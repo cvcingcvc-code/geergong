@@ -150,13 +150,20 @@ function ReviewPanel({ item, onDecide }) {
 
 function ReviewConsole() {
   const data = window.GORGON_QUEUE;
-  const [decided, setDecided] = React.useState({});
-  const [sel, setSel] = React.useState(data.items[0].id);
+  const store = window.GorgonStore;
+  const [decided, setDecided] = React.useState(() => (store ? store.getAdmin() : {}));
+  const [sel, setSel] = React.useState(() => {
+    const d = store ? store.getAdmin() : {};
+    const firstPending = data.items.find((i) => !d[i.id]);
+    return (firstPending || data.items[0]).id;
+  });
   const item = data.items.find((i) => i.id === sel);
 
   const decide = (id, action) => {
-    setDecided((d) => ({ ...d, [id]: action }));
-    const rest = data.items.filter((i) => !decided[i.id] && i.id !== id);
+    const next = { ...decided, [id]: action };
+    setDecided(next);
+    if (store) store.setAdmin(next);
+    const rest = data.items.filter((i) => !next[i.id] && i.id !== id);
     if (rest[0]) setSel(rest[0].id);
   };
 

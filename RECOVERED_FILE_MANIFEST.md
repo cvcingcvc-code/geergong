@@ -2,9 +2,14 @@
 
 Project: **Gorgon / Gorgon Design System**  
 Recovery target: `C://Users//lin//Documents//Gorgon-Recovered`  
-Recovered files: **113** (112 EXACT from export + 1 RECONSTRUCTED `_ds_bundle.js`).
+Recovered project files: **113** = **112 EXACT** (from export) + **1 RECONSTRUCTED** (`_ds_bundle.js`).  
+Total files in the recovered directory: **117** = 113 recovered + **4 recovery report docs** (audit · uncertainties · manifest · final report).
 
 Status legend: **EXACT** · **RECONSTRUCTED_FROM_DIFF** · **PARTIAL** · **MISSING** · **DELETED_BY_CLAUDE**.
+
+> Count reconciliation (canonical): 120 `write_file` calls → 115 distinct paths (3 pathless, `data.js` 3×)
+> → −3 deleted by Claude = **112 EXACT** → +1 reconstructed = **113** → +4 reports = **117**.
+> Derived by replaying chat `fe435e89`; details in `GORGON_RECOVERY_AUDIT.md` §4.
 
 
 ## (root)/

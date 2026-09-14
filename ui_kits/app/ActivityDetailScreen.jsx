@@ -1,6 +1,7 @@
 // Gorgon — Activity detail.
+// Demo MVP: + registration entry, working favorite (localStorage), "view on map" link.
 (function(){
-const { Tag, Avatar, Button, CategoryDot, VerifiedBadge, SourceTag, TrustBanner, FreshnessLabel, ReportSheet, RoutePlanner, MapAppSheet } = window.GorgonDesignSystem_56aa78;
+const { Tag, Avatar, Button, VerifiedBadge, SourceTag, TrustBanner, FreshnessLabel, ReportSheet, RoutePlanner, MapAppSheet } = window.GorgonDesignSystem_56aa78;
 const _CATS = window.GorgonDesignSystem_56aa78.CATEGORIES;
 
 function InfoLine({ icon, label, children }) {
@@ -29,7 +30,7 @@ function MetaRow({ icon, label, value, accent }) {
   );
 }
 
-function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
+function ActivityDetailScreen({ activity, synced, onSync, onBack, favorited, onToggleFavorite, onShowMap }) {
   const a = activity;
   const cat = _CATS[a.category];
   const [reportOpen, setReportOpen] = React.useState(false);
@@ -40,6 +41,8 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
   const trust = a.trust || (a.host ? "verified" : "aggregated");
   const bannerState = trust === "verified" || trust === "official" ? "confirmed" : "unverified";
   const cover = { background: `linear-gradient(150deg, color-mix(in oklch, ${cat.color} 90%, #fff) 0%, color-mix(in oklch, ${cat.color} 60%, var(--indigo-800)) 100%)` };
+
+  React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, [favorited, navOpen, reportOpen]);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -55,8 +58,8 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
               <button style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <i data-lucide="share-2" style={{ width: 19, height: 19, color: "var(--ink)" }} />
               </button>
-              <button style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <i data-lucide="heart" style={{ width: 19, height: 19, color: "var(--ink)" }} />
+              <button onClick={onToggleFavorite} aria-pressed={!!favorited} aria-label="收藏" style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: favorited ? "var(--danger)" : "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background var(--dur-fast) var(--ease-out)" }}>
+                <i data-lucide="heart" style={{ width: 19, height: 19, color: favorited ? "#fff" : "var(--ink)" }} />
               </button>
             </div>
           </div>
@@ -64,6 +67,7 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
             <Tag tone="ink" dotColor={cat.color}>{cat.label}</Tag>
             {a.hot && <Tag tone="danger">🔥 热门</Tag>}
             <Tag tone="ink">{a.distance} 内</Tag>
+            {a.demo && <Tag tone="warning">DEMO DATA</Tag>}
           </div>
         </div>
 
@@ -121,6 +125,16 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
             </div>
           )}
 
+          {/* Registration entry */}
+          {a.registrationUrl && (
+            <a href={a.registrationUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block" }}>
+              <Button block variant="secondary" size="lg" leadingIcon={<i data-lucide="ticket" style={{ width: 18, height: 18 }} />}
+                trailingIcon={<i data-lucide="external-link" style={{ width: 16, height: 16 }} />}>
+                报名入口（DEMO 示例链接）
+              </Button>
+            </a>
+          )}
+
           {/* Need to know */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>参加须知</h3>
@@ -150,7 +164,7 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
               </div>
             )}
 
-            {/* Map snippet */}
+            {/* Map snippet → jump to Map tab */}
             <div style={{ height: 128, borderRadius: "var(--radius-lg)", position: "relative", overflow: "hidden", background: "linear-gradient(135deg,#e8ebf3,#dde3ef)", border: "1px solid var(--border-subtle)", marginBottom: 14 }}>
               <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(var(--slate-200) 1px,transparent 1px),linear-gradient(90deg,var(--slate-200) 1px,transparent 1px)", backgroundSize: "26px 26px", opacity: 0.7 }} />
               <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-100%)" }}>
@@ -159,6 +173,11 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
                 </span>
               </div>
               <div style={{ position: "absolute", bottom: 10, left: 12, fontSize: 13, fontWeight: 600, color: "var(--text-body)", background: "rgba(255,255,255,0.9)", padding: "5px 10px", borderRadius: "var(--radius-pill)" }}>{a.venue}</div>
+              {onShowMap && (
+                <button onClick={onShowMap} style={{ position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "var(--brand)", color: "#fff", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 12.5, padding: "7px 12px", borderRadius: "var(--radius-pill)", cursor: "pointer", boxShadow: "var(--shadow-brand)" }}>
+                  <i data-lucide="map" style={{ width: 14, height: 14 }} />在地图查看
+                </button>
+              )}
             </div>
 
             {transit.length > 0 && (
@@ -200,7 +219,7 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack }) {
         <Button block variant={synced ? "mint" : "primary"} size="lg" onClick={onSync}
           leadingIcon={<i data-lucide={synced ? "check" : "calendar-plus"} style={{ width: 18, height: 18 }} />}
           style={{ flex: 1 }}>
-          {synced ? "已同步到我的周末" : "同步到我的周末"}
+          {synced ? "已加入我的周末" : "加入我的周末"}
         </Button>
       </div>
     </div>

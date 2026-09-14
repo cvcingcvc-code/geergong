@@ -1,6 +1,19 @@
 // Gorgon — Discover feed (home).
+// Demo MVP: live count, category filter, free filter, district filter, tap-to-detail.
 (function(){
-const { ActivityCard, SearchField, SegmentedControl, Avatar, CategoryDot } = window.GorgonDesignSystem_56aa78;
+const { ActivityCard, SearchField, SegmentedControl, Avatar } = window.GorgonDesignSystem_56aa78;
+
+function pillStyle(on) {
+  return {
+    flex: "none", display: "inline-flex", alignItems: "center", gap: 7,
+    border: on ? "1px solid var(--brand)" : "1px solid var(--border-subtle)",
+    background: on ? "var(--brand)" : "var(--surface-card)",
+    color: on ? "#fff" : "var(--text-body)",
+    fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 13.5,
+    padding: "9px 15px", borderRadius: "var(--radius-pill)", cursor: "pointer",
+    transition: "all var(--dur-fast) var(--ease-out)",
+  };
+}
 
 function CategoryRail({ value, onChange }) {
   const cats = window.GORGON_DATA.categories;
@@ -9,15 +22,7 @@ function CategoryRail({ value, onChange }) {
       {cats.map((c) => {
         const on = c.key === value;
         return (
-          <button key={c.key} onClick={() => onChange(c.key)} style={{
-            flex: "none", display: "inline-flex", alignItems: "center", gap: 7,
-            border: on ? "1px solid var(--brand)" : "1px solid var(--border-subtle)",
-            background: on ? "var(--brand)" : "var(--surface-card)",
-            color: on ? "#fff" : "var(--text-body)",
-            fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 13.5,
-            padding: "9px 15px", borderRadius: "var(--radius-pill)", cursor: "pointer",
-            transition: "all var(--dur-fast) var(--ease-out)",
-          }}>
+          <button key={c.key} onClick={() => onChange(c.key)} style={pillStyle(on)}>
             {c.key !== "all" && <span style={{ width: 8, height: 8, borderRadius: "50%", background: on ? "#fff" : `var(--cat-${c.key})` }} />}
             {c.label}
           </button>
@@ -27,11 +32,31 @@ function CategoryRail({ value, onChange }) {
   );
 }
 
-function DiscoverScreen({ synced, onSync, onOpen }) {
+function DiscoverScreen({ synced, onSync, onOpen, onGoSearch }) {
   const { user, activities } = window.GORGON_DATA;
   const [cat, setCat] = React.useState("all");
   const [when, setWhen] = React.useState("本周末");
-  const list = activities.filter((a) => cat === "all" || a.category === cat);
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [onlyFree, setOnlyFree] = React.useState(false);
+  const [district, setDistrict] = React.useState(null);
+
+  const districts = React.useMemo(() => {
+    const s = [];
+    activities.forEach((a) => { const d = a.district || (a.location || "").split("·")[1]; if (d && s.indexOf(d) < 0) s.push(d); });
+    return s;
+  }, [activities]);
+
+  const list = activities.filter((a) => {
+    if (cat !== "all" && a.category !== cat) return false;
+    if (onlyFree && a.price !== "免费") return false;
+    if (district && (a.district || "") !== district) return false;
+    return true;
+  });
+
+  const anyFilter = onlyFree || !!district;
+  const resetFilters = () => { setOnlyFree(false); setDistrict(null); };
+
+  React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, []);
 
   return (
     <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
@@ -40,6 +65,7 @@ function DiscoverScreen({ synced, onSync, onOpen }) {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-muted)", fontSize: 12.5, fontWeight: 500 }}>
             <i data-lucide="map-pin" style={{ width: 13, height: 13 }} />{user.campus}
+            <span style={{ marginLeft: 4, padding: "1px 7px", borderRadius: "var(--radius-pill)", background: "var(--warning-soft)", color: "#9A6300", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em" }}>DEMO</span>
           </div>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 23, color: "var(--text-strong)", letterSpacing: "-0.01em", marginTop: 3 }}>
             周末好，{user.name} 👋
@@ -54,16 +80,16 @@ function DiscoverScreen({ synced, onSync, onOpen }) {
         </div>
       </div>
 
-      {/* Search */}
-      <div style={{ padding: "0 20px 14px" }}>
-        <SearchField placeholder="搜索活动、地点、标签" />
+      {/* Search (tap → search tab) */}
+      <div style={{ padding: "0 20px 14px" }} onClick={onGoSearch} role="button" aria-label="打开搜索">
+        <SearchField placeholder="搜索活动、地点、标签" readOnly style={{ cursor: "pointer" }} />
       </div>
 
-      {/* Hero count strip */}
+      {/* Hero count strip — live */}
       <div style={{ margin: "0 20px 16px", padding: "16px 18px", borderRadius: "var(--radius-lg)", background: "var(--grad-sync)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "var(--shadow-brand)" }}>
         <div>
           <div style={{ fontFamily: "var(--font-display)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: 11, fontWeight: 600, opacity: 0.9 }}>This Weekend</div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, marginTop: 2 }}>就在你附近 38 场</div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, marginTop: 2 }}>就在你附近 {list.length} 场</div>
         </div>
         <i data-lucide="sparkles" style={{ width: 30, height: 30, opacity: 0.95 }} />
       </div>
@@ -72,19 +98,43 @@ function DiscoverScreen({ synced, onSync, onOpen }) {
 
       <div style={{ padding: "0 20px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <SegmentedControl options={["本周末", "下周末", "全部"]} value={when} onChange={setWhen} />
-        <button style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", background: "transparent", color: "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          <i data-lucide="sliders-horizontal" style={{ width: 16, height: 16 }} />筛选
+        <button onClick={() => setShowFilters((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", background: "transparent", color: (showFilters || anyFilter) ? "var(--brand)" : "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <i data-lucide="sliders-horizontal" style={{ width: 16, height: 16 }} />筛选{anyFilter ? " ·" + (district ? 1 : 0) + (onlyFree ? 1 : 0) : ""}
         </button>
       </div>
 
+      {/* Filter panel */}
+      {showFilters && (
+        <div style={{ padding: "0 20px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => setOnlyFree((v) => !v)} style={pillStyle(onlyFree)}>
+              <i data-lucide="ticket" style={{ width: 14, height: 14 }} />只看免费
+            </button>
+            {districts.map((d) => (
+              <button key={d} onClick={() => setDistrict(district === d ? null : d)} style={pillStyle(district === d)}>{d}</button>
+            ))}
+          </div>
+          {anyFilter && (
+            <button onClick={resetFilters} style={{ alignSelf: "flex-start", border: "none", background: "transparent", color: "var(--brand)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+              清除筛选
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Feed */}
       <div style={{ padding: "0 20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "-4px 0 0" }}>
+          共 <b style={{ color: "var(--text-strong)" }}>{list.length}</b> 场活动
+          {cat !== "all" ? ` · ${(window.GORGON_DATA.categories.find((c) => c.key === cat) || {}).label || ""}` : ""}
+          {onlyFree ? " · 仅免费" : ""}{district ? ` · ${district}` : ""}
+        </div>
         {list.map((a) => (
           <div key={a.id} onClick={() => onOpen(a)} style={{ cursor: "pointer" }}>
             <ActivityCard
               title={a.title} category={a.category} date={a.date} time={a.time}
               location={a.location} distance={a.distance} price={a.price}
-              tags={a.tags} hot={a.hot} synced={!!synced[a.id]}
+              tags={a.tags} hot={a.hot} image={a.image} synced={!!synced[a.id]}
               onSync={() => onSync(a.id)}
             />
           </div>

@@ -10,6 +10,8 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="../../_ds_bundle.js"></script>
+<!-- Demo MVP extensions (additive; do not modify the recovered design system) -->
+<script src="categories-ext.js"></script>
 <style>
   html,body{margin:0;height:100%}
   body{background:radial-gradient(1200px 700px at 50% -10%, #ece9fd 0%, var(--bg-base) 55%);
@@ -29,6 +31,8 @@
 </template>
 <div id="root"></div>
 <script src="data.js"></script>
+<script src="store.js"></script>
+<script src="demo-reset.js"></script>
 <script type="text/babel" src="AppShell.jsx"></script>
 <script type="text/babel" src="DiscoverScreen.jsx"></script>
 <script type="text/babel" src="ActivityDetailScreen.jsx"></script>
@@ -53,10 +57,15 @@ function Toast({ msg }) {
   );
 }
 
+const ALL_IDS = new Set((window.GORGON_DATA.activities || []).map((a) => a.id));
+const idsToMap = (ids) => { const m = {}; (ids || []).forEach((id) => { m[id] = true; }); return m; };
+
 function App() {
   const [tab, setTab] = React.useState("discover");
-  const [synced, setSynced] = React.useState({ a2: true, a5: true });
+  const [synced, setSynced] = React.useState(() => idsToMap(window.GorgonStore.getWeekend()));
+  const [favorites, setFavorites] = React.useState(() => window.GorgonStore.getFavorites());
   const [detail, setDetail] = React.useState(null);
+  const [mapFocus, setMapFocus] = React.useState(null);
   const [toast, setToast] = React.useState("");
   const toastTimer = React.useRef(null);
 
@@ -64,32 +73,47 @@ function App() {
     setToast(m); clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(""), 1800);
   };
-  const toggleSync = (id) => {
-    setSynced((s) => {
-      const next = { ...s, [id]: !s[id] };
-      if (next[id]) flash("已同步到我的周末");
-      return next;
-    });
-  };
-  const openDetail = (a) => setDetail(a);
 
-  const syncedCount = Object.values(synced).filter(Boolean).length;
+  // --- My Weekend (persisted) ---
+  const toggleSync = (id) => {
+    const on = !synced[id];
+    const next = { ...synced, [id]: on };
+    setSynced(next);
+    window.GorgonStore.setWeekend(Object.keys(next).filter((k) => next[k]));
+    flash(on ? "已加入我的周末" : "已从我的周末移除");
+  };
+
+  // --- Favorites (persisted) ---
+  const toggleFavorite = (id) => {
+    const has = favorites.indexOf(id) >= 0;
+    const next = has ? favorites.filter((x) => x !== id) : favorites.concat([id]);
+    setFavorites(next);
+    window.GorgonStore.setFavorites(next);
+    flash(has ? "已取消收藏" : "已收藏");
+    if (detail && has) setDetail(null);
+  };
+
+  const openDetail = (a) => setDetail(a);
+  const showOnMap = (a) => { setMapFocus(a.id); setDetail(null); setTab("map"); };
+
+  const syncedCount = Object.keys(synced).filter((k) => synced[k] && ALL_IDS.has(k)).length;
 
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
 
-  const mapDark = false;
   return (
     <PhoneFrame>
       <StatusBar dark={false} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-        {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+        {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} />}
         {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
-        {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} />}
-        {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+        {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
+        {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
 
         {detail && (
           <div style={{ position: "absolute", inset: 0, zIndex: 30, background: "var(--bg-base)", display: "flex", flexDirection: "column", animation: "gg-detail-in var(--dur-slow) var(--ease-out)" }}>
-            <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)} onBack={() => setDetail(null)} />
+            <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)}
+              onBack={() => setDetail(null)} favorited={favorites.indexOf(detail.id) >= 0}
+              onToggleFavorite={() => toggleFavorite(detail.id)} onShowMap={() => showOnMap(detail)} />
           </div>
         )}
         <Toast msg={toast} />

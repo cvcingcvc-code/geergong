@@ -1,3 +1,54 @@
+# Gorgon Demo MVP
+
+> **发现你的周末** — 一个 3 分钟可以完整演示的交互原型。
+> This is a **DEMO MVP** built on top of the recovered Gorgon design system.
+> The original design-system README follows below (unchanged).
+
+## 运行方式
+
+```bash
+# 在项目根目录（含 _ds_bundle.js 的那一层）
+python -m http.server 8000
+```
+
+> 首次加载需要联网（React / Babel / Lucide / 字体来自 CDN）。
+> 建议用 `127.0.0.1` 打开，例如 `http://localhost:8000/…`。
+
+## 访问地址
+
+| 界面 | 地址 |
+|---|---|
+| 📱 移动 App（发现 / 搜索 / 我的周末 / 地图） | `http://localhost:8000/ui_kits/app/` |
+| 🛠 审核后台（爬取 → 自动校验 → 人工审核） | `http://localhost:8000/ui_kits/admin/` |
+| 🖥 桌面规划台 | `http://localhost:8000/ui_kits/dashboard/` |
+| 🎞 Pitch 幻灯片 | `http://localhost:8000/slides/` |
+
+**Demo 模式**：在地址后加 `?demo=1`（例如 `.../ui_kits/app/?demo=1`），角落里会出现一个很淡的
+**「重置 Demo」** 按钮，用来一键清空演示状态。
+
+## 演示数据说明
+
+- ⚠️ 当前所有活动都是 **DEMO DATA（演示样例数据，不是真实活动）**，每条都带 `demo: true` 标记，
+  `source` 一律以 `DEMO DATA` 开头，App 内也会显示 `DEMO` 角标。
+- ⚠️ **当前版本没有真实爬虫，也没有生产数据库。** 后台的「爬取队列」是样例数据。
+- 演示中的「我的周末 / 收藏 / 审核结果」保存在**浏览器本地**（localStorage），
+  没有登录、没有账号，也不会上传到任何服务器。
+
+## 这一版实现了什么
+
+- 发现：24 条活动、分类筛选、只看免费、按区域筛选、实时数量。
+- 搜索：跨标题 / 简介 / 标签 / 分类 / 场馆 / 区域 / 价格，大小写不敏感，带空状态。
+- 活动详情：完整信息 + **报名入口** + **加入我的周末** + **在地图查看** + 收藏。
+- 我的周末：本地持久化，刷新不丢，可按周六/周日查看，可移除。
+- 收藏：本地持久化，可在「我的周末 → 收藏」中查看与移除。
+- 地图：示意地图（不接真实地图 SDK），地点列表、选中高亮、从详情跳转定位。
+- 审核后台：通过 / 退回 / 拒绝，结果本地持久化，刷新不丢。
+
+> 技术栈保持与恢复版本一致：React 18 (CDN) + Babel Standalone + 纯静态 HTML/JSX/CSS，
+> 无构建步骤、无打包工具。
+
+---
+
 # 戈尔贡 · Gorgon Design System
 
 > **发现你的周末** — Discover your weekend.

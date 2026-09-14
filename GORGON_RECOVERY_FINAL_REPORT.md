@@ -11,7 +11,13 @@
 
 ### EXACT FILES
 **112 files** restored verbatim from `design_chats-000.zip` → chat `fe435e89` ("Gorgon Design System"),
-replayed write→edit→delete in chronological order. Covers:
+replayed write→edit→delete in chronological order.
+
+> **Count reconciliation** (canonical): 120 `write_file` calls → 115 distinct paths (3 pathless, `data.js` 3×)
+> → −3 deleted by Claude = **112 EXACT** → +1 RECONSTRUCTED (`_ds_bundle.js`) = **113 recovered project files**
+> → +4 recovery report docs = **117 files in the directory**. See `GORGON_RECOVERY_AUDIT.md` §4.
+
+Covers:
 - `readme.md`, `本地运行指南.md`, `styles.css`
 - `assets/` (logo-mark / logo-wordmark / logo-wordmark-light .svg)
 - `tokens/` (base, colors, typography, spacing, effects, fonts .css)

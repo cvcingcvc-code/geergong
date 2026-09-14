@@ -10,6 +10,7 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="../../_ds_bundle.js"></script>
+<script src="../app/categories-ext.js"></script>
 <style>
   html,body{margin:0;height:100%}
   body{background:var(--bg-base);font-family:var(--font-sans)}
@@ -21,6 +22,7 @@
 <body>
 <div id="root"></div>
 <script src="../app/data.js"></script>
+<script src="../app/store.js"></script>
 <script type="text/babel" src="Sidebar.jsx"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script type="text/babel" data-presets="react">
@@ -32,8 +34,12 @@ function App() {
   const [nav, setNav] = React.useState("discover");
   const [when, setWhen] = React.useState("本周末");
   const [cat, setCat] = React.useState("全部");
-  const [synced, setSynced] = React.useState({ a2: true, a5: true, a4: true });
-  const toggle = (id) => setSynced((s) => ({ ...s, [id]: !s[id] }));
+  const [synced, setSynced] = React.useState(() => { const m = {}; (window.GorgonStore ? window.GorgonStore.getWeekend() : []).forEach((id) => { m[id] = true; }); return m; });
+  const toggle = (id) => {
+    const next = { ...synced, [id]: !synced[id] };
+    setSynced(next);
+    if (window.GorgonStore) window.GorgonStore.setWeekend(Object.keys(next).filter((k) => next[k]));
+  };
   const syncedList = activities.filter((a) => synced[a.id]);
   const cats = ["全部", "运动", "音乐", "艺术", "美食", "户外", "学习"];
   const freeCount = activities.filter((a) => a.price === "免费").length;

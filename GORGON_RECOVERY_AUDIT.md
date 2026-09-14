@@ -20,7 +20,7 @@ Inside `design_chats-000`, the chats break down as:
 
 | Chat file | Project name | Gorgon files? |
 |---|---|---|
-| **`fe435e89-…json`** | **Gorgon Design System** | **YES — 115 write_file paths, the entire project** |
+| **`fe435e89-…json`** | **Gorgon Design System** | **YES — 120 `write_file` calls targeting 115 distinct paths, the entire project** |
 | `792fec17-…json` | Studio OS 工作室协作平台 | No (references Gorgon *as a design system* only) |
 | `fa7d0482-…json` | Studio OS 工作室协作平台 | No (same) |
 | `a668b202-…json` | 智能教案 Design System | No — different product (lesson-plan app) |
@@ -41,10 +41,10 @@ tool calls whose inputs contained full file contents:
 
 | Tool | Count | What it gave us |
 |---|---|---|
-| `write_file` | 120 | `content` + `path` — full file bodies |
+| `write_file` | 120 calls | `content` + `path` — full file bodies. 117 calls carried a `path`; **115 distinct paths** (3 calls were pathless, `data.js` was written 3×). |
 | `str_replace_edit` | 28 | `old_string`/`new_string` (and `edits[]`) — diffs |
 | `dc_html_str_replace` / `dc_js_str_replace` | 4 | diffs against `templates/pitch-deck/PitchDeck.dc.html` |
-| `delete_file` | 10 | explicit deletions (mostly scratch PNGs) |
+| `delete_file` | 5 calls / 10 paths | explicit deletions (8 scratch screenshot PNGs + `deploy/README.md` + `deploy/vercel.json`) |
 | `read_file` / `grep` / `list_files` | 22 | inspection only |
 | `show_html` / `save_screenshot` / `present_fs_item_for_download` / `super_inline_html` | 31 | preview/export only |
 
@@ -81,7 +81,7 @@ could not match, it was recorded (see uncertainties), not guessed.
      slides/    title, agenda, bigstat, comparison, quote, closing, index .html
    ```
    `* _ds_bundle.js` is **reconstructed** (see §7), not from the export.
-4. **Fully recovered files:** 112 (every `write_file` body, last-write-wins).
+4. **Fully recovered files:** **112 EXACT** file bodies (every surviving `write_file` body, last-write-wins). Count reconciliation: see §4 below.
 5. **Only-partially recoverable:** `templates/pitch-deck/PitchDeck.dc.html`
    — export holds only 4 diffs, not the base file. The 7 individual slide HTMLs
    ARE fully recovered, so the pitch-deck content survives as standalone slides.
@@ -113,3 +113,32 @@ could not match, it was recorded (see uncertainties), not guessed.
       the export if you want them back.
     - `SKILL.md` (referenced in `readme.md`) is **not in the Gorgon export** —
       the only `SKILL.md` in the export belongs to the unrelated 智能教案 project.
+
+---
+
+## 4. Count reconciliation (why 112 / 113 / 117 all appear)
+
+The counts are different **scopes**, not contradictory. Derived directly from the chat
+(`fe435e89`) by replaying its tool calls:
+
+| Metric | Value | Source |
+|---|---|---|
+| `write_file` **calls** | **120** | §2 tool counts |
+| … of which carried a `path` | 117 | 3 calls were pathless (uncertainty U3) |
+| write_file **distinct paths** | **115** | `data.js` was written 3× (last-write-wins) |
+| − deleted by Claude (`_scratch_logo.html`, `deploy/vercel.json`, `deploy/README.md`) | −3 | `delete_file` calls |
+| = **EXACT recovered files** | **112** | verbatim file bodies |
+| + reconstructed runtime artifact (`_ds_bundle.js`) | +1 | §7 / RECONSTRUCTED |
+| = **recovered project files** | **113** | what lives in the recovered tree |
+| + recovery report docs (this file + 3 others) | +4 | audit · uncertainties · manifest · final report |
+| = **total files in `Gorgon-Recovered/`** | **117** | directory listing |
+
+- **112** = EXACT bodies recovered from the export.
+- **113** = 112 EXACT + 1 RECONSTRUCTED (`_ds_bundle.js`).
+- **117** = 113 recovered project files + 4 recovery **report** documents.
+
+The 10 `delete_file` *paths* include 8 scratch screenshots (never `write_file` targets);
+only 3 of them were written files, which is why 115 → 112.
+
+This section is the canonical reference; `RECOVERED_FILE_MANIFEST.md` and
+`GORGON_RECOVERY_FINAL_REPORT.md` cite the same figures.
