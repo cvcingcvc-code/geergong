@@ -1,0 +1,9 @@
+/* ── Gorgon webfonts ──────────────────────────────────────────────
+   Brand fonts loaded from Google Fonts CDN.
+   - Space Grotesk : display headings, large numerals, times/dates
+   - Plus Jakarta Sans : Latin UI + body
+   - Noto Sans SC : Chinese (primary script for the product)
+   NOTE: These are loaded from the Google CDN rather than self-hosted
+   binaries. Swap in licensed/self-hosted files for production. */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');

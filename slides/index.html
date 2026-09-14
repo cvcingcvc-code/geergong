@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gorgon · 幻灯片模板</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;height:100%}
+  body{background:#0c0d12;font-family:var(--font-sans);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .frame{width:1280px;height:720px;transform-origin:center;box-shadow:var(--shadow-xl);border-radius:14px;overflow:hidden;background:#fff}
+  .frame iframe{width:1280px;height:720px;border:0;display:block}
+  .nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);font-size:22px}
+  .nav:hover{background:rgba(255,255,255,.22)}
+  .prev{left:24px}.next{right:24px}
+  .rail{flex:none;display:flex;gap:12px;padding:16px 20px;background:#16181f;overflow-x:auto;align-items:center;border-top:1px solid #24262f}
+  .thumb{flex:none;width:148px;height:83px;border-radius:8px;overflow:hidden;cursor:pointer;position:relative;border:2px solid transparent;background:#000}
+  .thumb.active{border-color:var(--mint-400)}
+  .thumb iframe{width:1280px;height:720px;border:0;transform:scale(.1156);transform-origin:top left;pointer-events:none}
+  .tn{position:absolute;left:6px;bottom:5px;font-family:var(--font-display);font-size:10px;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:5px}
+  .count{position:absolute;top:18px;right:24px;font-family:var(--font-display);color:#fff;font-size:14px;font-weight:600;background:rgba(255,255,255,.1);padding:6px 12px;border-radius:999px;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="count"><span id="cur">1</span> / 6</div>
+  <button class="nav prev" onclick="go(-1)">‹</button>
+  <div class="frame" id="frame"><iframe id="main" src="title.html"></iframe></div>
+  <button class="nav next" onclick="go(1)">›</button>
+</div>
+<div class="rail" id="rail"></div>
+<script>
+  const slides = [
+    ["title.html","Title"],["agenda.html","Agenda"],["bigstat.html","Big Stat"],
+    ["comparison.html","Compare"],["quote.html","Quote"],["closing.html","Closing"]
+  ];
+  let i = 0;
+  const main = document.getElementById('main');
+  const rail = document.getElementById('rail');
+  slides.forEach(([src,label],idx)=>{
+    const t = document.createElement('div');
+    t.className='thumb'+(idx===0?' active':'');
+    t.innerHTML='<iframe src="'+src+'" scrolling="no"></iframe><span class="tn">'+String(idx+1).padStart(2,'0')+'</span>';
+    t.onclick=()=>{i=idx;render();};
+    rail.appendChild(t);
+  });
+  function render(){
+    main.src = slides[i][0];
+    document.getElementById('cur').textContent = i+1;
+    [...rail.children].forEach((c,idx)=>c.classList.toggle('active',idx===i));
+  }
+  function go(d){ i=(i+d+slides.length)%slides.length; render(); }
+  function fit(){
+    const s = document.querySelector('.stage');
+    const scale = Math.min((s.clientWidth-120)/1280,(s.clientHeight-40)/720);
+    document.getElementById('frame').style.transform='scale('+scale+')';
+  }
+  window.addEventListener('resize',fit); fit();
+  window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);});
+</script>
+</body>
+</html>

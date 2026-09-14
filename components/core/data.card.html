@@ -1,0 +1,39 @@
+<!-- @dsCard group="Components" viewport="700x170" name="Avatar & StatBlock" subtitle="Avatars and display-figure stats" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:24px;background:var(--surface-card)}#root{display:flex;flex-direction:column;gap:22px}.row{display:flex;align-items:center;gap:26px;flex-wrap:wrap}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Avatar, StatBlock } = window.GorgonDesignSystem_56aa78;
+function Demo(){
+  return (
+    <>
+      <div className="row">
+        <Avatar name="小林" size="xs"/>
+        <Avatar name="阿哲" size="sm"/>
+        <Avatar name="Mei" size="md"/>
+        <Avatar name="Lin" size="lg" ring/>
+        <Avatar name="周末" size="xl"/>
+      </div>
+      <div className="row" style={{gap:44}}>
+        <StatBlock value="38" label="本周末活动" accent="brand"/>
+        <StatBlock value="¥0" label="免费场次" accent="mint"/>
+        <StatBlock value="2.1km" label="平均距离"/>
+        <StatBlock value="14:30" label="最近开始" sub="苏州河夜跑"/>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

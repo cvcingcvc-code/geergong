@@ -1,0 +1,31 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Title slide" subtitle="Brand gradient cover with logo + kicker" -->
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0}
+  .slide{width:1280px;height:720px;position:relative;overflow:hidden;background:var(--grad-dusk);color:#fff;font-family:var(--font-sans);display:flex;flex-direction:column;justify-content:space-between;padding:72px 80px}
+  .glow{position:absolute;border-radius:50%;filter:blur(8px)}
+  .top{display:flex;align-items:center;gap:14px;z-index:2}
+  .kicker{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.22em;font-size:15px;font-weight:600;color:#C9C1F7;z-index:2}
+  h1{font-family:var(--font-display);font-size:104px;font-weight:700;line-height:1.02;letter-spacing:-0.02em;margin:18px 0 0;z-index:2;color:#fff}
+  .accent{color:#4FE0BA}
+  .sub{font-size:23px;color:#E4E0FB;max-width:720px;line-height:1.5;margin-top:24px;z-index:2}
+  .foot{display:flex;align-items:center;justify-content:space-between;z-index:2;font-size:15px;color:#A89BF1}
+  .pill{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);padding:9px 16px;border-radius:999px;font-weight:600;color:#fff;font-size:14px}
+</style></head>
+<body><div class="slide">
+  <div class="glow" style="width:520px;height:520px;background:radial-gradient(circle,#6A53FF66,transparent 70%);top:-160px;right:-120px"></div>
+  <div class="glow" style="width:420px;height:420px;background:radial-gradient(circle,#00C28E55,transparent 70%);bottom:-160px;left:-80px"></div>
+
+  <div class="top"><img src="../assets/logo-wordmark-light.svg" height="46" alt="Gorgon"></div>
+
+  <div>
+    <div class="kicker">Discover Your Weekend · 上海戈尔贡科技</div>
+    <h1>发现你的<span class="accent">周末</span></h1>
+    <p class="sub">把上海大学生散落在网络各处的周末活动，一处发现、一键同步。From scattered listings to one synced weekend.</p>
+  </div>
+
+  <div class="foot">
+    <span class="pill">🎓 上海 · 120,000+ 在校大学生</span>
+    <span>2026 · 产品介绍</span>
+  </div>
+</div></body></html>

@@ -1,0 +1,90 @@
+/* ── Gorgon color system ──────────────────────────────────────────
+   Base palette scales + semantic aliases.
+   Brand = electric indigo (#5B47E0) + mint (#00D6A3) on cool slate. */
+
+:root {
+  /* Indigo — primary brand */
+  --indigo-50:  #F1EFFD;
+  --indigo-100: #E4E0FB;
+  --indigo-200: #C9C1F7;
+  --indigo-300: #A89BF1;
+  --indigo-400: #8270EA;
+  --indigo-500: #5B47E0; /* brand */
+  --indigo-600: #4733C4;
+  --indigo-700: #38289B;
+  --indigo-800: #2A1E74;
+  --indigo-900: #1C144E;
+
+  /* Mint — secondary brand / "synced" */
+  --mint-50:  #E6FBF5;
+  --mint-100: #C7F6E9;
+  --mint-200: #8FEDD3;
+  --mint-300: #4FE0BA;
+  --mint-400: #14D3A3;
+  --mint-500: #00C28E; /* brand mint */
+  --mint-600: #009D74;
+  --mint-700: #007858;
+
+  /* Slate — cool neutrals */
+  --slate-0:   #FFFFFF;
+  --slate-50:  #F7F8FB;
+  --slate-100: #EEF0F5;
+  --slate-200: #E1E4EC;
+  --slate-300: #CBD0DC;
+  --slate-400: #9AA1B2;
+  --slate-500: #6B7280;
+  --slate-600: #4B5160;
+  --slate-700: #343846;
+  --slate-800: #20232E;
+  --slate-900: #12141B;
+  --ink:       #0C0D12;
+
+  /* Accent pops (use sparingly) */
+  --coral-500:  #FF5A5F; /* hot / live / danger-adjacent */
+  --amber-500:  #FFB020; /* featured / warning */
+  --pink-500:   #FF4D8D; /* social / trending */
+
+  /* ── Semantic aliases ─────────────────────────────────────────── */
+  --brand:           var(--indigo-500);
+  --brand-strong:    var(--indigo-600);
+  --brand-soft:      var(--indigo-50);
+  --brand-on:        #FFFFFF;
+
+  --accent:          var(--mint-500);
+  --accent-strong:   var(--mint-600);
+  --accent-soft:     var(--mint-50);
+
+  --bg-base:         var(--slate-50);
+  --bg-sunken:       var(--slate-100);
+  --surface-card:    var(--slate-0);
+  --surface-raised:  var(--slate-0);
+  --surface-inverse: var(--ink);
+
+  --text-strong:     var(--ink);
+  --text-body:       var(--slate-700);
+  --text-muted:      var(--slate-500);
+  --text-faint:      var(--slate-400);
+  --text-on-brand:   #FFFFFF;
+  --text-on-inverse: #F2F3F7;
+
+  --border-subtle:   var(--slate-200);
+  --border-default:  var(--slate-300);
+  --border-strong:   var(--slate-400);
+  --focus-ring:      color-mix(in oklch, var(--indigo-500) 45%, transparent);
+
+  --success:         var(--mint-500);
+  --success-soft:    var(--mint-50);
+  --warning:         var(--amber-500);
+  --warning-soft:    #FFF6E6;
+  --danger:          var(--coral-500);
+  --danger-soft:     #FFECEC;
+  --info:            var(--indigo-500);
+
+  /* Category accents (activity types) */
+  --cat-sport:    #2E7DFF;
+  --cat-music:    #FF4D8D;
+  --cat-art:      #8270EA;
+  --cat-food:     #FF7A00;
+  --cat-outdoor:  #00C28E;
+  --cat-study:    #5B47E0;
+}

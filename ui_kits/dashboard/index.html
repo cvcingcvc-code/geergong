@@ -1,0 +1,148 @@
+<!-- @dsCard group="Dashboard" viewport="1280x820" name="Gorgon Web Dashboard" subtitle="Desktop weekend planner — discover grid + my-weekend rail" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gorgon · 周末规划台</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html,body{margin:0;height:100%}
+  body{background:var(--bg-base);font-family:var(--font-sans)}
+  #root{height:100vh}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--slate-300);border-radius:8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="../app/data.js"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { ActivityCard, SearchField, SegmentedControl, StatBlock, Tag, Button, Avatar } = window.GorgonDesignSystem_56aa78;
+const { Sidebar } = window.GorgonDash;
+
+function App() {
+  const { activities } = window.GORGON_DATA;
+  const [nav, setNav] = React.useState("discover");
+  const [when, setWhen] = React.useState("本周末");
+  const [cat, setCat] = React.useState("全部");
+  const [synced, setSynced] = React.useState({ a2: true, a5: true, a4: true });
+  const toggle = (id) => setSynced((s) => ({ ...s, [id]: !s[id] }));
+  const syncedList = activities.filter((a) => synced[a.id]);
+  const cats = ["全部", "运动", "音乐", "艺术", "美食", "户外", "学习"];
+  const freeCount = activities.filter((a) => a.price === "免费").length;
+
+  React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
+
+  return (
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      <Sidebar active={nav} onChange={setNav} syncedCount={syncedList.length} />
+
+      {/* Main */}
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Top bar */}
+        <header style={{ flex: "none", padding: "20px 28px", borderBottom: "1px solid var(--border-subtle)", background: "var(--surface-card)", display: "flex", alignItems: "center", gap: 18 }}>
+          <div style={{ flex: 1, maxWidth: 460 }}><SearchField placeholder="搜索活动、地点、标签" /></div>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+            <button style={{ position: "relative", width: 44, height: 44, borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", background: "var(--surface-card)", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <i data-lucide="bell" style={{ width: 20, height: 20, color: "var(--text-body)" }} />
+              <span style={{ position: "absolute", top: 10, right: 11, width: 8, height: 8, borderRadius: "50%", background: "var(--danger)", boxShadow: "0 0 0 2px var(--surface-card)" }} />
+            </button>
+            <Button variant="primary" leadingIcon={<i data-lucide="plus" style={{ width: 18, height: 18 }} />}>发布活动</Button>
+          </div>
+        </header>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "26px 28px 40px" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>This Weekend · 6.15–6.16</div>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--text-strong)", marginTop: 4 }}>发现活动</h1>
+            </div>
+            <SegmentedControl options={["本周末", "下周末", "全部"]} value={when} onChange={setWhen} />
+          </div>
+
+          {/* Stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+            {[
+              { v: activities.length + 32, l: "本周末活动", a: "brand", i: "calendar-days" },
+              { v: freeCount + 14, l: "免费场次", a: "mint", i: "ticket" },
+              { v: "2.4km", l: "平均距离", a: "ink", i: "navigation" },
+              { v: syncedList.length, l: "我已同步", a: "brand", i: "check-check" },
+            ].map((s) => (
+              <div key={s.l} style={{ background: "var(--surface-card)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-lg)", padding: "16px 18px", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <StatBlock value={s.v} label={s.l} accent={s.a} />
+                <span style={{ width: 42, height: 42, borderRadius: "var(--radius-md)", background: "var(--bg-sunken)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <i data-lucide={s.i} style={{ width: 20, height: 20, color: "var(--brand)" }} />
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Category filter */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+            {cats.map((c) => {
+              const on = c === cat;
+              return (
+                <button key={c} onClick={() => setCat(c)} style={{ border: on ? "1px solid var(--brand)" : "1px solid var(--border-subtle)", background: on ? "var(--brand)" : "var(--surface-card)", color: on ? "#fff" : "var(--text-body)", fontWeight: 600, fontSize: 13.5, padding: "8px 16px", borderRadius: "var(--radius-pill)", cursor: "pointer" }}>{c}</button>
+              );
+            })}
+          </div>
+
+          {/* Discover grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 18 }}>
+            {activities.map((a) => (
+              <ActivityCard key={a.id} title={a.title} category={a.category} date={a.date} time={a.time} location={a.location} distance={a.distance} price={a.price} tags={a.tags} hot={a.hot} synced={!!synced[a.id]} onSync={() => toggle(a.id)} />
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* Right rail — my weekend */}
+      <aside style={{ width: 312, flex: "none", borderLeft: "1px solid var(--border-subtle)", background: "var(--surface-card)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "22px 20px 14px", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <i data-lucide="calendar-heart" style={{ width: 20, height: 20, color: "var(--brand)" }} />
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700, color: "var(--text-strong)" }}>我的周末</h2>
+            <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--text-muted)" }}>{syncedList.length} 场</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px" }}>
+          {["周六 · 6.15", "周日 · 6.16"].map((dayLabel, di) => {
+            const items = syncedList.filter((a) => a.day === (di === 0 ? "sat" : "sun"));
+            if (!items.length) return null;
+            return (
+              <div key={dayLabel} style={{ marginBottom: 18 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 700, color: "var(--text-body)", marginBottom: 10 }}>{dayLabel}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {items.map((a) => (
+                    <div key={a.id} style={{ display: "flex", gap: 11, padding: 10, borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", background: "var(--surface-card)" }}>
+                      <div style={{ width: 4, borderRadius: 4, background: `var(--cat-${a.category})`, flex: "none" }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, color: "var(--brand)", fontVariantNumeric: "tabular-nums" }}>{a.time}</div>
+                        <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{a.venue} · {a.distance}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          <Button block variant="secondary" leadingIcon={<i data-lucide="share-2" style={{ width: 17, height: 17 }} />} style={{ marginTop: 6 }}>分享我的周末</Button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+setTimeout(() => window.lucide && window.lucide.createIcons(), 120);
+</script>
+</body>
+</html>

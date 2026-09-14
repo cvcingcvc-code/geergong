@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" viewport="700x200" name="Tags, Badges & Categories" subtitle="Pills, status badges, category dots" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:24px;background:var(--surface-card)}#root{display:flex;flex-direction:column;gap:16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Tag, Badge, CategoryDot } = window.GorgonDesignSystem_56aa78;
+function Demo(){
+  return (
+    <>
+      <div className="row">
+        <Tag tone="brand">本周末</Tag>
+        <Tag tone="mint">免费</Tag>
+        <Tag tone="neutral">新手友好</Tag>
+        <Tag tone="warning">即将满员</Tag>
+        <Tag tone="danger">已满</Tag>
+        <Tag tone="ink">官方</Tag>
+      </div>
+      <div className="row">
+        <Badge tone="brand">3</Badge>
+        <Badge tone="danger">12</Badge>
+        <Badge tone="mint">NEW</Badge>
+        <Badge tone="amber">99+</Badge>
+        <span style={{position:'relative',display:'inline-flex'}}>通知 <Badge tone="danger" dot style={{position:'absolute',top:-2,right:-8}}/></span>
+      </div>
+      <div className="row" style={{gap:18}}>
+        <CategoryDot category="sport" showLabel/>
+        <CategoryDot category="music" showLabel/>
+        <CategoryDot category="art" showLabel/>
+        <CategoryDot category="food" showLabel/>
+        <CategoryDot category="outdoor" showLabel/>
+        <CategoryDot category="study" showLabel/>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

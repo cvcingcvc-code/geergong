@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x470" name="Activity Card" subtitle="The signature feed card + compact row" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:24px;background:var(--bg-base)}#root{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="text/babel">
+const { ActivityCard } = window.GorgonDesignSystem_56aa78;
+function Demo(){
+  const [s1,setS1] = React.useState(false);
+  const [s2,setS2] = React.useState(true);
+  return (
+    <>
+      <ActivityCard
+        title="夜跑 · 苏州河滨水步道"
+        category="sport" date="周六 6.15" time="19:30"
+        location="上海·普陀" distance="1.2km" price="免费"
+        tags={["新手友好","5km","组队"]} hot
+        synced={s1} onSync={setS1}/>
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        <ActivityCard compact title="独立音乐现场 · 月光俱乐部" category="music" date="周六 6.15" time="20:00" location="静安" distance="3.4km" synced={s2} onSync={setS2}/>
+        <ActivityCard compact title="陶艺工作坊 · 周末手作" category="art" date="周日 6.16" time="14:00" location="徐汇" distance="2.0km"/>
+        <ActivityCard compact title="城市骑行 · 滨江夕阳" category="outdoor" date="周日 6.16" time="17:30" location="杨浦" distance="5.1km"/>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+setTimeout(()=>window.lucide&&window.lucide.createIcons(),80);
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" viewport="700x430" name="Trust & Verification" subtitle="Badges, source, status banners, freshness, report flow" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:24px;background:var(--surface-card)}#root{display:flex;flex-direction:column;gap:18px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lbl{font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);font-weight:600}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="text/babel">
+const { VerifiedBadge, SourceTag, TrustBanner, FreshnessLabel, ReportSheet, Button } = window.GorgonDesignSystem_56aa78;
+function Demo(){
+  const [open,setOpen] = React.useState(false);
+  React.useEffect(()=>{ window.lucide && window.lucide.createIcons(); });
+  return (
+    <>
+      <div className="lbl">信任等级 · trust levels</div>
+      <div className="row">
+        <VerifiedBadge level="verified"/>
+        <VerifiedBadge level="official"/>
+        <VerifiedBadge level="aggregated"/>
+        <VerifiedBadge level="unverified"/>
+        <SourceTag source="上海艺文公众号" href="#"/>
+        <FreshnessLabel time="2 小时前"/>
+        <FreshnessLabel confirmed/>
+      </div>
+      <div className="lbl">状态条 · status banners</div>
+      <TrustBanner state="confirmed"/>
+      <TrustBanner state="unverified" action="查看来源"/>
+      <TrustBanner state="cancelled"/>
+      <div className="row">
+        <Button variant="secondary" size="sm" onClick={()=>setOpen(true)}
+          leadingIcon={<i data-lucide="flag" style={{width:15,height:15}}/>}>报错反馈</Button>
+        <span style={{fontSize:13,color:'var(--text-muted)'}}>← 点击打开举报浮层</span>
+      </div>
+      <div style={{position:'relative',height:open?0:0}}>
+        <div style={{position:'fixed',inset:0,zIndex:1000,pointerEvents:open?'auto':'none'}}>
+          <ReportSheet open={open} onClose={()=>setOpen(false)}/>
+        </div>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+setTimeout(()=>window.lucide&&window.lucide.createIcons(),80);
+</script>
+</body>
+</html>

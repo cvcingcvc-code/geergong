@@ -1,0 +1,106 @@
+// Gorgon 审核后台 — 自动爬取的待审核队列(样例)。
+// 每条来自「爬虫抓取 → 自动校验」,带机器校验结果与建议,等待人工审核。
+//
+// check.status: pass(通过) | warn(存疑) | fail(失败)
+// suggestion:   auto_pass(建议自动通过) | review(需人工核实) | reject(建议拒绝)
+window.GORGON_QUEUE = {
+  stats: { pending: 23, autoPassRate: 0.62, todayReviewed: 41, sources: 18 },
+  items: [
+    {
+      id: "q1", title: "西岸美术馆大道 · 周末特展", category: "art",
+      date: "周六 6.20", time: "10:00", venue: "西岸美术馆", location: "上海·徐汇",
+      price: "学生 ¥60", crawledAt: "12 分钟前",
+      source: "西岸美术馆官网", sourceUrl: "https://www.westbund.com/...",
+      sourceType: "whitelist",
+      score: 96, suggestion: "auto_pass",
+      checks: [
+        { key: "source", label: "来源核验", status: "pass", detail: "命中可信白名单 · 官方域名" },
+        { key: "dedup", label: "去重", status: "pass", detail: "未发现重复活动" },
+        { key: "geocode", label: "地址解析", status: "pass", detail: "可解析到坐标 · 偏差 <30m" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期 · 周末场次" },
+        { key: "risk", label: "风险扫描", status: "pass", detail: "未命中敏感词 / 广告" },
+        { key: "image", label: "封面图", status: "pass", detail: "已抓取有效封面" },
+      ],
+    },
+    {
+      id: "q2", title: "大学路周末市集 · 手作与咖啡", category: "food",
+      date: "周六 6.20", time: "11:00", venue: "大学路", location: "上海·杨浦",
+      price: "免费", crawledAt: "28 分钟前",
+      source: "小红书 · 多篇笔记", sourceUrl: "https://xiaohongshu.com/...",
+      sourceType: "social",
+      score: 71, suggestion: "review",
+      checks: [
+        { key: "source", label: "来源核验", status: "warn", detail: "社交平台聚合 · 非官方,建议二次核实" },
+        { key: "dedup", label: "去重", status: "pass", detail: "合并了 4 篇相似笔记" },
+        { key: "geocode", label: "地址解析", status: "warn", detail: "地址为街道级 · 坐标偏差可能 >150m" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期" },
+        { key: "risk", label: "风险扫描", status: "pass", detail: "未命中敏感词" },
+        { key: "image", label: "封面图", status: "pass", detail: "已抓取封面" },
+      ],
+    },
+    {
+      id: "q3", title: "周末私厨 · 云南菌子宴(限8人)", category: "food",
+      date: "周日 6.21", time: "12:00", venue: "巷子私厨", location: "上海·长宁",
+      price: "¥168", crawledAt: "1 小时前",
+      source: "用户投稿", sourceUrl: "",
+      sourceType: "ugc",
+      score: 38, suggestion: "reject",
+      checks: [
+        { key: "source", label: "来源核验", status: "fail", detail: "无可核实来源 · 个人投稿" },
+        { key: "dedup", label: "去重", status: "pass", detail: "未发现重复" },
+        { key: "geocode", label: "地址解析", status: "fail", detail: "地址含「弄内 · 需预约」· 无法解析坐标" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期" },
+        { key: "risk", label: "风险扫描", status: "warn", detail: "含「私厨 / 收款」· 疑似经营性,需资质" },
+        { key: "image", label: "封面图", status: "fail", detail: "未抓到有效图片" },
+      ],
+    },
+    {
+      id: "q4", title: "M50 创意园 · 艺术家开放工作室", category: "art",
+      date: "周六 6.20", time: "13:00", venue: "M50 创意园", location: "上海·普陀",
+      price: "免费", crawledAt: "1 小时前",
+      source: "M50 官方公众号", sourceUrl: "https://mp.weixin.qq.com/...",
+      sourceType: "official_wechat",
+      score: 88, suggestion: "auto_pass",
+      checks: [
+        { key: "source", label: "来源核验", status: "pass", detail: "认证公众号 · 主体一致" },
+        { key: "dedup", label: "去重", status: "pass", detail: "未发现重复" },
+        { key: "geocode", label: "地址解析", status: "pass", detail: "可解析 · 偏差 <50m" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期" },
+        { key: "risk", label: "风险扫描", status: "pass", detail: "未命中敏感词" },
+        { key: "image", label: "封面图", status: "warn", detail: "封面分辨率偏低" },
+      ],
+    },
+    {
+      id: "q5", title: "顾村公园 · 周末骑行野餐", category: "outdoor",
+      date: "周日 6.21", time: "15:00", venue: "顾村公园 1 号门", location: "上海·宝山",
+      price: "门票 ¥20", crawledAt: "2 小时前",
+      source: "微信群转发", sourceUrl: "",
+      sourceType: "social",
+      score: 64, suggestion: "review",
+      checks: [
+        { key: "source", label: "来源核验", status: "warn", detail: "群聊转发 · 原始出处不明" },
+        { key: "dedup", label: "去重", status: "pass", detail: "未发现重复" },
+        { key: "geocode", label: "地址解析", status: "pass", detail: "公园 POI 可解析" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期" },
+        { key: "risk", label: "风险扫描", status: "pass", detail: "未命中敏感词" },
+        { key: "image", label: "封面图", status: "warn", detail: "使用了公园通用图,非活动现场" },
+      ],
+    },
+    {
+      id: "q6", title: "「免费送演唱会门票」扫码进群", category: "music",
+      date: "周六 6.20", time: "19:00", venue: "(未填)", location: "上海",
+      price: "免费", crawledAt: "2 小时前",
+      source: "不明短链", sourceUrl: "http://t.cn/xxxxx",
+      sourceType: "spam",
+      score: 9, suggestion: "reject",
+      checks: [
+        { key: "source", label: "来源核验", status: "fail", detail: "短链跳转 · 来源不可信" },
+        { key: "dedup", label: "去重", status: "pass", detail: "未发现重复" },
+        { key: "geocode", label: "地址解析", status: "fail", detail: "无地点信息" },
+        { key: "time", label: "时间校验", status: "pass", detail: "未过期" },
+        { key: "risk", label: "风险扫描", status: "fail", detail: "命中「扫码进群 / 免费送」· 高度疑似引流/诈骗" },
+        { key: "image", label: "封面图", status: "fail", detail: "无图片" },
+      ],
+    },
+  ],
+};

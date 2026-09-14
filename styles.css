@@ -1,0 +1,12 @@
+/* ════════════════════════════════════════════════════════════════
+   GORGON DESIGN SYSTEM — global entry point
+   戈尔贡 · 发现你的周末
+   Consumers link this single file. Imports only — no rules here.
+   ════════════════════════════════════════════════════════════════ */
+
+@import "tokens/fonts.css";
+@import "tokens/colors.css";
+@import "tokens/typography.css";
+@import "tokens/spacing.css";
+@import "tokens/effects.css";
+@import "tokens/base.css";

@@ -1,0 +1,46 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Comparison slide" subtitle="Before / after two-column contrast" -->
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0}
+  .slide{width:1280px;height:720px;background:var(--bg-base);font-family:var(--font-sans);padding:72px 80px;box-sizing:border-box;display:flex;flex-direction:column}
+  .kicker{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.16em;font-size:14px;font-weight:600;color:var(--brand)}
+  h1{font-family:var(--font-display);font-size:50px;font-weight:700;color:var(--text-strong);margin:10px 0 40px;letter-spacing:-0.01em}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1}
+  .card{border-radius:var(--radius-xl);padding:38px;display:flex;flex-direction:column}
+  .before{background:var(--surface-card);border:1px solid var(--border-default)}
+  .after{background:var(--grad-sync);color:#fff;box-shadow:var(--shadow-lg)}
+  .ch{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-size:24px;font-weight:700;margin-bottom:24px}
+  .before .ch{color:var(--text-muted)}
+  .ic{width:46px;height:46px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .before .ic{background:var(--bg-sunken);color:var(--text-muted)}
+  .after .ic{background:rgba(255,255,255,.18);color:#fff}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px}
+  li{display:flex;gap:13px;align-items:flex-start;font-size:19px;line-height:1.45}
+  .before li{color:var(--text-body)}
+  .after li{color:#fff}
+  .dot{width:22px;height:22px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;margin-top:1px;font-size:13px;font-weight:700}
+  .before .dot{background:var(--danger-soft);color:#C42B30}
+  .after .dot{background:rgba(255,255,255,.22);color:#fff}
+</style></head>
+<body><div class="slide">
+  <div class="kicker">Before / After · 为什么是 Gorgon</div>
+  <h1>从「到处找」到「一处同步」</h1>
+  <div class="cols">
+    <div class="card before">
+      <div class="ch"><span class="ic">😮‍💨</span>没有 Gorgon</div>
+      <ul>
+        <li><span class="dot">✕</span>活动散落在公众号、群聊、海报、小程序</li>
+        <li><span class="dot">✕</span>时间地点要一条条记，常常错过</li>
+        <li><span class="dot">✕</span>不知道身边还有谁也想去</li>
+      </ul>
+    </div>
+    <div class="card after">
+      <div class="ch"><span class="ic">✨</span>用 Gorgon</div>
+      <ul>
+        <li><span class="dot">✓</span>全网周末活动一处检索、按距离排序</li>
+        <li><span class="dot">✓</span>一键同步到「我的周末」，自动提醒</li>
+        <li><span class="dot">✓</span>看到同学也在去，结伴更容易</li>
+      </ul>
+    </div>
+  </div>
+</div></body></html>

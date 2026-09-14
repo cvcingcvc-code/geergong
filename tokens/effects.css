@@ -1,0 +1,44 @@
+/* ── Gorgon radii, borders, shadows, motion ───────────────────────
+   Friendly rounded corners; soft layered shadows tinted with indigo. */
+
+:root {
+  /* Radii */
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-2xl: 36px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* Borders */
+  --border-hairline: 1px solid var(--border-subtle);
+  --border-1: 1px solid var(--border-default);
+  --border-2: 2px solid var(--border-default);
+
+  /* Shadows — cool indigo-tinted, layered */
+  --shadow-xs:  0 1px 2px rgba(28, 20, 78, 0.06);
+  --shadow-sm:  0 2px 6px rgba(28, 20, 78, 0.07), 0 1px 2px rgba(28, 20, 78, 0.05);
+  --shadow-md:  0 6px 18px rgba(28, 20, 78, 0.10), 0 2px 5px rgba(28, 20, 78, 0.06);
+  --shadow-lg:  0 16px 40px rgba(28, 20, 78, 0.14), 0 4px 10px rgba(28, 20, 78, 0.07);
+  --shadow-xl:  0 28px 64px rgba(28, 20, 78, 0.18), 0 8px 20px rgba(28, 20, 78, 0.08);
+  --shadow-brand: 0 10px 28px rgba(91, 71, 224, 0.32);
+  --shadow-mint:  0 10px 28px rgba(0, 194, 142, 0.30);
+
+  /* Focus */
+  --ring-width: 3px;
+
+  /* Motion */ /* @kind other */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 360ms;
+
+  /* Signature gradients (use sparingly — hero moments) */ /* @kind color */
+  --grad-brand: linear-gradient(135deg, #6A53FF 0%, #5B47E0 55%, #4733C4 100%);
+  --grad-sync: linear-gradient(120deg, #5B47E0 0%, #00C28E 100%);
+  --grad-dusk: linear-gradient(160deg, #2A1E74 0%, #5B47E0 60%, #FF5A5F 120%);
+}

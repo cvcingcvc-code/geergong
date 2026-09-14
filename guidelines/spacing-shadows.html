@@ -1,0 +1,16 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Elevation & shadows" subtitle="Cool indigo-tinted shadows + brand/mint glows" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>body{margin:0;padding:26px 22px;background:var(--bg-base);font-family:var(--font-sans)}
+.row{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.item{text-align:center}
+.box{width:84px;height:64px;background:var(--surface-card);border-radius:var(--radius-md)}
+.glow{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600}
+.lbl{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-top:9px}</style></head>
+<body><div class="row">
+<div class="item"><div class="box" style="box-shadow:var(--shadow-xs)"></div><div class="lbl">xs</div></div>
+<div class="item"><div class="box" style="box-shadow:var(--shadow-sm)"></div><div class="lbl">sm · card</div></div>
+<div class="item"><div class="box" style="box-shadow:var(--shadow-md)"></div><div class="lbl">md</div></div>
+<div class="item"><div class="box" style="box-shadow:var(--shadow-lg)"></div><div class="lbl">lg</div></div>
+<div class="item"><div class="box glow" style="background:var(--brand);box-shadow:var(--shadow-brand)">brand</div><div class="lbl">brand glow</div></div>
+<div class="item"><div class="box glow" style="background:var(--accent);color:#06241B;box-shadow:var(--shadow-mint)">mint</div><div class="lbl">mint glow</div></div>
+</div></body></html>

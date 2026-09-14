@@ -1,0 +1,106 @@
+<!-- @dsCard group="App" viewport="560x900" name="Gorgon Mobile App" subtitle="Interactive — discover, sync, my weekend, map" -->
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gorgon · 发现你的周末</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(1200px 700px at 50% -10%, #ece9fd 0%, var(--bg-base) 55%);
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:28px;font-family:var(--font-sans)}
+  ::-webkit-scrollbar{display:none}
+  @keyframes gg-toast-in{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes gg-detail-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+</style>
+</head>
+<body>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="24" fill="#5B47E0"/>
+    <path d="M62 38 A14 14 0 1 0 66 52 L52 52" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="70" cy="32" r="8" fill="#00C28E"/>
+  </svg>
+</template>
+<div id="root"></div>
+<script src="data.js"></script>
+<script type="text/babel" src="AppShell.jsx"></script>
+<script type="text/babel" src="DiscoverScreen.jsx"></script>
+<script type="text/babel" src="ActivityDetailScreen.jsx"></script>
+<script type="text/babel" src="SearchScreen.jsx"></script>
+<script type="text/babel" src="MyWeekendScreen.jsx"></script>
+<script type="text/babel" src="MapScreen.jsx"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { StatusBar, TabBar, PhoneFrame, DiscoverScreen, ActivityDetailScreen, SearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
+
+function Toast({ msg }) {
+  if (!msg) return null;
+  return (
+    <div style={{ position: "absolute", top: 54, left: "50%", transform: "translateX(-50%)", zIndex: 50,
+      background: "var(--ink)", color: "#fff", padding: "11px 18px", borderRadius: "var(--radius-pill)",
+      display: "flex", alignItems: "center", gap: 9, boxShadow: "var(--shadow-lg)", animation: "gg-toast-in var(--dur-base) var(--ease-out)", whiteSpace: "nowrap" }}>
+      <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <i data-lucide="check" style={{ width: 14, height: 14, color: "#06241B" }} />
+      </span>
+      <span style={{ fontSize: 13.5, fontWeight: 600 }}>{msg}</span>
+    </div>
+  );
+}
+
+function App() {
+  const [tab, setTab] = React.useState("discover");
+  const [synced, setSynced] = React.useState({ a2: true, a5: true });
+  const [detail, setDetail] = React.useState(null);
+  const [toast, setToast] = React.useState("");
+  const toastTimer = React.useRef(null);
+
+  const flash = (m) => {
+    setToast(m); clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 1800);
+  };
+  const toggleSync = (id) => {
+    setSynced((s) => {
+      const next = { ...s, [id]: !s[id] };
+      if (next[id]) flash("已同步到我的周末");
+      return next;
+    });
+  };
+  const openDetail = (a) => setDetail(a);
+
+  const syncedCount = Object.values(synced).filter(Boolean).length;
+
+  React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
+
+  const mapDark = false;
+  return (
+    <PhoneFrame>
+      <StatusBar dark={false} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+        {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+        {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+        {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} />}
+        {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+
+        {detail && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 30, background: "var(--bg-base)", display: "flex", flexDirection: "column", animation: "gg-detail-in var(--dur-slow) var(--ease-out)" }}>
+            <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)} onBack={() => setDetail(null)} />
+          </div>
+        )}
+        <Toast msg={toast} />
+      </div>
+      <TabBar active={tab} onChange={(t) => { setDetail(null); setTab(t); }} syncedCount={syncedCount} />
+    </PhoneFrame>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+setTimeout(() => window.lucide && window.lucide.createIcons(), 120);
+</script>
+</body>
+</html>

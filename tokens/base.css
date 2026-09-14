@@ -1,0 +1,51 @@
+/* ── Gorgon base reset & helpers ──────────────────────────────────
+   Light-touch reset + a few utility primitives consumers can lean on. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-body);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+  font-weight: var(--weight-bold);
+}
+
+p { margin: 0; text-wrap: pretty; }
+
+a { color: var(--brand); text-decoration: none; }
+
+button { font-family: inherit; cursor: pointer; }
+
+:focus-visible {
+  outline: var(--ring-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+::selection { background: var(--indigo-200); color: var(--ink); }
+
+/* Numeric/time treatment helper */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.gorgon-display { font-family: var(--font-display); letter-spacing: var(--tracking-tight); }
+.gorgon-kicker {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+}

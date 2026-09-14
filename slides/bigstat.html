@@ -1,0 +1,27 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Big stat slide" subtitle="Oversized display figure with supporting metrics" -->
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0}
+  .slide{width:1280px;height:720px;background:var(--ink);color:#fff;font-family:var(--font-sans);padding:72px 80px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#5B47E055,transparent 70%);top:-180px;right:-120px}
+  .kicker{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.18em;font-size:15px;font-weight:600;color:#8270EA;z-index:2}
+  .big{font-family:var(--font-display);font-size:200px;font-weight:700;line-height:.9;letter-spacing:-0.03em;z-index:2;margin:18px 0 0;font-variant-numeric:tabular-nums}
+  .big .u{font-size:72px;color:#4FE0BA}
+  .desc{font-size:24px;color:#CBD0DC;max-width:680px;line-height:1.5;z-index:2;margin-top:22px}
+  .row{display:flex;gap:64px;margin-top:54px;z-index:2}
+  .stat .n{font-family:var(--font-display);font-size:46px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+  .stat .n .m{color:#4FE0BA}
+  .stat .l{font-size:15px;color:var(--slate-400);margin-top:4px}
+</style></head>
+<body><div class="slide">
+  <div class="glow"></div>
+  <div class="kicker">The Market · 市场规模</div>
+  <div class="big">120,000<span class="u"> 名</span></div>
+  <div class="desc">上海在校大学生，每个周末都在寻找值得参加的活动 —— 这是 Gorgon 要服务的人。</div>
+  <div class="row">
+    <div class="stat"><div class="n">60<span class="m">+</span></div><div class="l">覆盖高校</div></div>
+    <div class="stat"><div class="n">38<span class="m">/周</span></div><div class="l">人均可见活动</div></div>
+    <div class="stat"><div class="n">2.4<span class="m">km</span></div><div class="l">平均活动距离</div></div>
+    <div class="stat"><div class="n">71<span class="m">%</span></div><div class="l">同步后到场率</div></div>
+  </div>
+</div></body></html>

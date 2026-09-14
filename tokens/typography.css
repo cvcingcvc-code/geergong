@@ -1,0 +1,45 @@
+/* ── Gorgon typography ────────────────────────────────────────────
+   Display = Space Grotesk (Latin/numerals)
+   Sans    = Plus Jakarta Sans (Latin) → Noto Sans SC (CJK fallback)
+   CJK text always resolves to Noto Sans SC. */
+
+:root {
+  --font-display: "Space Grotesk", "Noto Sans SC", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Noto Sans SC", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-cjk: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "Space Grotesk", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Type scale (1.25 major-third-ish, tuned) */
+  --text-2xs:   11px;
+  --text-xs:    12px;
+  --text-sm:    13px;
+  --text-base:  15px;
+  --text-md:    17px;
+  --text-lg:    20px;
+  --text-xl:    24px;
+  --text-2xl:   30px;
+  --text-3xl:   38px;
+  --text-4xl:   48px;
+  --text-5xl:   62px;
+  --text-6xl:   80px;
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+  --weight-extrabold: 800;
+
+  /* Line heights */
+  --leading-tight: 1.1;
+  --leading-snug:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* Letter spacing */
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.12em;
+}
