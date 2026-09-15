@@ -154,6 +154,20 @@ class RawSearchResult:
 
     Field names are canonical *raw* names (they line up with
     pipeline/schema.py) so the adapter stays thin.
+
+    PHASE 5 addition: the retrieval layer now talks to the real internet, so
+    every hit must declare WHERE it came from and WHEN we saw it. A hit is
+    never silently upgraded from demo to real.
+
+      dataOrigin   "real"  -> fetched from a live source over the network
+                   "demo"  -> served from a recorded fixture
+      retrievedAt  ISO timestamp of the request that produced the hit
+      rank         1-based position inside its own provider response
+      rawDate/rawTime/rawVenue/...   the listing row's own values, used by the
+                   EventExtractor as a LOWER-priority source than the detail
+                   page — never as invented data.
+      imageUrl     thumbnail the source itself published for this hit
+                   (priority 50 in the image ladder: below og:image).
     """
     resultId: str = ""
     providerQuery: str = ""
@@ -161,19 +175,31 @@ class RawSearchResult:
     source: str = ""            # human-readable channel, e.g. "AI 极客社区"
     sourceType: str = ""        # wechat | xhs | web | community | manual
     sourceTrust: str = "medium"  # high | medium | low (source-level, not the stage)
+    dataOrigin: str = "demo"    # real | demo
     title: str = None
     snippet: str = None
     url: str = None
     registrationUrl: str = None
     publishedAt: str = None
+    retrievedAt: str = None
+    rank: int = None
     rawDate: str = None
     rawTime: str = None
+    rawEndTime: str = None
     rawVenue: str = None
     address: str = None
     rawLocation: str = None
+    city: str = None
+    district: str = None
     rawPrice: str = None
     organizer: str = None
+    imageUrl: str = None
+    imageSource: str = None
     tags: list = field(default_factory=list)
+    # Populated by the enrichment stage (pipeline/search/enrich.py):
+    #   {"url", "fetch": {...}, "confidence", "fieldSources", "agenda",
+    #    "skipped", "structured"}
+    extractInfo: dict = field(default_factory=dict)
 
     def to_dict(self):
         return asdict(self)
@@ -196,11 +222,21 @@ class RawSearchResult:
 
 
 def new_raw_result(**kwargs):
-    """Build a RawSearchResult, deriving a deterministic resultId if absent."""
+    """Build a RawSearchResult, deriving a deterministic resultId if absent.
+
+    The id is derived from (provider, url) when a URL is present, so the same
+    page found by two different plan queries collapses in merge_raw_results;
+    otherwise it falls back to a hash of the whole payload.
+    """
     if not kwargs.get("resultId"):
         import hashlib
-        import json as _json
-        seed = _json.dumps(kwargs, ensure_ascii=False, sort_keys=True)
+        url = kwargs.get("url")
+        provider = kwargs.get("provider")
+        if url:
+            seed = "%s|%s" % (provider or "", str(url).strip().rstrip("/").casefold())
+        else:
+            import json as _json
+            seed = _json.dumps(kwargs, ensure_ascii=False, sort_keys=True, default=str)
         kwargs["resultId"] = "sr_" + hashlib.sha1(seed.encode("utf-8")).hexdigest()[:10]
     return RawSearchResult.from_dict(kwargs)
 

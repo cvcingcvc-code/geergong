@@ -3,8 +3,8 @@
 // Used by the app ONLY as a fallback when /api/search is unavailable.
 window.GORGON_SEARCH_DEMO = {
   "DEMO_DATA": true,
-  "demo": true,
-  "query": "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。",
+  "status": "ok",
+  "providerMode": "demo",
   "request": {
     "query": "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。",
     "city": "上海",
@@ -65,6 +65,63 @@ window.GORGON_SEARCH_DEMO = {
     },
     "notes": []
   },
+  "notices": [
+    {
+      "level": "warning",
+      "code": "demo_data",
+      "message": "DEMO DATA：本次结果来自本地录制的 fixture，未访问互联网。"
+    },
+    {
+      "level": "info",
+      "code": "thin_excluded",
+      "message": "另有 2 条信息缺少可确认的时间与地点，已排除在推荐之外。"
+    }
+  ],
+  "providers": [
+    {
+      "name": "fixture:shanghai_ai_events",
+      "kind": "fixture",
+      "available": true,
+      "reason": null,
+      "detail": null,
+      "hits": null
+    }
+  ],
+  "providerErrors": [],
+  "stages": [
+    {
+      "key": "understood",
+      "label": "正在理解你的需求…"
+    },
+    {
+      "key": "planned",
+      "label": "正在生成检索计划…"
+    },
+    {
+      "key": "searching",
+      "label": "正在检索活动…"
+    },
+    {
+      "key": "extracting",
+      "label": "正在访问候选活动页面…"
+    },
+    {
+      "key": "merging",
+      "label": "正在整理多来源信息…"
+    },
+    {
+      "key": "deduping",
+      "label": "正在去重…"
+    },
+    {
+      "key": "scoring",
+      "label": "正在评估可信度…"
+    },
+    {
+      "key": "ranking",
+      "label": "正在生成推荐…"
+    }
+  ],
   "summary": {
     "rawResults": 26,
     "mergedRawResults": 25,
@@ -80,6 +137,12 @@ window.GORGON_SEARCH_DEMO = {
     "rejected": 0,
     "ranked": 25,
     "returned": 20,
+    "excludedThin": 2,
+    "excludedThinReason": "缺少可确认的时间与地点",
+    "realResults": 0,
+    "demoResults": 23,
+    "withImage": 0,
+    "placeholderImage": 10,
     "reviewQueue": {
       "approved": 16,
       "needs_review": 5,
@@ -112,15 +175,33 @@ window.GORGON_SEARCH_DEMO = {
           "source": "AI 极客社区",
           "sourceType": "wechat",
           "sourceTrust": "high",
-          "url": "https://example.com/aigeeks/agent-builder-meetup"
+          "trustLabel": "高可信",
+          "title": "AI Agent Builder Meetup",
+          "url": "https://example.com/aigeeks/agent-builder-meetup",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 Agent Meetup 本周末"
         },
         {
           "source": "魔都周末情报",
           "sourceType": "xhs",
           "sourceTrust": "medium",
-          "url": "https://example.com/mdsq/agent-builder-meetup"
+          "trustLabel": "中可信",
+          "title": "AI Agent Builder Meetup",
+          "url": "https://example.com/mdsq/agent-builder-meetup",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 Agent Meetup 本周末"
         }
       ],
+      "sourceCount": 2,
+      "sources": [
+        "AI 极客社区",
+        "魔都周末情报"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 Agent Meetup 本周末"
       ],
@@ -148,6 +229,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "AI 极客社区",
         "sourceUrl": "https://example.com/aigeeks/agent-builder-meetup",
         "registrationUrl": "https://example.com/aigeeks/agent-builder-meetup/signup",
+        "imageUrl": "/assets/placeholders/agent.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-10T09:30:00",
         "trustScore": 85,
         "trustReasons": [
@@ -189,9 +273,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "Vibe Coding 上海",
           "sourceType": "community",
           "sourceTrust": "high",
-          "url": "https://example.com/vibe/workshop"
+          "trustLabel": "高可信",
+          "title": "Vibe Coding 主题工作坊:和 AI 一起写代码",
+          "url": "https://example.com/vibe/workshop",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 Vibe Coding 活动"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "Vibe Coding 上海"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 Vibe Coding 活动"
       ],
@@ -219,6 +314,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "Vibe Coding 上海",
         "sourceUrl": "https://example.com/vibe/workshop",
         "registrationUrl": "https://example.com/vibe/workshop/signup",
+        "imageUrl": "/assets/placeholders/vibecoding.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-11T18:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -259,9 +357,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "PM 社区",
           "sourceType": "community",
           "sourceTrust": "medium",
-          "url": "https://example.com/pm/ai-pm-salon"
+          "trustLabel": "中可信",
+          "title": "AI 产品经理沙龙:从需求到上线",
+          "url": "https://example.com/pm/ai-pm-salon",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 徐汇"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "PM 社区"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 徐汇"
       ],
@@ -289,6 +398,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "PM 社区",
         "sourceUrl": "https://example.com/pm/ai-pm-salon",
         "registrationUrl": "https://example.com/pm/ai-pm-salon/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-08T10:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -329,9 +441,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "影像实验室",
           "sourceType": "web",
           "sourceTrust": "medium",
-          "url": "https://example.com/img/ai-photo"
+          "trustLabel": "中可信",
+          "title": "AI 摄影 · 生成式图像创作体验",
+          "url": "https://example.com/img/ai-photo",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 徐汇"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "影像实验室"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 徐汇"
       ],
@@ -359,6 +482,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "影像实验室",
         "sourceUrl": "https://example.com/img/ai-photo",
         "registrationUrl": "https://example.com/img/ai-photo/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-08-25T13:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -400,15 +526,33 @@ window.GORGON_SEARCH_DEMO = {
           "source": "上海 AI 开发者社区",
           "sourceType": "wechat",
           "sourceTrust": "high",
-          "url": "https://example.com/aidev/agent-hackathon"
+          "trustLabel": "高可信",
+          "title": "AI Agent Hackathon 上海站",
+          "url": "https://example.com/aidev/agent-hackathon",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI Hackathon"
         },
         {
           "source": "活动行聚合",
           "sourceType": "web",
           "sourceTrust": "low",
-          "url": "https://example.com/hdx/agent-hackathon-4"
+          "trustLabel": "低可信",
+          "title": "AI Agent Hackathon · 上海站(第 4 期)",
+          "url": "https://example.com/hdx/agent-hackathon-4",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI Hackathon"
         }
       ],
+      "sourceCount": 2,
+      "sources": [
+        "上海 AI 开发者社区",
+        "活动行聚合"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI Hackathon"
       ],
@@ -436,6 +580,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "上海 AI 开发者社区",
         "sourceUrl": "https://example.com/aidev/agent-hackathon",
         "registrationUrl": "https://example.com/aidev/agent-hackathon/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-01T10:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -477,9 +624,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "Agent 上海",
           "sourceType": "community",
           "sourceTrust": "medium",
-          "url": "https://example.com/agentsh/open-mic"
+          "trustLabel": "中可信",
+          "title": "Agent 开发者之夜 Open Mic",
+          "url": "https://example.com/agentsh/open-mic",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 Agent Meetup 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "Agent 上海"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 Agent Meetup 本周末"
       ],
@@ -507,6 +665,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "Agent 上海",
         "sourceUrl": "https://example.com/agentsh/open-mic",
         "registrationUrl": "https://example.com/agentsh/open-mic/rsvp",
+        "imageUrl": "/assets/placeholders/agent.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-09T11:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -548,9 +709,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "AI 极客社区",
           "sourceType": "wechat",
           "sourceTrust": "high",
-          "url": "https://example.com/aigeeks/agent-conf"
+          "trustLabel": "高可信",
+          "title": "AI Agent 大会 · 秋季场",
+          "url": "https://example.com/aigeeks/agent-conf",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "AI 极客社区"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -578,6 +750,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "AI 极客社区",
         "sourceUrl": "https://example.com/aigeeks/agent-conf",
         "registrationUrl": "https://example.com/aigeeks/agent-conf/signup",
+        "imageUrl": "/assets/placeholders/agent.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-04T09:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -619,9 +794,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "教育公益联盟",
           "sourceType": "community",
           "sourceTrust": "high",
-          "url": "https://example.com/edu/ai-workshop"
+          "trustLabel": "高可信",
+          "title": "AI 教育公益工作坊(免费)",
+          "url": "https://example.com/edu/ai-workshop",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "教育公益联盟"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -649,6 +835,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "教育公益联盟",
         "sourceUrl": "https://example.com/edu/ai-workshop",
         "registrationUrl": "https://example.com/edu/ai-workshop/signup",
+        "imageUrl": "/assets/placeholders/workshop.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-07T10:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -689,9 +878,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "CSDN 上海",
           "sourceType": "web",
           "sourceTrust": "medium",
-          "url": "https://example.com/csdn/llm-share"
+          "trustLabel": "中可信",
+          "title": "AI 大模型应用分享会(免费)",
+          "url": "https://example.com/csdn/llm-share",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 徐汇"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "CSDN 上海"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 徐汇"
       ],
@@ -719,6 +919,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "CSDN 上海",
         "sourceUrl": "https://example.com/csdn/llm-share",
         "registrationUrl": null,
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-14T09:00:00",
         "trustScore": 80,
         "trustReasons": [
@@ -758,9 +961,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "陆家嘴创投圈",
           "sourceType": "wechat",
           "sourceTrust": "medium",
-          "url": "https://example.com/ljz/ai-demo-day"
+          "trustLabel": "中可信",
+          "title": "AI Demo Day · 生成式应用路演夜",
+          "url": "https://example.com/ljz/ai-demo-day",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI Demo Day"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "陆家嘴创投圈"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI Demo Day"
       ],
@@ -788,6 +1002,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "陆家嘴创投圈",
         "sourceUrl": "https://example.com/ljz/ai-demo-day",
         "registrationUrl": "https://example.com/ljz/ai-demo-day/apply",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-12T14:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -829,9 +1046,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "复旦 AI 研习社",
           "sourceType": "community",
           "sourceTrust": "high",
-          "url": "https://example.com/fdai/llm-workshop"
+          "trustLabel": "高可信",
+          "title": "大模型应用实战工作坊(零基础)",
+          "url": "https://example.com/fdai/llm-workshop",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "复旦 AI 研习社"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -859,6 +1087,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "复旦 AI 研习社",
         "sourceUrl": "https://example.com/fdai/llm-workshop",
         "registrationUrl": "https://example.com/fdai/llm-workshop/signup",
+        "imageUrl": "/assets/placeholders/agent.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-05T09:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -900,9 +1131,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "Vibe Coding 上海",
           "sourceType": "community",
           "sourceTrust": "high",
-          "url": "https://example.com/vibe/flash-hack"
+          "trustLabel": "高可信",
+          "title": "Vibe Coding 快闪 Hack(周日场)",
+          "url": "https://example.com/vibe/flash-hack",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 Vibe Coding 活动"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "Vibe Coding 上海"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 Vibe Coding 活动"
       ],
@@ -930,6 +1172,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "Vibe Coding 上海",
         "sourceUrl": "https://example.com/vibe/flash-hack",
         "registrationUrl": "https://example.com/vibe/flash-hack/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-13T19:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -971,9 +1216,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "开源社",
           "sourceType": "community",
           "sourceTrust": "high",
-          "url": "https://example.com/oss/meetup"
+          "trustLabel": "高可信",
+          "title": "开源之夏 · 上海 Meetup",
+          "url": "https://example.com/oss/meetup",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "开源社"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -1001,6 +1257,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "开源社",
         "sourceUrl": "https://example.com/oss/meetup",
         "registrationUrl": "https://example.com/oss/meetup/signup",
+        "imageUrl": "/assets/placeholders/meetup.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-06-01T09:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -1041,9 +1300,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "咖啡实验室",
           "sourceType": "web",
           "sourceTrust": "medium",
-          "url": "https://example.com/coffee/roast-101"
+          "trustLabel": "中可信",
+          "title": "咖啡烘焙品鉴入门",
+          "url": "https://example.com/coffee/roast-101",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 徐汇"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "咖啡实验室"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 徐汇"
       ],
@@ -1070,6 +1340,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "咖啡实验室",
         "sourceUrl": "https://example.com/coffee/roast-101",
         "registrationUrl": "https://example.com/coffee/roast-101/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-03T10:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -1111,9 +1384,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "大隐书局",
           "sourceType": "web",
           "sourceTrust": "low",
-          "url": "https://example.com/dys/boardgame"
+          "trustLabel": "低可信",
+          "title": "桌游之夜:入门德州扑克与狼人杀",
+          "url": "https://example.com/dys/boardgame",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "大隐书局"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -1140,6 +1424,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "大隐书局",
         "sourceUrl": "https://example.com/dys/boardgame",
         "registrationUrl": null,
+        "imageUrl": "/assets/placeholders/default.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-13T10:00:00",
         "trustScore": 80,
         "trustReasons": [
@@ -1179,9 +1466,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "育音堂",
           "sourceType": "web",
           "sourceTrust": "medium",
-          "url": "https://example.com/yy/folk-night"
+          "trustLabel": "中可信",
+          "title": "周末民谣现场:城市夜晚与吉他",
+          "url": "https://example.com/yy/folk-night",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "育音堂"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -1208,6 +1506,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "育音堂",
         "sourceUrl": "https://example.com/yy/folk-night",
         "registrationUrl": null,
+        "imageUrl": "/assets/placeholders/party.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-02T12:00:00",
         "trustScore": 80,
         "trustReasons": [
@@ -1248,9 +1549,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "AI 极客社区",
           "sourceType": "wechat",
           "sourceTrust": "high",
-          "url": "https://example.com/aigeeks/agent-practice"
+          "trustLabel": "高可信",
+          "title": "上海 AI 分享会:Agent 落地实践",
+          "url": "https://example.com/aigeeks/agent-practice",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 本周末"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "AI 极客社区"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 本周末"
       ],
@@ -1278,6 +1590,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "AI 极客社区",
         "sourceUrl": "https://example.com/aigeeks/agent-practice",
         "registrationUrl": "https://example.com/aigeeks/agent-practice/signup",
+        "imageUrl": "/assets/placeholders/agent.svg",
+        "imageSource": "placeholder",
+        "agenda": [],
         "publishedAt": "2026-09-13T08:40:00",
         "trustScore": 85,
         "trustReasons": [
@@ -1323,9 +1638,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "西岸创投",
           "sourceType": "web",
           "sourceTrust": "medium",
-          "url": "https://example.com/xa/demo-night"
+          "trustLabel": "中可信",
+          "title": "AI 产品开放日 · 生成式应用 Demo Night",
+          "url": "https://example.com/xa/demo-night",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI Demo Day"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "西岸创投"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI Demo Day"
       ],
@@ -1353,6 +1679,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "西岸创投",
         "sourceUrl": "https://example.com/xa/demo-night",
         "registrationUrl": "https://example.com/xa/demo-night/signup",
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-08T10:00:00",
         "trustScore": 85,
         "trustReasons": [
@@ -1397,9 +1726,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "张江发布",
           "sourceType": "wechat",
           "sourceTrust": "medium",
-          "url": "https://example.com/zj/demo-night"
+          "trustLabel": "中可信",
+          "title": "AI 产品开放日 · 生成式应用 Demo Night",
+          "url": "https://example.com/zj/demo-night",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI Demo Day"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "张江发布"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI Demo Day"
       ],
@@ -1427,6 +1767,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "张江发布",
         "sourceUrl": "https://example.com/zj/demo-night",
         "registrationUrl": null,
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-09T10:00:00",
         "trustScore": 70,
         "trustReasons": [
@@ -1469,9 +1812,20 @@ window.GORGON_SEARCH_DEMO = {
           "source": "小红书 · 上海周末",
           "sourceType": "xhs",
           "sourceTrust": "medium",
-          "url": "https://example.com/xhs/agent-practice-note"
+          "trustLabel": "中可信",
+          "title": "上海 AI 分享会:Agent 落地实践",
+          "url": "https://example.com/xhs/agent-practice-note",
+          "provider": "fixture:shanghai_ai_events",
+          "dataOrigin": "demo",
+          "retrievedAt": null,
+          "query": "上海 AI 活动 徐汇"
         }
       ],
+      "sourceCount": 1,
+      "sources": [
+        "小红书 · 上海周末"
+      ],
+      "dataOrigin": "demo",
       "queries": [
         "上海 AI 活动 徐汇"
       ],
@@ -1499,6 +1853,9 @@ window.GORGON_SEARCH_DEMO = {
         "sourceName": "小红书 · 上海周末",
         "sourceUrl": "https://example.com/xhs/agent-practice-note",
         "registrationUrl": null,
+        "imageUrl": null,
+        "imageSource": null,
+        "agenda": [],
         "publishedAt": "2026-09-13T21:05:00",
         "trustScore": 70,
         "trustReasons": [
@@ -1517,5 +1874,7 @@ window.GORGON_SEARCH_DEMO = {
         "duplicateOf": null
       }
     }
-  ]
+  ],
+  "demo": true,
+  "query": "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。"
 };

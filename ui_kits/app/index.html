@@ -1,4 +1,4 @@
-<!-- @dsCard group="App" viewport="560x900" name="Gorgon Mobile App" subtitle="Interactive — discover, sync, my weekend, map" -->
+<!-- @dsCard group="App" viewport="1440x900" name="Gorgon Desktop App" subtitle="Interactive — smart search, discover, my weekend, map" -->
 <!doctype html>
 <html lang="zh">
 <head>
@@ -17,7 +17,7 @@
 <script src="categories-ext.js"></script>
 <style>
   @keyframes gg-toast-in{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
-  @keyframes gg-detail-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  @keyframes gg-detail-in{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -37,6 +37,10 @@
 <script src="demo-reset.js"></script>
 <!-- Unified responsive primitives: useResponsive() / currentBreakpoint() -->
 <script src="responsive.js"></script>
+<!-- PHASE 5: one activity view model for every surface (plain JS, no JSX) -->
+<script src="activity-view.js"></script>
+<!-- PHASE 5: shared atoms — image w/ fallback, trust chip, provider badge -->
+<script type="text/babel" src="common.jsx"></script>
 <script type="text/babel" src="AppShell.jsx"></script>
 <script type="text/babel" src="DiscoverScreen.jsx"></script>
 <script type="text/babel" src="ActivityDetailScreen.jsx"></script>
@@ -48,6 +52,7 @@
 <script type="text/babel" data-presets="react">
 const { StatusBar, TabBar, PhoneFrame, AppShell, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
 const { useResponsive } = window.GorgonResponsive;
+const ActivityView = window.GorgonActivityView;
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -63,20 +68,30 @@ function Toast({ msg }) {
   );
 }
 
-const ALL_IDS = new Set((window.GORGON_DATA.activities || []).map((a) => a.id));
-const idsToMap = (ids) => { const m = {}; (ids || []).forEach((id) => { m[id] = true; }); return m; };
+const ALL_ACTIVITIES = (window.GORGON_DATA.activities || []);
+
+/** Anything (raw record, id, or an already-normalised view) -> view model. */
+function asView(x) {
+  if (!x) return null;
+  if (typeof x === "string") {
+    const found = ALL_ACTIVITIES.find((a) => a.id === x);
+    return found ? ActivityView.toView(found) : null;
+  }
+  if (x.__view) return x;
+  return ActivityView.toView(x);
+}
 
 function App() {
   const [tab, setTab] = React.useState("discover");
-  const [synced, setSynced] = React.useState(() => idsToMap(window.GorgonStore.getWeekend()));
+  // My Weekend persists FULL snapshots (id -> view), so a saved search result
+  // survives a refresh even when the search session is gone.
+  const [weekend, setWeekend] = React.useState(() => window.GorgonStore.getWeekendItems());
   const [favorites, setFavorites] = React.useState(() => window.GorgonStore.getFavorites());
   const [detail, setDetail] = React.useState(null);
   const [mapFocus, setMapFocus] = React.useState(null);
   const [toast, setToast] = React.useState("");
   const toastTimer = React.useRef(null);
 
-  // Single source of truth for the shell decision. Everything else about
-  // the layout is handled by CSS media queries (responsive.css).
   const { isMobile } = useResponsive();
 
   const flash = (m) => {
@@ -84,12 +99,15 @@ function App() {
     toastTimer.current = setTimeout(() => setToast(""), 1800);
   };
 
-  // --- My Weekend (persisted) ---
-  const toggleSync = (id) => {
-    const on = !synced[id];
-    const next = { ...synced, [id]: on };
-    setSynced(next);
-    window.GorgonStore.setWeekend(Object.keys(next).filter((k) => next[k]));
+  // --- My Weekend (persisted, snapshot-carrying) ---
+  const toggleSync = (input) => {
+    const view = asView(input);
+    if (!view || !view.id) return;
+    const on = !weekend[view.id];
+    const next = Object.assign({}, weekend);
+    if (on) next[view.id] = view; else delete next[view.id];
+    setWeekend(next);
+    window.GorgonStore.setWeekendItems(next);
     flash(on ? "已加入我的周末" : "已从我的周末移除");
   };
 
@@ -100,31 +118,28 @@ function App() {
     setFavorites(next);
     window.GorgonStore.setFavorites(next);
     flash(has ? "已取消收藏" : "已收藏");
-    if (detail && has) setDetail(null);
   };
 
-  const openDetail = (a) => setDetail(a);
-  const showOnMap = (a) => { setMapFocus(a.id); setDetail(null); setTab("map"); };
+  const openDetail = (x) => { const v = asView(x); if (v) setDetail(v); };
+  const showOnMap = (v) => { setMapFocus(v.id); setDetail(null); setTab("map"); };
   const changeTab = (t) => { setDetail(null); setTab(t); };
 
-  const syncedCount = Object.keys(synced).filter((k) => synced[k] && ALL_IDS.has(k)).length;
+  const syncedCount = Object.keys(weekend).length;
 
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
 
-  // One business tree, two chrome treatments.
   const content = (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-      {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} onGoSmart={() => setTab("smart")} />}
-      {tab === "smart" && <NaturalSearchScreen />}
-      {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
-      {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
-      {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
+      {tab === "discover" && <DiscoverScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} onGoSmart={() => setTab("smart")} />}
+      {tab === "smart" && <NaturalSearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} />}
+      {tab === "search" && <SearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} />}
+      {tab === "weekend" && <MyWeekendScreen weekend={weekend} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
+      {tab === "map" && <MapScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
 
       {detail && (
-        <div className="gg-detail-overlay" style={{ animation: "gg-detail-in var(--dur-slow) var(--ease-out)" }}>
-          <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)}
-            onBack={() => setDetail(null)} favorited={favorites.indexOf(detail.id) >= 0}
-            onToggleFavorite={() => toggleFavorite(detail.id)} onShowMap={() => showOnMap(detail)} />
+        <div className="gg-detail-overlay" style={{ animation: "gg-detail-in var(--dur-base) var(--ease-out)" }}>
+          <ActivityDetailScreen view={detail} synced={!!weekend[detail.id]} onSync={() => toggleSync(detail)}
+            onBack={() => setDetail(null)} onShowMap={() => showOnMap(detail)} />
         </div>
       )}
       <Toast msg={toast} />
@@ -132,7 +147,6 @@ function App() {
   );
 
   if (isMobile) {
-    // Unchanged mobile presentation: phone mock-up + bottom navigation.
     return (
       <PhoneFrame>
         <StatusBar dark={false} />
@@ -142,8 +156,6 @@ function App() {
     );
   }
 
-  // Tablet & desktop: full-bleed surface, top header + left sidebar.
-  // The bottom TabBar and the phone chassis are intentionally NOT rendered.
   return (
     <AppShell tab={tab} onTab={changeTab} syncedCount={syncedCount}
       onSettings={() => flash("设置（演示版暂未开放）")}>

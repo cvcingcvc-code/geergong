@@ -34,6 +34,9 @@ ACTIVITY_FIELDS = [
     "sourceName",            # str|null (which raw source this came from)
     "sourceUrl",             # str|null (link to the original listing)
     "registrationUrl",       # str|null
+    "imageUrl",              # str|null (real image URL, or a local placeholder)
+    "imageSource",           # str|null (og:image | twitter:image | json-ld | hero | thumbnail | placeholder)
+    "agenda",                # list[{time,start,end,title}] — only when the source published one
     "publishedAt",           # str|null (source-provided publish time)
     "collectedAt",           # str|null (when our ingest collected it)
     "trustScore",            # int|null (0-100, set by trust stage)
@@ -62,6 +65,9 @@ DEFAULTS = {
     "sourceName": None,
     "sourceUrl": None,
     "registrationUrl": None,
+    "imageUrl": None,
+    "imageSource": None,
+    "agenda": [],
     "publishedAt": None,
     "collectedAt": None,
     "trustScore": None,
@@ -108,7 +114,7 @@ def validate(act):
     pt = act.get("priceType")
     if pt not in PRICE_TYPES:
         problems.append("bad_priceType:%s" % pt)
-    for key in ("tags", "trustReasons"):
+    for key in ("tags", "trustReasons", "agenda"):
         if act.get(key) is not None and not isinstance(act[key], list):
             problems.append("bad_type:%s" % key)
     score = act.get("trustScore")

@@ -25,7 +25,7 @@
       "sourceUrl": "https://example.com/ai/a01",
       "registrationUrl": "https://example.com/ai/a01/signup",
       "publishedAt": "2026-09-01T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -51,7 +51,7 @@
       "sourceUrl": "https://example.com/ai/a02",
       "registrationUrl": "https://example.com/ai/a02/signup",
       "publishedAt": "2026-09-02T09:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -73,7 +73,7 @@
       "sourceName": "ai_community",
       "sourceUrl": "https://example.com/ai/a03",
       "publishedAt": "2026-09-03T12:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -97,7 +97,7 @@
       "sourceUrl": "https://example.com/ai/a04",
       "registrationUrl": "https://example.com/ai/a04/signup",
       "publishedAt": "2026-09-04T09:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -120,7 +120,7 @@
       "sourceName": "ai_community",
       "sourceUrl": "https://example.com/ai/a05",
       "publishedAt": "2026-09-05T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -142,7 +142,7 @@
       "sourceName": "ai_community",
       "sourceUrl": "https://example.com/ai/a06",
       "publishedAt": "2026-09-06T18:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -157,7 +157,7 @@
       "price": "免费",
       "sourceName": "ai_community",
       "publishedAt": "2026-09-07T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -182,7 +182,7 @@
       "sourceUrl": "https://example.com/ai/a08",
       "registrationUrl": "https://example.com/ai/a08/signup",
       "publishedAt": "2026-09-08T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -204,7 +204,7 @@
       "sourceName": "ai_community",
       "sourceUrl": "https://example.com/ai/a09",
       "publishedAt": "2026-09-09T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -228,7 +228,7 @@
       "sourceUrl": "https://example.com/ai/a10",
       "registrationUrl": "https://example.com/ai/a10/signup",
       "publishedAt": "2026-09-10T10:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -252,7 +252,7 @@
       "sourceUrl": "https://bbs.example.com/t/9001",
       "registrationUrl": "https://bbs.example.com/t/9001/form",
       "publishedAt": "2026-09-02T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -274,7 +274,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9002",
       "publishedAt": "2026-09-03T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -298,7 +298,7 @@
       "sourceUrl": "https://bbs.example.com/t/9003",
       "registrationUrl": "https://bbs.example.com/t/9003/form",
       "publishedAt": "2026-09-04T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -319,7 +319,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9004",
       "publishedAt": "2026-09-05T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -342,7 +342,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9005",
       "publishedAt": "2026-09-06T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -366,7 +366,7 @@
       "sourceUrl": "https://bbs.example.com/t/9006",
       "registrationUrl": "https://bbs.example.com/t/9006/form",
       "publishedAt": "2026-09-07T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -389,7 +389,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9007",
       "publishedAt": "2026-09-08T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -410,7 +410,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9008",
       "publishedAt": "2026-09-09T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -433,7 +433,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9009",
       "publishedAt": "2026-09-10T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -454,7 +454,7 @@
       "sourceName": "campus_bbs",
       "sourceUrl": "https://bbs.example.com/t/9010",
       "publishedAt": "2026-09-11T08:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -479,7 +479,7 @@
       "sourceUrl": "https://portal.example.com/ev/701",
       "registrationUrl": "https://portal.example.com/ev/701/reg",
       "publishedAt": "2026-09-03T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -502,7 +502,7 @@
       "sourceUrl": "https://portal.example.com/ev/702",
       "registrationUrl": "https://portal.example.com/ev/702/reg",
       "publishedAt": "2026-09-04T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -526,7 +526,7 @@
       "sourceUrl": "https://portal.example.com/ev/703",
       "registrationUrl": "https://portal.example.com/ev/703/reg",
       "publishedAt": "2026-09-05T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -549,7 +549,7 @@
       "sourceName": "city_portal",
       "sourceUrl": "https://portal.example.com/ev/704",
       "publishedAt": "2026-09-06T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -573,7 +573,7 @@
       "sourceUrl": "https://portal.example.com/ev/705",
       "registrationUrl": "https://portal.example.com/ev/705/reg",
       "publishedAt": "2026-09-07T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -596,7 +596,7 @@
       "sourceName": "city_portal",
       "sourceUrl": "https://portal.example.com/ev/706",
       "publishedAt": "2026-09-08T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -620,7 +620,7 @@
       "sourceUrl": "https://portal.example.com/ev/707",
       "registrationUrl": "https://portal.example.com/ev/707/reg",
       "publishedAt": "2026-09-09T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -642,7 +642,7 @@
       "sourceName": "city_portal",
       "sourceUrl": "https://portal.example.com/ev/708",
       "publishedAt": "2026-09-10T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -654,7 +654,7 @@
       "price": null,
       "sourceName": "city_portal",
       "publishedAt": "2026-09-11T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     },
     {
@@ -676,7 +676,7 @@
       "sourceName": "city_portal",
       "sourceUrl": "https://portal.example.com/ev/710",
       "publishedAt": "2026-09-12T14:00:00",
-      "collectedAt": "2026-09-15T17:50:18",
+      "collectedAt": "2026-09-15T21:59:39",
       "status": "raw"
     }
   ]

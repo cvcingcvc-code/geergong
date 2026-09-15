@@ -443,9 +443,9 @@ body {
 }
 
 /* ── Detail overlay ─────────────────────────────────────────────────
-   Mobile keeps the original full-screen push. On tablet/desktop the
-   detail becomes a centred modal card instead of a 1280px-wide phone
-   screen — same component, same content. */
+   PHASE 5: the detail is a real PAGE on desktop, not a centred phone
+   sheet. Mobile keeps the full-screen push; from 768px up it is still
+   full-bleed, but the inner layout becomes 2-column. */
 .gg-detail-overlay {
   position: absolute;
   inset: 0;
@@ -455,25 +455,234 @@ body {
   flex-direction: column;
 }
 .gg-detail { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-@media (min-width: 768px) {
-  .gg-detail-overlay {
-    background: color-mix(in oklch, var(--ink) 32%, transparent);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    align-items: center;
-    padding: 28px 32px;
-  }
-  .gg-detail {
-    max-width: 760px;
-    width: 100%;
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
-    background: var(--bg-base);
-  }
+
+/* Top bar: back · title · actions */
+.gg-detail-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px var(--gg-gutter);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.gg-detail-bar-title {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gg-detail-bar-actions { display: none; align-items: center; gap: 8px; flex: none; }
+@media (min-width: 768px) { .gg-detail-bar-actions { display: flex; } }
+
+.gg-detail-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* 1 column on mobile → main + 340px sidebar from 1024px */
+.gg-detail-2col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: var(--gg-content-max);
+  margin: 0 auto;
+  padding: 18px var(--gg-gutter) 40px;
+}
+.gg-detail-main { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.gg-detail-aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.gg-detail-mobilebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px var(--gg-gutter) 20px;
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-subtle);
 }
 
-/* ── Misc ───────────────────────────────────────────────────────── */
-.gg-tnum { font-variant-numeric: tabular-nums; }
-.gg-divider { height: 1px; background: var(--border-subtle); margin: var(--gg-gap) 0; }
+@media (min-width: 1024px) {
+  .gg-detail-2col {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 36px;
+    align-items: start;
+    padding-top: 26px;
+  }
+  .gg-detail-aside { position: sticky; top: 0; }
+  .gg-detail-mobilebar { display: none; }
+}
+
+/* Core facts: 2 columns on mobile → 4 across on desktop */
+.gg-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+@media (min-width: 768px) {
+  .gg-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 26px; }
+}
+
+/* 为什么推荐 — single column on mobile, 2 across on desktop */
+.gg-why-grid { display: flex; flex-direction: column; gap: 9px; }
+.gg-why-item { display: flex; gap: 9px; font-size: 14px; color: var(--text-body); line-height: 1.55; }
+@media (min-width: 768px) {
+  .gg-why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 26px; }
+}
+
+/* ── Search result card (desktop-first) ─────────────────────────────
+   stacked on mobile, image-left row from tablet up. */
+.gg-result {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 13px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+.gg-result:hover { box-shadow: var(--shadow-md); }
+.gg-result-media { width: 100%; flex: none; }
+.gg-result-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gg-result-head { display: flex; align-items: flex-start; gap: 14px; }
+.gg-result-score { flex: none; text-align: right; }
+.gg-result-facts { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.gg-fact {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.4;
+}
+.gg-fact i { color: var(--text-faint); }
+.gg-result-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+@media (min-width: 768px) {
+  .gg-result { flex-direction: row; gap: 18px; padding: 16px; }
+  .gg-result-media { width: 152px; }
+}
+
+/* ── Chips (topic filters / light buttons) ───────────────────────── */
+.gg-chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.gg-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font-family: var(--font-sans); font-weight: 600; font-size: 12.5px;
+  padding: 7px 14px; border-radius: var(--radius-pill);
+  cursor: pointer; white-space: nowrap;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.gg-chip:hover { border-color: var(--brand); color: var(--brand); }
+.gg-chip.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.gg-chip:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Staged loading ───────────────────────────────────────────────── */
+.gg-stage-list { display: flex; flex-direction: column; gap: 11px; }
+.gg-stage {
+  display: flex; align-items: center; gap: 11px;
+  font-size: 13.5px; color: var(--text-faint);
+  transition: color var(--dur-base) var(--ease-out);
+}
+.gg-stage.is-done { color: var(--text-muted); }
+.gg-stage.is-now { color: var(--text-strong); font-weight: 600; }
+.gg-stage-glyph {
+  width: 20px; height: 20px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--bg-sunken); color: var(--text-faint);
+}
+.gg-stage.is-done .gg-stage-glyph { background: var(--success-soft); color: var(--accent-strong, #047857); }
+.gg-stage.is-now .gg-stage-glyph { background: var(--brand-soft); color: var(--brand); }
+.gg-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--slate-400); }
+.gg-spin {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid var(--brand-soft);
+  border-top-color: var(--brand);
+  animation: gg-spin 0.7s linear infinite;
+}
+@keyframes gg-spin { to { transform: rotate(360deg); } }
+
+/* Compact ask bar once an answer exists */
+.gg-ask-box.is-compact textarea { min-height: 24px; font-size: 14.5px; }
+@media (min-width: 1200px) {
+  .gg-ask-box.is-compact textarea { min-height: 26px; font-size: 15px; }
+}
+
+/* ── Discover: stats strip + image cards ─────────────────────────── */
+.gg-stats { display: flex; gap: 30px; flex-wrap: wrap; }
+.gg-stat { display: flex; align-items: baseline; gap: 7px; }
+.gg-stat b {
+  font-family: var(--font-display); font-weight: 700; font-size: 24px;
+  color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1;
+}
+.gg-stat span { font-size: 13px; color: var(--text-muted); }
+
+.gg-disc-card {
+  display: flex; flex-direction: column;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.gg-disc-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+/* ── My Weekend timeline ──────────────────────────────────────────── */
+.gg-weekend-day { margin-bottom: 26px; }
+.gg-weekend-dayhead {
+  display: flex; align-items: baseline; gap: 11px;
+  flex-wrap: wrap; margin-bottom: 14px;
+}
+.gg-timeline { display: flex; flex-direction: column; }
+.gg-timeline-row { display: flex; gap: 12px; align-items: stretch; }
+.gg-timeline-time {
+  width: 62px; flex: none;
+  display: flex; flex-direction: column; gap: 2px;
+  padding-top: 14px; text-align: right;
+}
+.gg-timeline-rail {
+  position: relative; width: 18px; flex: none;
+  display: flex; justify-content: center;
+}
+/* the connecting line */
+.gg-timeline-rail::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 2px; margin-left: -1px; background: var(--border-subtle);
+}
+.gg-timeline-row:first-child .gg-timeline-rail::before { top: 20px; }
+.gg-timeline-row:last-child .gg-timeline-rail::before { bottom: calc(100% - 22px); }
+.gg-timeline-dot {
+  position: relative; z-index: 1;
+  width: 11px; height: 11px; margin-top: 18px;
+  border-radius: 50%; background: var(--brand);
+  box-shadow: 0 0 0 3px var(--surface-card);
+}
+.gg-timeline-dot.is-clash { background: var(--danger); }
+.gg-timeline-card {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-xs);
+}
+.gg-timeline-card.is-clash { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+/* On mobile the row's action buttons wrap under the text. */
+@media (max-width: 767px) {
+  .gg-timeline-card { flex-wrap: wrap; }
+  .gg-timeline-time { width: 52px; }
+}
 .gg-scroll { overflow-y: auto; scrollbar-width: none; }
-.gg-scroll::-webkit-scrollbar { display: none; }

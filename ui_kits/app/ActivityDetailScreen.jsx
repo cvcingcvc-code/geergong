@@ -1,230 +1,322 @@
-// Gorgon — Activity detail.
-// Demo MVP: + registration entry, working favorite (localStorage), "view on map" link.
-(function(){
-const { Tag, Avatar, Button, VerifiedBadge, SourceTag, TrustBanner, FreshnessLabel, ReportSheet, RoutePlanner, MapAppSheet } = window.GorgonDesignSystem_56aa78;
-const _CATS = window.GorgonDesignSystem_56aa78.CATEGORIES;
+// Gorgon — 活动详情 (desktop-first).
+//
+// PHASE 5 rebuilt this screen from a mobile sheet into a real desktop page:
+//
+//   Desktop (>=1024)   main column (hero / title / facts / why / about /
+//                      agenda)  +  340px sticky action & source sidebar
+//   Mobile  (<768)     one column; the sidebar's actions move to a sticky
+//                      bottom bar and the rest flows inline
+//
+// Every value is rendered from the view model. Nothing is invented:
+//   * a missing registrationUrl shows 暂未找到报名链接 instead of a fake link;
+//   * 为什么推荐 comes from the ranking's real reasons, and the block is
+//     hidden entirely when there are none;
+//   * 活动流程 is rendered ONLY when the page actually published an agenda;
+//   * the map area is an explicit placeholder — no fabricated metro lines or
+//     "12 分钟" transit estimates.
+(function () {
+  const { Tag, Button } = window.GorgonDesignSystem_56aa78;
+  const V = window.GorgonActivityView;
+  const C = window.GorgonCommon;
 
-function InfoLine({ icon, label, children }) {
-  return (
-    <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-      <i data-lucide={icon} style={{ width: 17, height: 17, color: "var(--text-muted)", flex: "none", marginTop: 2 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)", fontWeight: 500 }}>{label}</span>
-        <div style={{ fontSize: "var(--text-base)", color: "var(--text-strong)", fontWeight: 600, marginTop: 2 }}>{children}</div>
+  function Section({ title, kicker, children }) {
+    return (
+      <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div>
+          {kicker && <div className="gorgon-kicker" style={{ marginBottom: 6 }}>{kicker}</div>}
+          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, color: "var(--text-strong)", margin: 0 }}>{title}</h2>
+        </div>
+        {children}
+      </section>
+    );
+  }
+
+  function SideCard({ title, children }) {
+    return (
+      <div style={{
+        padding: "16px 17px", borderRadius: "var(--radius-lg)", background: "var(--surface-card)",
+        border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)",
+      }}>
+        {title && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em", marginBottom: 12 }}>{title}</div>}
+        {children}
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function MetaRow({ icon, label, value, accent }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <span style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: "var(--bg-sunken)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-        <i data-lucide={icon} style={{ width: 18, height: 18, color: "var(--brand)" }} />
-      </span>
-      <div>
-        <div style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 14.5, color: accent || "var(--text-strong)", fontWeight: 700, fontFamily: "var(--font-sans)" }}>{value}</div>
+  function ActivityDetailScreen({ view, synced, onSync, onBack, onShowMap, onToast }) {
+    const v = view;
+    const [shareNote, setShareNote] = React.useState("");
+
+    React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, [v && v.id, shareNote, synced]);
+
+    if (!v) return null;
+
+    const shareUrl = v.sourceUrl || v.registrationUrl || null;
+
+    const doShare = async () => {
+      if (!shareUrl) { setShareNote("该活动暂无可分享的链接"); return; }
+      const payload = { title: v.title, text: v.title, url: shareUrl };
+      try {
+        if (navigator.share) { await navigator.share(payload); return; }
+        if (navigator.clipboard) { await navigator.clipboard.writeText(shareUrl); setShareNote("链接已复制"); return; }
+      } catch (e) { /* user cancelled or clipboard blocked */ }
+      setShareNote("已打开来源链接，请手动复制");
+      window.open(shareUrl, "_blank", "noopener");
+    };
+
+    const ratio = "16 / 6";
+
+    const facts = (
+      <div className="gg-facts">
+        <C.MetaTile icon="calendar" label="时间"
+          value={v.dateText || "日期待定"}
+          sub={v.timeText || "时间待定"} />
+        <C.MetaTile icon="map-pin" label="地点"
+          value={v.venue || v.district || "地点待定"}
+          sub={[v.district, v.city].filter(Boolean).join(" · ") || null} />
+        <C.MetaTile icon="ticket" label="票价"
+          value={v.priceLabel}
+          accent={v.priceType === "free" ? "var(--accent-strong, #047857)" : null}
+          sub={v.registrationUrl ? "需提前报名" : "报名方式以来源为准"} />
+        <C.MetaTile icon="users" label="主办方" value={v.organizer || "主办方待确认"} />
       </div>
-    </div>
-  );
-}
+    );
 
-function ActivityDetailScreen({ activity, synced, onSync, onBack, favorited, onToggleFavorite, onShowMap }) {
-  const a = activity;
-  const cat = _CATS[a.category];
-  const [reportOpen, setReportOpen] = React.useState(false);
-  const [navOpen, setNavOpen] = React.useState(false);
-  const u = (window.GORGON_DATA && window.GORGON_DATA.user) || {};
-  const transit = a.transit || [];
-  const full = a.spotsLeft === 0;
-  const trust = a.trust || (a.host ? "verified" : "aggregated");
-  const bannerState = trust === "verified" || trust === "official" ? "confirmed" : "unverified";
-  const cover = { background: `linear-gradient(150deg, color-mix(in oklch, ${cat.color} 90%, #fff) 0%, color-mix(in oklch, ${cat.color} 60%, var(--indigo-800)) 100%)` };
+    /* ── Sidebar: actions + trust + place + sources ──────────────────── */
 
-  React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, [favorited, navOpen, reportOpen]);
+    const sidebar = (
+      <div className="gg-detail-aside">
+        <SideCard title="操作">
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            <Button block variant={synced ? "mint" : "primary"} size="lg" onClick={onSync}
+              leadingIcon={<i data-lucide={synced ? "check" : "plus"} style={{ width: 17, height: 17 }} />}>
+              {synced ? "已加入我的周末" : "加入我的周末"}
+            </Button>
 
-  return (
-    <div className="gg-detail">
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none" }}>
-        {/* Hero */}
-        <div style={{ position: "relative", height: 300, ...cover }}>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(12,13,18,0.30) 0%, rgba(12,13,18,0) 30%, rgba(12,13,18,0.55) 100%)" }} />
-          <div style={{ position: "absolute", top: 14, left: 16, right: 16, display: "flex", justifyContent: "space-between" }}>
-            <button onClick={onBack} style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}>
-              <i data-lucide="arrow-left" style={{ width: 20, height: 20, color: "var(--ink)" }} />
-            </button>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <i data-lucide="share-2" style={{ width: 19, height: 19, color: "var(--ink)" }} />
-              </button>
-              <button onClick={onToggleFavorite} aria-pressed={!!favorited} aria-label="收藏" style={{ width: 42, height: 42, borderRadius: "50%", border: "none", background: favorited ? "var(--danger)" : "rgba(255,255,255,0.92)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "background var(--dur-fast) var(--ease-out)" }}>
-                <i data-lucide="heart" style={{ width: 19, height: 19, color: favorited ? "#fff" : "var(--ink)" }} />
-              </button>
-            </div>
+            {v.registrationUrl ? (
+              <a href={v.registrationUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block" }}>
+                <Button block variant="secondary" size="lg"
+                  leadingIcon={<i data-lucide="ticket" style={{ width: 17, height: 17 }} />}
+                  trailingIcon={<i data-lucide="external-link" style={{ width: 15, height: 15 }} />}>
+                  打开报名链接
+                </Button>
+              </a>
+            ) : (
+              <div style={{
+                border: "1px dashed var(--border-strong, var(--border-subtle))", borderRadius: "var(--radius-md)",
+                padding: "12px 14px", fontSize: 12.5, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.55,
+              }}>
+                暂未找到报名链接
+              </div>
+            )}
+
+            <Button block variant="ghost" size="lg" onClick={doShare}
+              leadingIcon={<i data-lucide="share-2" style={{ width: 17, height: 17 }} />}>
+              分享活动
+            </Button>
+            {shareNote && <div style={{ fontSize: 11.5, color: "var(--text-muted)", textAlign: "center" }}>{shareNote}</div>}
           </div>
-          <div style={{ position: "absolute", bottom: 16, left: 18, display: "flex", gap: 7 }}>
-            <Tag tone="ink" dotColor={cat.color}>{cat.label}</Tag>
-            {a.hot && <Tag tone="danger">🔥 热门</Tag>}
-            <Tag tone="ink">{a.distance} 内</Tag>
-            {a.demo && <Tag tone="warning">DEMO DATA</Tag>}
+        </SideCard>
+
+        <SideCard title="可信状态">
+          <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+            <C.TrustChip status={v.trust} />
+            {v.trustScore != null && (
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                可信度 {v.trustScore}/100
+              </span>
+            )}
+          </div>
+          {v.trustReasons.length > 0 && (
+            <div style={{ marginTop: 11, display: "flex", flexDirection: "column", gap: 5 }}>
+              {v.trustReasons.map((r, i) => (
+                <div key={i} style={{ fontSize: 12, color: "var(--text-body)", lineHeight: 1.5 }}>· {r}</div>
+              ))}
+            </div>
+          )}
+          {v.trust === "pending" && (
+            <div style={{ marginTop: 10, fontSize: 11.5, color: "#9A6300", lineHeight: 1.55 }}>
+              该活动尚未通过人工核验，信息可能不完整。
+            </div>
+          )}
+          {v.trust === "conflict" && (
+            <div style={{ marginTop: 10, fontSize: 11.5, color: "var(--danger)", lineHeight: 1.55 }}>
+              多个来源之间存在信息冲突，请以官方页面为准。
+            </div>
+          )}
+        </SideCard>
+
+        <SideCard title="活动地点">
+          <C.MapPlaceholder venue={v.venue} address={v.address} onShowMap={onShowMap} />
+        </SideCard>
+
+        <SideCard title={"信息来源" + (v.provenance.length ? "（" + v.provenance.length + "）" : "")}>
+          {v.provenance.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {v.provenance.map((p, i) => <C.SourceRow key={i} item={p} />)}
+            </div>
+          ) : v.sourceUrl ? (
+            <C.SourceRow item={{ source: v.organizer || "来源页面", title: v.title, url: v.sourceUrl, sourceTrust: "medium" }} />
+          ) : (
+            <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
+              这条活动没有可追溯的来源链接 —— Gorgon 不会为它编造一个。
+            </div>
+          )}
+        </SideCard>
+      </div>
+    );
+
+    /* ── Main column ─────────────────────────────────────────────────── */
+
+    return (
+      <div className="gg-detail">
+        {/* Desktop top bar — the mobile sheet's floating buttons are gone. */}
+        <div className="gg-detail-bar">
+          <button onClick={onBack} aria-label="返回"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--border-subtle)",
+              background: "var(--surface-card)", borderRadius: "var(--radius-pill)", padding: "8px 15px",
+              fontSize: 13, fontWeight: 600, color: "var(--text-body)", cursor: "pointer", fontFamily: "var(--font-sans)",
+            }}>
+            <i data-lucide="arrow-left" style={{ width: 16, height: 16 }} />返回
+          </button>
+          <div className="gg-detail-bar-title">{v.title}</div>
+          <div className="gg-detail-bar-actions">
+            <C.TrustChip status={v.trust} />
+            <Button variant={synced ? "mint" : "primary"} size="sm" onClick={onSync}
+              leadingIcon={<i data-lucide={synced ? "check" : "plus"} style={{ width: 15, height: 15 }} />}>
+              {synced ? "已加入" : "加入我的周末"}
+            </Button>
           </div>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "20px var(--gg-gutter) 16px", display: "flex", flexDirection: "column", gap: 18 }}>
-          <div>
-            <TrustBanner state={bannerState} action={bannerState === "unverified" ? "查看来源" : undefined} style={{ marginBottom: 14 }} />
-            <h1 style={{ fontSize: 25, fontWeight: 800, fontFamily: "var(--font-sans)", color: "var(--text-strong)", lineHeight: 1.25, letterSpacing: "-0.01em" }}>{a.title}</h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 12 }}>
-              <Avatar name={a.host} size="sm" />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>{a.host}</span>
-                  <VerifiedBadge level={trust} size="sm" />
+        <div className="gg-detail-scroll">
+          <div className="gg-detail-2col">
+            {/* ── LEFT / CENTER ─────────────────────────────────────── */}
+            <div className="gg-detail-main">
+              <div style={{ position: "relative" }}>
+                <C.ActivityImage image={v.image} alt={v.title} ratio={ratio} radius="var(--radius-xl)">
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(180deg, rgba(12,13,18,0) 45%, rgba(12,13,18,0.55) 100%)",
+                  }} />
+                  <C.PlaceholderNote image={v.image} label={v.image.type === "placeholder" ? "暂无图片 · 分类占位图" : undefined} />
+                  {v.tags.length > 0 && (
+                    <div style={{ position: "absolute", left: 16, bottom: 14, display: "flex", gap: 7, flexWrap: "wrap", zIndex: 2 }}>
+                      {v.tags.slice(0, 5).map((t) => <Tag key={t} tone="ink" size="sm">{t}</Tag>)}
+                    </div>
+                  )}
+                </C.ActivityImage>
+              </div>
+
+              <header style={{ marginTop: 20 }}>
+                <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, lineHeight: 1.22, letterSpacing: "-0.02em", color: "var(--text-strong)", margin: 0 }}>
+                  {v.title}
+                </h1>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 13, flexWrap: "wrap" }}>
+                  {v.finalScore != null && (
+                    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 7 }}>
+                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, color: "var(--brand)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{v.finalScore}</span>
+                      <span style={{ fontSize: 11.5, color: "var(--text-faint)" }}>推荐度</span>
+                    </span>
+                  )}
+                  <C.TrustChip status={v.trust} />
+                  {v.dataOrigin === "demo" && <C.ProviderBadge mode="demo" size="sm" />}
+                  {v.locationText && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--text-muted)" }}>
+                      <i data-lucide="map-pin" style={{ width: 14, height: 14 }} />{v.locationText}
+                    </span>
+                  )}
                 </div>
-                <div style={{ marginTop: 4 }}>
-                  <FreshnessLabel time={a.updated || "3 小时前"} confirmed={bannerState === "confirmed"} />
-                </div>
-              </div>
-              <Button variant="secondary" size="sm">关注</Button>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <SourceTag source={a.source || "Gorgon 官方"} href="#" />
-            </div>
-          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, padding: "16px 0", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
-            <MetaRow icon="calendar" label="日期" value={a.date} />
-            <MetaRow icon="clock" label="时间" value={`${a.time}–${a.end}`} />
-            <MetaRow icon="map-pin" label="地点" value={a.venue} />
-            <MetaRow icon="ticket" label="票价" value={a.price} accent={a.price === "免费" ? "var(--accent-strong)" : null} />
-          </div>
+                {v.description && (
+                  <p style={{ fontSize: 15, lineHeight: 1.75, color: "var(--text-body)", margin: "16px 0 0", maxWidth: 760 }}>
+                    {v.description}
+                  </p>
+                )}
 
-          <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)", marginBottom: 8 }}>关于这场活动</h3>
-            <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "var(--text-body)" }}>{a.desc}</p>
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 12 }}>
-              {a.tags.map((t) => <Tag key={t} tone="neutral" size="sm">#{t}</Tag>)}
-            </div>
-          </div>
+                {v.tags.length > 0 && (
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 14 }}>
+                    {v.tags.map((t) => <Tag key={t} size="sm" tone="neutral">{t}</Tag>)}
+                  </div>
+                )}
+              </header>
 
-          {/* Capacity */}
-          {a.capacity != null && (
-            <div style={{ padding: "14px 16px", borderRadius: "var(--radius-md)", background: "var(--bg-sunken)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-strong)" }}>报名名额</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: full ? "var(--danger)" : a.spotsLeft <= 5 ? "var(--warning)" : "var(--accent-strong)" }}>
-                  {full ? "已满" : `仅剩 ${a.spotsLeft} 个名额`}
-                </span>
-              </div>
-              <div style={{ height: 8, borderRadius: 999, background: "var(--slate-200)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.round((a.going / a.capacity) * 100)}%`, background: full ? "var(--danger)" : "var(--grad-sync)", borderRadius: 999 }} />
-              </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 7, fontVariantNumeric: "tabular-nums" }}>{a.going} / {a.capacity} 人已报名</div>
-            </div>
-          )}
+              {facts}
 
-          {/* Registration entry */}
-          {a.registrationUrl && (
-            <a href={a.registrationUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "block" }}>
-              <Button block variant="secondary" size="lg" leadingIcon={<i data-lucide="ticket" style={{ width: 18, height: 18 }} />}
-                trailingIcon={<i data-lucide="external-link" style={{ width: 16, height: 16 }} />}>
-                报名入口（DEMO 示例链接）
-              </Button>
-            </a>
-          )}
+              {v.reasons.length > 0 && (
+                <Section title="为什么推荐">
+                  <div className="gg-why-grid">
+                    {v.reasons.map((r, i) => (
+                      <div key={i} className="gg-why-item">
+                        <i data-lucide="check" style={{ width: 15, height: 15, color: "var(--accent-strong, #00A277)", flex: "none", marginTop: 2 }} />
+                        <span>{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-faint)", marginTop: 2 }}>
+                    以上理由来自 Gorgon 的实际排序计算，不是预设文案。
+                  </div>
+                </Section>
+              )}
 
-          {/* Need to know */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>参加须知</h3>
-            {a.bring && a.bring.length > 0 && (
-              <InfoLine icon="backpack" label="需要携带">
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
-                  {a.bring.map((b) => <Tag key={b} tone="brand" size="sm">{b}</Tag>)}
-                </div>
-              </InfoLine>
-            )}
-            {a.notes && <InfoLine icon="info" label="温馨提示"><span style={{ fontWeight: 500, color: "var(--text-body)", lineHeight: 1.6 }}>{a.notes}</span></InfoLine>}
-            {a.refund && <InfoLine icon="rotate-ccw" label="退款政策"><span style={{ fontWeight: 500, color: "var(--text-body)", lineHeight: 1.6 }}>{a.refund}</span></InfoLine>}
-            {a.contact && <InfoLine icon="message-circle" label="联系方式"><span style={{ fontWeight: 500, color: "var(--text-body)" }}>{a.contact}</span></InfoLine>}
-          </div>
+              {v.description && (
+                <Section title="活动介绍">
+                  <p style={{ fontSize: 14.5, lineHeight: 1.8, color: "var(--text-body)", margin: 0, whiteSpace: "pre-wrap" }}>
+                    {v.description}
+                  </p>
+                </Section>
+              )}
 
-          {/* Location + route */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>到达方式</h3>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 12.5, fontWeight: 600, color: "var(--brand)", fontVariantNumeric: "tabular-nums" }}>距你 {a.distance}</span>
-            </div>
+              {v.agenda.length > 0 && (
+                <Section title="活动流程">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    {v.agenda.map((row, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 16, padding: "11px 0",
+                        borderTop: i === 0 ? "none" : "1px solid var(--border-subtle)",
+                      }}>
+                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13.5, color: "var(--brand)", width: 118, flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                          {row.time || row.timeText || "时间待定"}
+                        </span>
+                        <span style={{ fontSize: 14, color: "var(--text-body)", lineHeight: 1.55 }}>{row.title || row.text || ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
 
-            {a.address && (
-              <div style={{ display: "flex", gap: 9, alignItems: "flex-start", padding: "11px 13px", borderRadius: "var(--radius-md)", background: "var(--bg-sunken)", marginBottom: 12 }}>
-                <i data-lucide="map-pin" style={{ width: 17, height: 17, color: "var(--accent-strong)", flex: "none", marginTop: 1 }} />
-                <span style={{ fontSize: 13.5, color: "var(--text-body)", lineHeight: 1.5 }}>{a.address}</span>
-              </div>
-            )}
-
-            {/* Map snippet → jump to Map tab */}
-            <div style={{ height: 128, borderRadius: "var(--radius-lg)", position: "relative", overflow: "hidden", background: "linear-gradient(135deg,#e8ebf3,#dde3ef)", border: "1px solid var(--border-subtle)", marginBottom: 14 }}>
-              <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(var(--slate-200) 1px,transparent 1px),linear-gradient(90deg,var(--slate-200) 1px,transparent 1px)", backgroundSize: "26px 26px", opacity: 0.7 }} />
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-100%)" }}>
-                <span style={{ width: 30, height: 30, borderRadius: "50% 50% 50% 0", background: "var(--brand)", transform: "rotate(-45deg)", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--shadow-md)" }}>
-                  <i data-lucide="map-pin" style={{ width: 15, height: 15, color: "#fff", transform: "rotate(45deg)" }} />
-                </span>
-              </div>
-              <div style={{ position: "absolute", bottom: 10, left: 12, fontSize: 13, fontWeight: 600, color: "var(--text-body)", background: "rgba(255,255,255,0.9)", padding: "5px 10px", borderRadius: "var(--radius-pill)" }}>{a.venue}</div>
-              {onShowMap && (
-                <button onClick={onShowMap} style={{ position: "absolute", top: 10, right: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "var(--brand)", color: "#fff", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 12.5, padding: "7px 12px", borderRadius: "var(--radius-pill)", cursor: "pointer", boxShadow: "var(--shadow-brand)" }}>
-                  <i data-lucide="map" style={{ width: 14, height: 14 }} />在地图查看
-                </button>
+              {!v.description && (
+                <Section title="活动介绍">
+                  <div style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.7, padding: "14px 16px", borderRadius: "var(--radius-md)", background: "var(--bg-sunken)" }}>
+                    来源页面没有提供活动介绍，Gorgon 不会替它写一段。
+                    {v.sourceUrl && (<> 可以<a href={v.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", fontWeight: 600, marginLeft: 4 }}>查看原文</a>。</>)}
+                  </div>
+                </Section>
               )}
             </div>
 
-            {transit.length > 0 && (
-              <RoutePlanner
-                from={`我的位置 · ${u.campus || "上海"}`}
-                venue={a.venue}
-                distance={a.distance}
-                transit={transit}
-                onNavigate={() => setNavOpen(true)}
-              />
-            )}
+            {/* ── RIGHT ────────────────────────────────────────────── */}
+            {sidebar}
           </div>
+        </div>
 
-          {/* Going */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ display: "flex" }}>
-              {["阿哲", "Mei", "Lin", "周"].map((n, i) => (
-                <span key={n} style={{ marginLeft: i ? -10 : 0 }}><Avatar name={n} size="sm" style={{ boxShadow: "0 0 0 2px var(--surface-card)" }} /></span>
-              ))}
-            </div>
-            <div style={{ fontSize: 13.5, color: "var(--text-body)" }}><b style={{ color: "var(--text-strong)" }}>{a.going} 人</b> 已加入</div>
+        {/* Mobile-only sticky actions (desktop uses the sidebar). */}
+        <div className="gg-detail-mobilebar">
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>票价</div>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, color: v.priceType === "free" ? "var(--accent-strong, #047857)" : "var(--text-strong)" }}>{v.priceLabel}</div>
           </div>
-
-          {/* Report error */}
-          <button onClick={() => setReportOpen(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", border: "1px solid var(--border-subtle)", background: "var(--surface-card)", borderRadius: "var(--radius-md)", padding: "12px", cursor: "pointer", color: "var(--text-muted)", fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 13.5 }}>
-            <i data-lucide="flag" style={{ width: 16, height: 16 }} />信息有误?报错反馈
-          </button>
+          <Button block variant={synced ? "mint" : "primary"} size="lg" onClick={onSync}
+            leadingIcon={<i data-lucide={synced ? "check" : "plus"} style={{ width: 18, height: 18 }} />}
+            style={{ flex: 1 }}>
+            {synced ? "已加入我的周末" : "加入我的周末"}
+          </Button>
         </div>
       </div>
+    );
+  }
 
-      <ReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
-      <MapAppSheet open={navOpen} onClose={() => setNavOpen(false)} venue={a.venue} coord={a.coord} />
-      {/* Sticky CTA */}
-      <div style={{ flex: "none", padding: "14px var(--gg-gutter) 22px", borderTop: "1px solid var(--border-subtle)", background: "var(--surface-card)", display: "flex", alignItems: "center", gap: 14 }}>
-        <div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>票价</div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: a.price === "免费" ? "var(--accent-strong)" : "var(--text-strong)" }}>{a.price}</div>
-        </div>
-        <Button block variant={synced ? "mint" : "primary"} size="lg" onClick={onSync}
-          leadingIcon={<i data-lucide={synced ? "check" : "calendar-plus"} style={{ width: 18, height: 18 }} />}
-          style={{ flex: 1 }}>
-          {synced ? "已加入我的周末" : "加入我的周末"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-window.GorgonApp = Object.assign(window.GorgonApp || {}, { ActivityDetailScreen });
+  window.GorgonApp = Object.assign(window.GorgonApp || {}, { ActivityDetailScreen });
 })();

@@ -47,6 +47,23 @@ _CATEGORY_RULES = [
 _KNOWN_CATEGORIES = {k for k, _ in _CATEGORY_RULES}
 
 
+# Presentation label for the trust state. Derived from real pipeline signals
+# only — never invented:
+#   cross_source_conflict   -> 存在冲突
+#   status == "approved"    -> 已确认
+#   anything else           -> 待核验
+_TRUST_LABEL = {"confirmed": "已确认", "pending": "待核验", "conflict": "存在冲突"}
+
+
+def _trust_status(act):
+    reasons = act.get("trustReasons") or []
+    if "cross_source_conflict" in reasons or act.get("duplicateOf"):
+        return "conflict"
+    if act.get("status") == "approved":
+        return "confirmed"
+    return "pending"
+
+
 def _match_category(act):
     if act.get("category") in _KNOWN_CATEGORIES:
         return act["category"]
@@ -89,7 +106,11 @@ def to_gorgon_record(act):
     return {
         "id": act.get("id"),
         "demo": True,  # pipeline MVP output is still demo-tagged end to end
-        "image": None,
+        "image": act.get("imageUrl"),
+        "imageUrl": act.get("imageUrl"),
+        "imageSource": act.get("imageSource"),
+        "agenda": [dict(a) for a in (act.get("agenda") or [])],
+        "trustStatus": _trust_status(act),
         "title": act.get("title") or "(无标题)",
         "category": _match_category(act),
         "date": date_label(act.get("startDate")) or "日期待定",

@@ -25,7 +25,7 @@ window.GORGON_REVIEW_QUEUE = [
       "Agent",
       "黑客松"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "ai_community",
     "sourceUrl": "https://example.com/ai/a01",
     "score": 85,
@@ -137,7 +137,7 @@ window.GORGON_REVIEW_QUEUE = [
       "跑步",
       "夜跑"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "ai_community",
     "sourceUrl": "https://example.com/ai/a06",
     "score": 70,
@@ -214,7 +214,7 @@ window.GORGON_REVIEW_QUEUE = [
     "tags": [
       "讲座"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "ai_community",
     "sourceUrl": null,
     "score": 15,
@@ -271,7 +271,7 @@ window.GORGON_REVIEW_QUEUE = [
       "桌游",
       "社交"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "ai_community",
     "sourceUrl": "https://example.com/ai/a09",
     "score": 70,
@@ -349,7 +349,7 @@ window.GORGON_REVIEW_QUEUE = [
       "Hackathon",
       "AI"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "campus_bbs",
     "sourceUrl": "https://bbs.example.com/t/9001",
     "score": 85,
@@ -461,7 +461,7 @@ window.GORGON_REVIEW_QUEUE = [
       "跑步",
       "夜跑"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "campus_bbs",
     "sourceUrl": "https://bbs.example.com/t/9010",
     "score": 80,
@@ -566,7 +566,7 @@ window.GORGON_REVIEW_QUEUE = [
       "AI",
       "黑客松"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "city_portal",
     "sourceUrl": "https://portal.example.com/ev/701",
     "score": 85,
@@ -677,7 +677,7 @@ window.GORGON_REVIEW_QUEUE = [
     "tags": [
       "观影"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "city_portal",
     "sourceUrl": "https://portal.example.com/ev/708",
     "score": 70,
@@ -766,7 +766,7 @@ window.GORGON_REVIEW_QUEUE = [
     "registrationUrl": null,
     "description": "这条记录没有日期也没有地点，用于测试低分路径。",
     "tags": [],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "city_portal",
     "sourceUrl": null,
     "score": 0,
@@ -816,7 +816,7 @@ window.GORGON_REVIEW_QUEUE = [
       "AI",
       "黑客松"
     ],
-    "crawledAt": "2026-09-15 17:50",
+    "crawledAt": "2026-09-15 21:59",
     "source": "city_portal",
     "sourceUrl": "https://portal.example.com/ev/710",
     "score": 80,

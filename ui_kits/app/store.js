@@ -2,9 +2,16 @@
 //
 // Scope: DEMO ONLY. No backend, no database. Everything lives in the browser.
 // Keys are stable so "Reset Demo" can clear them deterministically.
+//
+// PHASE 5: My Weekend now stores the FULL activity snapshot, not just the id.
+// A search result the user saved must still be there after a refresh — and it
+// must render even when the search session is gone (no API, new query, etc.).
+// The old id-list key is still written (and still read) so existing storage
+// keeps working.
 
 (function () {
   var K_WEEKEND = "gorgon_my_weekend"; // string[] of activity ids
+  var K_WEEKEND_ITEMS = "gorgon_my_weekend_items"; // { [id]: activityView }
   var K_FAVORITES = "gorgon_favorites"; // string[] of activity ids
   var K_ADMIN = "gorgon_admin_review"; // { [itemId]: "approve" | "return" | "reject" }
   var K_SEED = "gorgon_demo_v1"; // flag: demo dataset has been seeded once
@@ -32,12 +39,32 @@
     return Array.isArray(v) ? v.filter(function (x) { return typeof x === "string"; }) : [];
   }
 
+  function toMap(v) {
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+
   window.GorgonStore = {
-    KEYS: { weekend: K_WEEKEND, favorites: K_FAVORITES, admin: K_ADMIN, seed: K_SEED },
+    KEYS: {
+      weekend: K_WEEKEND, weekendItems: K_WEEKEND_ITEMS,
+      favorites: K_FAVORITES, admin: K_ADMIN, seed: K_SEED,
+    },
 
     // ---- My Weekend ----------------------------------------------------
+    /** id -> saved activity snapshot. The source of truth for the UI. */
+    getWeekendItems: function () {
+      return toMap(read(K_WEEKEND_ITEMS, {}));
+    },
+    setWeekendItems: function (map) {
+      map = toMap(map);
+      write(K_WEEKEND_ITEMS, map);
+      // keep the id list in sync for anything still reading it
+      write(K_WEEKEND, Object.keys(map).filter(function (k) { return map[k]; }));
+    },
     getWeekend: function () {
-      return toArray(read(K_WEEKEND, []));
+      var items = toMap(read(K_WEEKEND_ITEMS, {}));
+      var ids = Object.keys(items);
+      // Fall back to the legacy id list when no snapshots were ever saved.
+      return ids.length ? ids : toArray(read(K_WEEKEND, []));
     },
     setWeekend: function (ids) {
       write(K_WEEKEND, toArray(ids));
@@ -79,6 +106,7 @@
     reset: function () {
       try {
         localStorage.removeItem(K_WEEKEND);
+        localStorage.removeItem(K_WEEKEND_ITEMS);
         localStorage.removeItem(K_FAVORITES);
         localStorage.removeItem(K_ADMIN);
         localStorage.removeItem(K_SEED);
