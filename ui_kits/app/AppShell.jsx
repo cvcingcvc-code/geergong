@@ -18,6 +18,7 @@ function StatusBar({ dark }) {
 
 const TABS = [
   { key: "discover", label: "发现", icon: "compass" },
+  { key: "smart", label: "智能", icon: "sparkles" },
   { key: "search", label: "搜索", icon: "search" },
   { key: "weekend", label: "我的周末", icon: "calendar-heart" },
   { key: "map", label: "地图", icon: "map" },

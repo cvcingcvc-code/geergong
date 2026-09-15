@@ -31,6 +31,7 @@
 </template>
 <div id="root"></div>
 <script src="generated-data.js"></script>
+<script src="generated-search-demo.js"></script>
 <script src="data.js"></script>
 <script src="data-adapter.js"></script>
 <script src="store.js"></script>
@@ -39,11 +40,12 @@
 <script type="text/babel" src="DiscoverScreen.jsx"></script>
 <script type="text/babel" src="ActivityDetailScreen.jsx"></script>
 <script type="text/babel" src="SearchScreen.jsx"></script>
+<script type="text/babel" src="NaturalSearchScreen.jsx"></script>
 <script type="text/babel" src="MyWeekendScreen.jsx"></script>
 <script type="text/babel" src="MapScreen.jsx"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script type="text/babel" data-presets="react">
-const { StatusBar, TabBar, PhoneFrame, DiscoverScreen, ActivityDetailScreen, SearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
+const { StatusBar, TabBar, PhoneFrame, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -107,6 +109,7 @@ function App() {
       <StatusBar dark={false} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
         {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} />}
+        {tab === "smart" && <NaturalSearchScreen />}
         {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
         {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
         {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}

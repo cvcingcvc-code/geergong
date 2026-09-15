@@ -1,0 +1,1521 @@
+// Gorgon generated search demo — DO NOT EDIT BY HAND.
+// ⚠️ DEMO DATA — produced by `python pipeline/run.py --search-demo`.
+// Used by the app ONLY as a fallback when /api/search is unavailable.
+window.GORGON_SEARCH_DEMO = {
+  "DEMO_DATA": true,
+  "demo": true,
+  "query": "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。",
+  "request": {
+    "query": "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。",
+    "city": "上海",
+    "topics": [
+      "AI",
+      "Agent",
+      "Vibe Coding"
+    ],
+    "dateRange": {
+      "type": "relative",
+      "value": "this_weekend"
+    },
+    "timePreference": "afternoon",
+    "locationPreference": "徐汇",
+    "pricePreference": "free_preferred",
+    "maxResults": 20
+  },
+  "plan": {
+    "queries": [
+      {
+        "text": "上海 AI 活动 本周末",
+        "topic": "AI",
+        "kind": "topic"
+      },
+      {
+        "text": "上海 Agent Meetup 本周末",
+        "topic": "Agent",
+        "kind": "format"
+      },
+      {
+        "text": "上海 Vibe Coding 活动",
+        "topic": "Vibe Coding",
+        "kind": "topic"
+      },
+      {
+        "text": "上海 AI Hackathon",
+        "topic": "AI",
+        "kind": "format"
+      },
+      {
+        "text": "上海 AI Demo Day",
+        "topic": "AI",
+        "kind": "format"
+      },
+      {
+        "text": "上海 AI 活动 徐汇",
+        "topic": "AI",
+        "kind": "location"
+      }
+    ],
+    "strategy": "deterministic_rules_v1",
+    "dateRange": {
+      "type": "relative",
+      "value": null,
+      "start": "2026-09-19",
+      "end": "2026-09-20",
+      "label": "本周末"
+    },
+    "notes": []
+  },
+  "summary": {
+    "rawResults": 26,
+    "mergedRawResults": 25,
+    "mergedDuplicates": 1,
+    "normalized": 25,
+    "duplicates": 2,
+    "duplicatesExact": 1,
+    "duplicatesNear": 1,
+    "canonical": 23,
+    "approved": 16,
+    "needsReview": 7,
+    "duplicateCandidates": 2,
+    "rejected": 0,
+    "ranked": 25,
+    "returned": 20,
+    "reviewQueue": {
+      "approved": 16,
+      "needs_review": 5,
+      "low_confidence": 2
+    }
+  },
+  "results": [
+    {
+      "id": "sr001",
+      "bucket": "approved",
+      "finalScore": 89,
+      "scores": {
+        "relevance": 80,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "2 个来源信息一致",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费"
+      ],
+      "provenance": [
+        {
+          "source": "AI 极客社区",
+          "sourceType": "wechat",
+          "sourceTrust": "high",
+          "url": "https://example.com/aigeeks/agent-builder-meetup"
+        },
+        {
+          "source": "魔都周末情报",
+          "sourceType": "xhs",
+          "sourceTrust": "medium",
+          "url": "https://example.com/mdsq/agent-builder-meetup"
+        }
+      ],
+      "queries": [
+        "上海 Agent Meetup 本周末"
+      ],
+      "activity": {
+        "id": "sr001",
+        "title": "AI Agent Builder Meetup",
+        "description": "Agent Builder 线下聚会：3 个正在做的 Agent 项目现场拆解，之后自由组队交流。下午场，茶点免费。",
+        "startDate": "2026-09-19",
+        "startTime": "14:00",
+        "endDate": null,
+        "endTime": "17:00",
+        "venue": "徐汇滨江 AI 创新中心",
+        "address": "上海市徐汇区龙腾大道2600号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Agent",
+          "Meetup"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "上海 AI 开发者社区",
+        "sourceName": "AI 极客社区",
+        "sourceUrl": "https://example.com/aigeeks/agent-builder-meetup",
+        "registrationUrl": "https://example.com/aigeeks/agent-builder-meetup/signup",
+        "publishedAt": "2026-09-10T09:30:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr017",
+      "bucket": "approved",
+      "finalScore": 86,
+      "scores": {
+        "relevance": 70,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Vibe Coding 主题匹配",
+        "来源可信度较高",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费"
+      ],
+      "provenance": [
+        {
+          "source": "Vibe Coding 上海",
+          "sourceType": "community",
+          "sourceTrust": "high",
+          "url": "https://example.com/vibe/workshop"
+        }
+      ],
+      "queries": [
+        "上海 Vibe Coding 活动"
+      ],
+      "activity": {
+        "id": "sr017",
+        "title": "Vibe Coding 主题工作坊:和 AI 一起写代码",
+        "description": "3 小时 vibe coding 实战，从想法到能跑的原型。下午场，免费。",
+        "startDate": "2026-09-20",
+        "startTime": "15:00",
+        "endDate": null,
+        "endTime": "18:00",
+        "venue": "漕河泾创营空间",
+        "address": "上海市徐汇区宜山路900号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "Vibe Coding",
+          "AI",
+          "工作坊"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "Vibe Coding 上海",
+        "sourceName": "Vibe Coding 上海",
+        "sourceUrl": "https://example.com/vibe/workshop",
+        "registrationUrl": "https://example.com/vibe/workshop/signup",
+        "publishedAt": "2026-09-11T18:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr014",
+      "bucket": "approved",
+      "finalScore": 79,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费",
+        "信息较新（7 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "PM 社区",
+          "sourceType": "community",
+          "sourceTrust": "medium",
+          "url": "https://example.com/pm/ai-pm-salon"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 徐汇"
+      ],
+      "activity": {
+        "id": "sr014",
+        "title": "AI 产品经理沙龙:从需求到上线",
+        "description": "三位 AI 产品经理讲怎么把模型能力变成产品。下午场。",
+        "startDate": "2026-09-19",
+        "startTime": "15:30",
+        "endDate": null,
+        "endTime": "18:00",
+        "venue": "徐家汇创客空间",
+        "address": "上海市徐汇区漕溪北路88号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "产品",
+          "沙龙"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "PM 社区",
+        "sourceName": "PM 社区",
+        "sourceUrl": "https://example.com/pm/ai-pm-salon",
+        "registrationUrl": "https://example.com/pm/ai-pm-salon/signup",
+        "publishedAt": "2026-09-08T10:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr016",
+      "bucket": "approved",
+      "finalScore": 77,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 80
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费",
+        "信息较新（21 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "影像实验室",
+          "sourceType": "web",
+          "sourceTrust": "medium",
+          "url": "https://example.com/img/ai-photo"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 徐汇"
+      ],
+      "activity": {
+        "id": "sr016",
+        "title": "AI 摄影 · 生成式图像创作体验",
+        "description": "用生成式模型做图像创作，现场出片。下午场，免费。",
+        "startDate": "2026-09-19",
+        "startTime": "14:30",
+        "endDate": null,
+        "endTime": "17:30",
+        "venue": "西岸美术馆",
+        "address": "上海市徐汇区龙腾大道2600号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "生成式",
+          "体验"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "影像实验室",
+        "sourceName": "影像实验室",
+        "sourceUrl": "https://example.com/img/ai-photo",
+        "registrationUrl": "https://example.com/img/ai-photo/signup",
+        "publishedAt": "2026-08-25T13:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr006",
+      "bucket": "approved",
+      "finalScore": 76,
+      "scores": {
+        "relevance": 80,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 80
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "2 个来源信息一致",
+        "活动在上午开始，与下午偏好不符",
+        "位于徐汇",
+        "免费"
+      ],
+      "provenance": [
+        {
+          "source": "上海 AI 开发者社区",
+          "sourceType": "wechat",
+          "sourceTrust": "high",
+          "url": "https://example.com/aidev/agent-hackathon"
+        },
+        {
+          "source": "活动行聚合",
+          "sourceType": "web",
+          "sourceTrust": "low",
+          "url": "https://example.com/hdx/agent-hackathon-4"
+        }
+      ],
+      "queries": [
+        "上海 AI Hackathon"
+      ],
+      "activity": {
+        "id": "sr006",
+        "title": "AI Agent Hackathon 上海站",
+        "description": "一天制 Agent 黑客松，上午开放组队，晚上路演评奖。提供免费午餐。",
+        "startDate": "2026-09-19",
+        "startTime": "09:00",
+        "endDate": null,
+        "endTime": "21:00",
+        "venue": "西岸智塔 AI 空间",
+        "address": "上海市徐汇区龙腾大道2350号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Agent",
+          "黑客松"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "上海 AI 开发者社区",
+        "sourceName": "上海 AI 开发者社区",
+        "sourceUrl": "https://example.com/aidev/agent-hackathon",
+        "registrationUrl": "https://example.com/aidev/agent-hackathon/signup",
+        "publishedAt": "2026-09-01T10:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr003",
+      "bucket": "approved",
+      "finalScore": 74,
+      "scores": {
+        "relevance": 80,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "活动在晚上开始，与下午偏好不符",
+        "在浦东，不在徐汇附近",
+        "免费",
+        "信息较新（6 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "Agent 上海",
+          "sourceType": "community",
+          "sourceTrust": "medium",
+          "url": "https://example.com/agentsh/open-mic"
+        }
+      ],
+      "queries": [
+        "上海 Agent Meetup 本周末"
+      ],
+      "activity": {
+        "id": "sr003",
+        "title": "Agent 开发者之夜 Open Mic",
+        "description": "每人 5 分钟展示自己的 Agent Demo，结束后自由 networking。晚上场。",
+        "startDate": "2026-09-19",
+        "startTime": "19:30",
+        "endDate": null,
+        "endTime": "22:00",
+        "venue": "张江人工智能岛 B 座",
+        "address": "上海市浦东新区川和路55号",
+        "district": "浦东",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "Agent",
+          "Demo",
+          "Open Mic"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "Agent 上海",
+        "sourceName": "Agent 上海",
+        "sourceUrl": "https://example.com/agentsh/open-mic",
+        "registrationUrl": "https://example.com/agentsh/open-mic/rsvp",
+        "publishedAt": "2026-09-09T11:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr020",
+      "bucket": "approved",
+      "finalScore": 74,
+      "scores": {
+        "relevance": 80,
+        "trust": 85,
+        "timeFit": 35,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 80
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "来源可信度较高",
+        "活动时间符合下午偏好",
+        "不在本周末范围内",
+        "在浦东，不在徐汇附近"
+      ],
+      "provenance": [
+        {
+          "source": "AI 极客社区",
+          "sourceType": "wechat",
+          "sourceTrust": "high",
+          "url": "https://example.com/aigeeks/agent-conf"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr020",
+        "title": "AI Agent 大会 · 秋季场",
+        "description": "下周末的大型 Agent 主题大会，主论坛 + 分论坛。",
+        "startDate": "2026-09-26",
+        "startTime": "13:00",
+        "endDate": null,
+        "endTime": "18:00",
+        "venue": "张江科学会堂",
+        "address": "上海市浦东新区海科路1393号",
+        "district": "浦东",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Agent",
+          "大会"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "上海 AI 开发者社区",
+        "sourceName": "AI 极客社区",
+        "sourceUrl": "https://example.com/aigeeks/agent-conf",
+        "registrationUrl": "https://example.com/aigeeks/agent-conf/signup",
+        "publishedAt": "2026-09-04T09:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr019",
+      "bucket": "approved",
+      "finalScore": 73,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 80
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "来源可信度较高",
+        "活动时间符合下午偏好",
+        "在普陀，不在徐汇附近",
+        "免费",
+        "信息较新（8 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "教育公益联盟",
+          "sourceType": "community",
+          "sourceTrust": "high",
+          "url": "https://example.com/edu/ai-workshop"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr019",
+        "title": "AI 教育公益工作坊(免费)",
+        "description": "面向中小学老师的 AI 工具入门，公益免费。下午场。",
+        "startDate": "2026-09-20",
+        "startTime": "14:30",
+        "endDate": null,
+        "endTime": "17:00",
+        "venue": "普陀区青少年活动中心",
+        "address": "上海市普陀区枣阳路108号",
+        "district": "普陀",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "公益",
+          "工作坊"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "教育公益联盟",
+        "sourceName": "教育公益联盟",
+        "sourceUrl": "https://example.com/edu/ai-workshop",
+        "registrationUrl": "https://example.com/edu/ai-workshop/signup",
+        "publishedAt": "2026-09-07T10:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr015",
+      "bucket": "approved",
+      "finalScore": 66,
+      "scores": {
+        "relevance": 50,
+        "trust": 80,
+        "timeFit": 25,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动在晚上开始，与下午偏好不符",
+        "位于徐汇",
+        "免费",
+        "信息较新（1 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "CSDN 上海",
+          "sourceType": "web",
+          "sourceTrust": "medium",
+          "url": "https://example.com/csdn/llm-share"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 徐汇"
+      ],
+      "activity": {
+        "id": "sr015",
+        "title": "AI 大模型应用分享会(免费)",
+        "description": "晚上场，分享大模型在客服/知识库场景的落地。",
+        "startDate": "2026-09-19",
+        "startTime": "19:00",
+        "endDate": null,
+        "endTime": "21:00",
+        "venue": "徐汇区科技馆",
+        "address": "上海市徐汇区南丹东路80号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "大模型",
+          "分享会"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "CSDN 上海",
+        "sourceName": "CSDN 上海",
+        "sourceUrl": "https://example.com/csdn/llm-share",
+        "registrationUrl": null,
+        "publishedAt": "2026-09-14T09:00:00",
+        "trustScore": 80,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr008",
+      "bucket": "approved",
+      "finalScore": 64,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动在晚上开始，与下午偏好不符",
+        "在浦东，不在徐汇附近",
+        "免费",
+        "信息较新（3 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "陆家嘴创投圈",
+          "sourceType": "wechat",
+          "sourceTrust": "medium",
+          "url": "https://example.com/ljz/ai-demo-day"
+        }
+      ],
+      "queries": [
+        "上海 AI Demo Day"
+      ],
+      "activity": {
+        "id": "sr008",
+        "title": "AI Demo Day · 生成式应用路演夜",
+        "description": "12 支团队路演，投资人现场点评，晚上 7 点开始。",
+        "startDate": "2026-09-20",
+        "startTime": "19:00",
+        "endDate": null,
+        "endTime": "21:30",
+        "venue": "张江人工智能岛",
+        "address": "上海市浦东新区川和路55号",
+        "district": "浦东",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Demo Day",
+          "路演"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "张江 AI 加速器",
+        "sourceName": "陆家嘴创投圈",
+        "sourceUrl": "https://example.com/ljz/ai-demo-day",
+        "registrationUrl": "https://example.com/ljz/ai-demo-day/apply",
+        "publishedAt": "2026-09-12T14:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr009",
+      "bucket": "approved",
+      "finalScore": 59,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 45,
+        "freshness": 80
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "来源可信度较高",
+        "活动在上午开始，与下午偏好不符",
+        "在杨浦，不在徐汇附近",
+        "¥199，与免费偏好不符",
+        "信息较新（10 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "复旦 AI 研习社",
+          "sourceType": "community",
+          "sourceTrust": "high",
+          "url": "https://example.com/fdai/llm-workshop"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr009",
+        "title": "大模型应用实战工作坊(零基础)",
+        "description": "带电脑，3 小时跑通一个 RAG 应用。上午场，席位有限。",
+        "startDate": "2026-09-20",
+        "startTime": "09:30",
+        "endDate": null,
+        "endTime": "12:00",
+        "venue": "创智天地 7 号楼",
+        "address": "上海市杨浦区淞沪路创智天地",
+        "district": "杨浦",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "大模型",
+          "工作坊",
+          "零基础"
+        ],
+        "priceType": "paid",
+        "price": 199,
+        "organizer": "复旦 AI 研习社",
+        "sourceName": "复旦 AI 研习社",
+        "sourceUrl": "https://example.com/fdai/llm-workshop",
+        "registrationUrl": "https://example.com/fdai/llm-workshop/signup",
+        "publishedAt": "2026-09-05T09:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr018",
+      "bucket": "approved",
+      "finalScore": 54,
+      "scores": {
+        "relevance": 20,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 100,
+        "priceFit": 45,
+        "freshness": 100
+      },
+      "reasons": [
+        "Vibe Coding 主题高度匹配",
+        "来源可信度较高",
+        "活动在上午开始，与下午偏好不符",
+        "位于徐汇",
+        "¥59，与免费偏好不符",
+        "信息较新（2 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "Vibe Coding 上海",
+          "sourceType": "community",
+          "sourceTrust": "high",
+          "url": "https://example.com/vibe/flash-hack"
+        }
+      ],
+      "queries": [
+        "上海 Vibe Coding 活动"
+      ],
+      "activity": {
+        "id": "sr018",
+        "title": "Vibe Coding 快闪 Hack(周日场)",
+        "description": "上午 10 点开始，2 小时做一个能用的小工具，收场地费。",
+        "startDate": "2026-09-20",
+        "startTime": "10:00",
+        "endDate": null,
+        "endTime": "12:00",
+        "venue": "漕河泾创营空间",
+        "address": "上海市徐汇区宜山路900号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "Vibe Coding",
+          "Hack",
+          "快闪"
+        ],
+        "priceType": "paid",
+        "price": 59,
+        "organizer": "Vibe Coding 上海",
+        "sourceName": "Vibe Coding 上海",
+        "sourceUrl": "https://example.com/vibe/flash-hack",
+        "registrationUrl": "https://example.com/vibe/flash-hack/signup",
+        "publishedAt": "2026-09-13T19:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr013",
+      "bucket": "approved",
+      "finalScore": 51,
+      "scores": {
+        "relevance": 0,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 40
+      },
+      "reasons": [
+        "与 AI / Agent 主题不符",
+        "来源可信度较高",
+        "活动时间符合下午偏好",
+        "在杨浦，不在徐汇附近",
+        "免费",
+        "发布时间较早（106 天前）"
+      ],
+      "provenance": [
+        {
+          "source": "开源社",
+          "sourceType": "community",
+          "sourceTrust": "high",
+          "url": "https://example.com/oss/meetup"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr013",
+        "title": "开源之夏 · 上海 Meetup",
+        "description": "开源项目维护者面对面，Lightning Talk 报名中。",
+        "startDate": "2026-09-20",
+        "startTime": "14:00",
+        "endDate": null,
+        "endTime": "17:00",
+        "venue": "杨浦区图书馆",
+        "address": "上海市杨浦区平凉路1490号",
+        "district": "杨浦",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "开源",
+          "技术",
+          "Meetup"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "开源社",
+        "sourceName": "开源社",
+        "sourceUrl": "https://example.com/oss/meetup",
+        "registrationUrl": "https://example.com/oss/meetup/signup",
+        "publishedAt": "2026-06-01T09:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr025",
+      "bucket": "approved",
+      "finalScore": 45,
+      "scores": {
+        "relevance": 0,
+        "trust": 85,
+        "timeFit": 25,
+        "locationFit": 100,
+        "priceFit": 45,
+        "freshness": 80
+      },
+      "reasons": [
+        "与 AI / Agent 主题不符",
+        "活动在上午开始，与下午偏好不符",
+        "位于徐汇",
+        "¥88，与免费偏好不符",
+        "信息较新（12 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "咖啡实验室",
+          "sourceType": "web",
+          "sourceTrust": "medium",
+          "url": "https://example.com/coffee/roast-101"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 徐汇"
+      ],
+      "activity": {
+        "id": "sr025",
+        "title": "咖啡烘焙品鉴入门",
+        "description": "从生豆到杯子的入门课。上午场。",
+        "startDate": "2026-09-20",
+        "startTime": "10:00",
+        "endDate": null,
+        "endTime": "12:00",
+        "venue": "永康路咖啡实验室",
+        "address": "上海市徐汇区永康路 60 号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "咖啡",
+          "品鉴"
+        ],
+        "priceType": "paid",
+        "price": 88,
+        "organizer": "咖啡实验室",
+        "sourceName": "咖啡实验室",
+        "sourceUrl": "https://example.com/coffee/roast-101",
+        "registrationUrl": "https://example.com/coffee/roast-101/signup",
+        "publishedAt": "2026-09-03T10:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr026",
+      "bucket": "approved",
+      "finalScore": 45,
+      "scores": {
+        "relevance": 0,
+        "trust": 80,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "与 AI / Agent 主题不符",
+        "单一低可信来源",
+        "活动在晚上开始，与下午偏好不符",
+        "在黄浦，不在徐汇附近",
+        "免费",
+        "信息较新（2 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "大隐书局",
+          "sourceType": "web",
+          "sourceTrust": "low",
+          "url": "https://example.com/dys/boardgame"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr026",
+        "title": "桌游之夜:入门德州扑克与狼人杀",
+        "description": "免费桌游吧体验局。",
+        "startDate": "2026-09-20",
+        "startTime": "18:30",
+        "endDate": null,
+        "endTime": "22:30",
+        "venue": "大隐书局",
+        "address": "上海市黄浦区复兴中路517号",
+        "district": "黄浦",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "桌游",
+          "社交"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "大隐书局",
+        "sourceName": "大隐书局",
+        "sourceUrl": "https://example.com/dys/boardgame",
+        "registrationUrl": null,
+        "publishedAt": "2026-09-13T10:00:00",
+        "trustScore": 80,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr023",
+      "bucket": "approved",
+      "finalScore": 40,
+      "scores": {
+        "relevance": 0,
+        "trust": 80,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 45,
+        "freshness": 80
+      },
+      "reasons": [
+        "与 AI / Agent 主题不符",
+        "活动在晚上开始，与下午偏好不符",
+        "在长宁，不在徐汇附近",
+        "¥80，与免费偏好不符",
+        "信息较新（13 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "育音堂",
+          "sourceType": "web",
+          "sourceTrust": "medium",
+          "url": "https://example.com/yy/folk-night"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr023",
+        "title": "周末民谣现场:城市夜晚与吉他",
+        "description": "三位独立音乐人轮番上场。",
+        "startDate": "2026-09-19",
+        "startTime": "20:00",
+        "endDate": null,
+        "endTime": "22:00",
+        "venue": "育音堂",
+        "address": "上海市长宁区凯旋路851号",
+        "district": "长宁",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "音乐",
+          "民谣"
+        ],
+        "priceType": "paid",
+        "price": 80,
+        "organizer": "育音堂",
+        "sourceName": "育音堂",
+        "sourceUrl": "https://example.com/yy/folk-night",
+        "registrationUrl": null,
+        "publishedAt": "2026-09-02T12:00:00",
+        "trustScore": 80,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "status": "approved",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr004",
+      "bucket": "needs_review",
+      "finalScore": 89,
+      "scores": {
+        "relevance": 80,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "来源可信度较高",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费"
+      ],
+      "provenance": [
+        {
+          "source": "AI 极客社区",
+          "sourceType": "wechat",
+          "sourceTrust": "high",
+          "url": "https://example.com/aigeeks/agent-practice"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 本周末"
+      ],
+      "activity": {
+        "id": "sr004",
+        "title": "上海 AI 分享会:Agent 落地实践",
+        "description": "两位工程师分享把 Agent 放进真实业务后踩过的坑，下午场。",
+        "startDate": "2026-09-20",
+        "startTime": "14:00",
+        "endDate": null,
+        "endTime": "16:00",
+        "venue": "徐汇区文化馆",
+        "address": "上海市徐汇区南丹东路80号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Agent",
+          "分享会"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "AI 极客社区",
+        "sourceName": "AI 极客社区",
+        "sourceUrl": "https://example.com/aigeeks/agent-practice",
+        "registrationUrl": "https://example.com/aigeeks/agent-practice/signup",
+        "publishedAt": "2026-09-13T08:40:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "location_conflict",
+          "source_fields_complete",
+          "time_conflict"
+        ],
+        "status": "needs_review",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr021",
+      "bucket": "needs_review",
+      "finalScore": 79,
+      "scores": {
+        "relevance": 50,
+        "trust": 85,
+        "timeFit": 100,
+        "locationFit": 100,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动时间符合下午偏好",
+        "位于徐汇",
+        "免费",
+        "信息较新（7 天前发布）",
+        "来源之间存在冲突，待核验"
+      ],
+      "provenance": [
+        {
+          "source": "西岸创投",
+          "sourceType": "web",
+          "sourceTrust": "medium",
+          "url": "https://example.com/xa/demo-night"
+        }
+      ],
+      "queries": [
+        "上海 AI Demo Day"
+      ],
+      "activity": {
+        "id": "sr021",
+        "title": "AI 产品开放日 · 生成式应用 Demo Night",
+        "description": "十多个学生与独立开发者上台路演。晚上场。",
+        "startDate": "2026-09-19",
+        "startTime": "14:00",
+        "endDate": null,
+        "endTime": null,
+        "venue": "西岸智塔 AI 空间",
+        "address": "上海市徐汇区龙腾大道2350号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Demo Day",
+          "路演"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": "西岸创投",
+        "sourceName": "西岸创投",
+        "sourceUrl": "https://example.com/xa/demo-night",
+        "registrationUrl": "https://example.com/xa/demo-night/signup",
+        "publishedAt": "2026-09-08T10:00:00",
+        "trustScore": 85,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "location_conflict",
+          "source_fields_complete"
+        ],
+        "status": "needs_review",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr022",
+      "bucket": "needs_review",
+      "finalScore": 71,
+      "scores": {
+        "relevance": 50,
+        "trust": 70,
+        "timeFit": 100,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "活动时间符合下午偏好",
+        "在浦东，不在徐汇附近",
+        "免费",
+        "信息较新（6 天前发布）",
+        "来源之间存在冲突，待核验"
+      ],
+      "provenance": [
+        {
+          "source": "张江发布",
+          "sourceType": "wechat",
+          "sourceTrust": "medium",
+          "url": "https://example.com/zj/demo-night"
+        }
+      ],
+      "queries": [
+        "上海 AI Demo Day"
+      ],
+      "activity": {
+        "id": "sr022",
+        "title": "AI 产品开放日 · 生成式应用 Demo Night",
+        "description": "同一场路演，另一渠道发布，场地写的是浦东。",
+        "startDate": "2026-09-19",
+        "startTime": "14:00",
+        "endDate": null,
+        "endTime": null,
+        "venue": "张江人工智能岛",
+        "address": null,
+        "district": "浦东",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Demo Day",
+          "路演"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": null,
+        "sourceName": "张江发布",
+        "sourceUrl": "https://example.com/zj/demo-night",
+        "registrationUrl": null,
+        "publishedAt": "2026-09-09T10:00:00",
+        "trustScore": 70,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_source_url",
+          "has_venue",
+          "location_conflict",
+          "source_fields_complete"
+        ],
+        "status": "needs_review",
+        "duplicateOf": null
+      }
+    },
+    {
+      "id": "sr005",
+      "bucket": "needs_review",
+      "finalScore": 70,
+      "scores": {
+        "relevance": 80,
+        "trust": 70,
+        "timeFit": 25,
+        "locationFit": 60,
+        "priceFit": 100,
+        "freshness": 100
+      },
+      "reasons": [
+        "AI 主题高度匹配",
+        "Agent 主题匹配",
+        "活动在晚上开始，与下午偏好不符",
+        "在静安，不在徐汇附近",
+        "免费",
+        "信息较新（2 天前发布）"
+      ],
+      "provenance": [
+        {
+          "source": "小红书 · 上海周末",
+          "sourceType": "xhs",
+          "sourceTrust": "medium",
+          "url": "https://example.com/xhs/agent-practice-note"
+        }
+      ],
+      "queries": [
+        "上海 AI 活动 徐汇"
+      ],
+      "activity": {
+        "id": "sr005",
+        "title": "上海 AI 分享会:Agent 落地实践",
+        "description": "笔记：周日晚上在静安有 Agent 落地实践的分享会，免费，人不多。",
+        "startDate": "2026-09-20",
+        "startTime": "19:00",
+        "endDate": null,
+        "endTime": "21:00",
+        "venue": "静安创想中心",
+        "address": null,
+        "district": "静安",
+        "city": "上海",
+        "category": null,
+        "tags": [
+          "AI",
+          "Agent",
+          "分享会"
+        ],
+        "priceType": "free",
+        "price": 0,
+        "organizer": null,
+        "sourceName": "小红书 · 上海周末",
+        "sourceUrl": "https://example.com/xhs/agent-practice-note",
+        "registrationUrl": null,
+        "publishedAt": "2026-09-13T21:05:00",
+        "trustScore": 70,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_source_url",
+          "has_venue",
+          "location_conflict",
+          "source_fields_complete",
+          "time_conflict"
+        ],
+        "status": "needs_review",
+        "duplicateOf": null
+      }
+    }
+  ]
+};

@@ -4,6 +4,8 @@
 #   python pipeline/run.py                 full run: ingest→…→review→export
 #   python pipeline/run.py --stage dedupe  run stages up to & incl. `dedupe`
 #   python pipeline/run.py --export-gorgon also write ui_kits/app/generated-data.js
+#   python pipeline/run.py --search-demo   run the information-retrieval demo (PHASE 12)
+#   python pipeline/run.py --search "…"    run the retrieval chain for any query
 #
 # Every stage is runnable and testable on its own. No LLM anywhere.
 
@@ -22,8 +24,10 @@ DATA_NORMALIZED = PIPELINE_DIR / "data" / "normalized"
 DATA_WORK = PIPELINE_DIR / "data" / "work"
 DATA_REVIEW = PIPELINE_DIR / "data" / "review"
 DATA_APPROVED = PIPELINE_DIR / "data" / "approved"
+DATA_SEARCH = PIPELINE_DIR / "data" / "search"
 GORGON_JS = REPO_ROOT / "ui_kits" / "app" / "generated-data.js"
 ADMIN_REVIEW_JS = REPO_ROOT / "ui_kits" / "admin" / "generated-review-data.js"
+SEARCH_DEMO_JS = REPO_ROOT / "ui_kits" / "app" / "generated-search-demo.js"
 DEFAULT_DECISIONS = DATA_REVIEW / "human_decisions.json"
 
 STAGES = ["ingest", "normalize", "clean", "dedupe", "trust", "review", "export"]
@@ -196,6 +200,81 @@ def apply_reviews(decisions_path):
     return 0
 
 
+# --- information retrieval (PHASE 4) ----------------------------------------
+
+def run_search(query=None, demo=False, today=None, debug=False, export=True):
+    """Run the retrieval chain and report it.
+
+    Search hits go through the SAME normalize/dedupe/trust/review modules as
+    the ingest path — this function only orchestrates and reports.
+    """
+    from pipeline.search.demo import DEMO_QUERY, DEMO_TODAY, run_demo
+    from pipeline.search.service import search_events
+    from pipeline.export.search_export import export_search_demo_js, export_search_json
+
+    if isinstance(today, str):
+        import datetime as _dt
+        today = _dt.date.fromisoformat(today)
+
+    if demo or not query:
+        if not query:
+            query = DEMO_QUERY
+        result = run_demo(today=today or DEMO_TODAY, debug=debug)
+    else:
+        result = search_events(query, today=today, debug=debug)
+
+    summary = result["summary"]
+    print("")
+    print("GORGON INFORMATION RETRIEVAL")
+    print("")
+    print("QUERY: %s" % result["request"].get("query"))
+    print("")
+    print("PARSED REQUEST:")
+    for key in ("city", "topics", "dateRange", "timePreference",
+                "locationPreference", "pricePreference"):
+        print("  %s: %s" % (key, result["request"].get(key)))
+    print("")
+    print("PLAN (%s queries):" % len(result["plan"]["queries"]))
+    for q in result["plan"]["queries"]:
+        print("  - %s" % q["text"])
+    print("")
+    print("RAW RESULTS: %s" % summary["rawResults"])
+    print("MERGED: %s (merged away %s)" % (summary["mergedRawResults"], summary["mergedDuplicates"]))
+    print("NORMALIZED: %s" % summary["normalized"])
+    print("DUPLICATES: %s" % summary["duplicates"])
+    print("CANONICAL: %s" % summary["canonical"])
+    print("APPROVED: %s" % summary["approved"])
+    print("NEEDS REVIEW: %s" % summary["needsReview"])
+    print("DUPLICATE CANDIDATES: %s" % summary["duplicateCandidates"])
+    print("REJECTED: %s" % summary["rejected"])
+    print("RANKED: %s (returned %s)" % (summary["ranked"], summary["returned"]))
+    print("")
+    print("TOP 5")
+    for i, item in enumerate(result["results"][:5], 1):
+        act = item["activity"]
+        print("  %s. [%s] %s" % (i, item["finalScore"], act.get("title")))
+        print("     %s %s · %s · %s · %s" % (
+            act.get("startDate"), act.get("startTime") or "时间待定",
+            act.get("district") or "区域待定",
+            "免费" if act.get("priceType") == "free" else (
+                "¥%g" % act["price"] if act.get("priceType") == "paid" and act.get("price") is not None else "价格待定"),
+            item["bucket"]))
+        for reason in item["reasons"][:4]:
+            print("     - %s" % reason)
+    print("")
+
+    if export:
+        paths = [
+            export_search_json(result, str(DATA_SEARCH / "demo_search.json"), debug=debug),
+            export_search_demo_js(result, str(SEARCH_DEMO_JS), query),
+        ]
+        print("OUTPUT:")
+        for path in paths:
+            print("  %s" % path)
+        print("")
+    return result
+
+
 # --- orchestration ----------------------------------------------------------
 
 def run(until="export", export_gorgon=False):
@@ -237,10 +316,21 @@ def main(argv=None):
     parser.add_argument("--export-gorgon", action="store_true", help="also write ui_kits/app/generated-data.js")
     parser.add_argument("--apply-reviews", nargs="?", const=str(DEFAULT_DECISIONS), metavar="DECISIONS_JSON",
                         help="apply human review decisions (default: pipeline/data/review/human_decisions.json)")
+    parser.add_argument("--search-demo", action="store_true",
+                        help="run the information-retrieval demo scenario (PHASE 12)")
+    parser.add_argument("--search", metavar="QUERY",
+                        help="run the retrieval chain for a natural-language query")
+    parser.add_argument("--today", help="pin the reference date (YYYY-MM-DD) for search")
+    parser.add_argument("--search-debug", action="store_true", help="include internal debug output")
     args = parser.parse_args(argv)
 
     if args.apply_reviews:
         return apply_reviews(args.apply_reviews)
+
+    if args.search_demo or args.search:
+        run_search(query=args.search, demo=args.search_demo, today=args.today,
+                   debug=args.search_debug)
+        return 0
 
     until = args.stage or "export"
     state = run(until=until, export_gorgon=args.export_gorgon)

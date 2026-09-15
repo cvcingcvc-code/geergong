@@ -1,0 +1,285 @@
+# Gorgon Information Retrieval — core models (PHASE 1 / PHASE 4).
+#
+# This module is the single source of truth for the retrieval contract.
+# It deliberately contains NO rules and NO scoring: planner / provider /
+# ranker / service own the behaviour.
+#
+# Object chain:
+#   SearchRequest  user's natural-language need, structured + partial
+#     -> SearchPlan   deterministic list of SearchQuery
+#       -> RawSearchResult  one candidate hit, exactly as a source reported it
+#         -> SearchCandidate  the hit after the EXISTING pipeline ran
+#           -> RankedEvent  candidate + explainable ranking
+#
+# Everything is a plain dataclass with to_dict()/from_dict() so the API,
+# the CLI and the tests all speak the same shape. JSON keys are camelCase;
+# snake_case input aliases are accepted for convenience.
+
+from dataclasses import dataclass, field, asdict
+
+# --- controlled vocabularies ------------------------------------------------
+
+PRICE_PREFERENCES = ("any", "free_preferred", "free_only", "paid_ok")
+TIME_PREFERENCES = ("morning", "afternoon", "evening")
+DATE_RANGE_TYPES = ("relative", "absolute")
+SOURCE_TRUST_LEVELS = ("high", "medium", "low")
+
+# Result buckets returned to callers. `rejected` never reaches the main list.
+BUCKETS = ("approved", "needs_review", "duplicate_candidate", "rejected")
+
+
+def _get(d, *names):
+    """First present key among aliases (camelCase / snake_case)."""
+    for name in names:
+        if isinstance(d, dict) and name in d and d[name] is not None:
+            return d[name]
+    return None
+
+
+# --- SearchRequest ----------------------------------------------------------
+
+@dataclass
+class SearchRequest:
+    """A user's need. EVERY field except `query` may be missing.
+
+    Never force the user to fill a form: the planner works with whatever
+    it gets and downgrades gracefully.
+    """
+    query: str = ""
+    city: str = None
+    topics: list = field(default_factory=list)
+    dateRange: dict = None            # {"type":"relative","value":"this_weekend"}
+    timePreference: str = None        # morning | afternoon | evening
+    locationPreference: str = None    # district, e.g. "徐汇"
+    pricePreference: str = None       # see PRICE_PREFERENCES
+    maxResults: int = 20
+
+    def to_dict(self):
+        return {
+            "query": self.query,
+            "city": self.city,
+            "topics": list(self.topics or []),
+            "dateRange": dict(self.dateRange) if self.dateRange else None,
+            "timePreference": self.timePreference,
+            "locationPreference": self.locationPreference,
+            "pricePreference": self.pricePreference,
+            "maxResults": self.maxResults,
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        if d is None:
+            return cls()
+        if isinstance(d, cls):
+            return d
+        if not isinstance(d, dict):
+            return cls(query=str(d))
+        topics = _get(d, "topics") or []
+        if isinstance(topics, str):
+            topics = [topics]
+        dr = _get(d, "dateRange", "date_range")
+        if isinstance(dr, str):
+            dr = {"type": "relative", "value": dr}
+        max_results = _get(d, "maxResults", "max_results")
+        return cls(
+            query=_get(d, "query", "q") or "",
+            city=_get(d, "city"),
+            topics=[str(t) for t in topics],
+            dateRange=dict(dr) if isinstance(dr, dict) else None,
+            timePreference=_get(d, "timePreference", "time_preference"),
+            locationPreference=_get(d, "locationPreference", "location_preference"),
+            pricePreference=_get(d, "pricePreference", "price_preference"),
+            maxResults=int(max_results) if max_results else 20,
+        )
+
+
+# --- SearchPlan / SearchQuery ----------------------------------------------
+
+@dataclass
+class SearchQuery:
+    """One concrete query to hand to a provider."""
+    text: str
+    topic: str = None       # which request topic produced it (None = derived)
+    kind: str = "topic"     # topic | format | location
+
+    def to_dict(self):
+        return {"text": self.text, "topic": self.topic, "kind": self.kind}
+
+    @classmethod
+    def from_dict(cls, d):
+        if isinstance(d, str):
+            return cls(text=d)
+        return cls(
+            text=_get(d, "text") or "",
+            topic=_get(d, "topic"),
+            kind=_get(d, "kind") or "topic",
+        )
+
+
+@dataclass
+class SearchPlan:
+    """The search plan. Planning only — no fetching happens here."""
+    queries: list = field(default_factory=list)     # list[SearchQuery]
+    strategy: str = "deterministic_rules_v1"
+    dateRange: dict = None                          # resolved dates
+    notes: list = field(default_factory=list)
+
+    def query_texts(self):
+        return [q.text if isinstance(q, SearchQuery) else str(q) for q in self.queries]
+
+    def to_dict(self):
+        return {
+            "queries": [q.to_dict() if isinstance(q, SearchQuery) else {"text": str(q)} for q in self.queries],
+            "strategy": self.strategy,
+            "dateRange": dict(self.dateRange) if self.dateRange else None,
+            "notes": list(self.notes),
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        d = d or {}
+        return cls(
+            queries=[SearchQuery.from_dict(q) for q in (d.get("queries") or [])],
+            strategy=d.get("strategy") or "deterministic_rules_v1",
+            dateRange=d.get("dateRange"),
+            notes=list(d.get("notes") or []),
+        )
+
+
+# --- RawSearchResult --------------------------------------------------------
+
+@dataclass
+class RawSearchResult:
+    """One hit exactly as a source reported it — dirty values allowed.
+
+    Field names are canonical *raw* names (they line up with
+    pipeline/schema.py) so the adapter stays thin.
+    """
+    resultId: str = ""
+    providerQuery: str = ""
+    provider: str = ""          # which SearchProvider produced it
+    source: str = ""            # human-readable channel, e.g. "AI 极客社区"
+    sourceType: str = ""        # wechat | xhs | web | community | manual
+    sourceTrust: str = "medium"  # high | medium | low (source-level, not the stage)
+    title: str = None
+    snippet: str = None
+    url: str = None
+    registrationUrl: str = None
+    publishedAt: str = None
+    rawDate: str = None
+    rawTime: str = None
+    rawVenue: str = None
+    address: str = None
+    rawLocation: str = None
+    rawPrice: str = None
+    organizer: str = None
+    tags: list = field(default_factory=list)
+
+    def to_dict(self):
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d):
+        d = d or {}
+        known = set(cls().to_dict().keys())
+        kwargs = {k: d[k] for k in known if k in d}
+        extra_tags = kwargs.get("tags") or []
+        if isinstance(extra_tags, str):
+            kwargs["tags"] = [extra_tags]
+        return cls(**kwargs)
+
+    def searchable_text(self):
+        return " ".join(str(x) for x in [
+            self.title, self.snippet, self.rawVenue, self.rawLocation,
+            " ".join(self.tags or []), self.source,
+        ] if x)
+
+
+def new_raw_result(**kwargs):
+    """Build a RawSearchResult, deriving a deterministic resultId if absent."""
+    if not kwargs.get("resultId"):
+        import hashlib
+        import json as _json
+        seed = _json.dumps(kwargs, ensure_ascii=False, sort_keys=True)
+        kwargs["resultId"] = "sr_" + hashlib.sha1(seed.encode("utf-8")).hexdigest()[:10]
+    return RawSearchResult.from_dict(kwargs)
+
+
+# --- SearchCandidate --------------------------------------------------------
+
+@dataclass
+class SearchCandidate:
+    """A record that went through the EXISTING pipeline.
+
+    `activity` is the untouched canonical record (pipeline/schema.py).
+    Everything else here is retrieval-layer metadata.
+    """
+    activity: dict = field(default_factory=dict)
+    bucket: str = "needs_review"      # approved | needs_review | duplicate_candidate | rejected
+    provenance: list = field(default_factory=list)   # [{resultId, source, sourceType, sourceTrust, url}]
+    queries: list = field(default_factory=list)      # plan queries that surfaced it
+
+    def to_dict(self):
+        return {
+            "activity": dict(self.activity),
+            "bucket": self.bucket,
+            "provenance": [dict(p) for p in self.provenance],
+            "queries": list(self.queries),
+        }
+
+    @property
+    def source_count(self):
+        return len({(p.get("source") or "") for p in self.provenance if p.get("source")}) or 1
+
+
+def bucket_for(activity):
+    """Map a pipeline record's status onto a retrieval bucket (deterministic)."""
+    status = (activity or {}).get("status")
+    if status == "approved":
+        return "approved"
+    if activity.get("duplicateOf"):
+        return "duplicate_candidate"
+    if status == "rejected":
+        return "rejected"
+    return "needs_review"
+
+
+# --- RankedEvent ------------------------------------------------------------
+
+@dataclass
+class RankedEvent:
+    """A candidate plus every score that produced its position.
+
+    Ranking answers "is this worth attending for THIS user?" — it is not
+    trust ("is this information credible?"). Both are reported separately.
+    """
+    candidate: SearchCandidate = None
+    finalScore: int = 0
+    relevanceScore: int = 0
+    trustScore: int = 0
+    timeFitScore: int = 0
+    locationFitScore: int = 0
+    priceFitScore: int = 0
+    freshnessScore: int = 0
+    reasons: list = field(default_factory=list)
+    weights: dict = field(default_factory=dict)
+
+    def to_dict(self):
+        return {
+            "id": self.candidate.activity.get("id") if self.candidate else None,
+            "bucket": self.candidate.bucket if self.candidate else None,
+            "activity": dict(self.candidate.activity) if self.candidate else {},
+            "provenance": [dict(p) for p in (self.candidate.provenance if self.candidate else [])],
+            "queries": list(self.candidate.queries if self.candidate else []),
+            "finalScore": self.finalScore,
+            "scores": {
+                "relevance": self.relevanceScore,
+                "trust": self.trustScore,
+                "timeFit": self.timeFitScore,
+                "locationFit": self.locationFitScore,
+                "priceFit": self.priceFitScore,
+                "freshness": self.freshnessScore,
+            },
+            "reasons": list(self.reasons),
+            "weights": dict(self.weights),
+        }
