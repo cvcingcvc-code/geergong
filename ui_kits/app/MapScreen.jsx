@@ -66,7 +66,7 @@ function MapScreen({ synced, onSync, onOpen, focusId }) {
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, []);
 
   return (
-    <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "#eaeef6" }}>
+    <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden", background: "#eaeef6" }}>
       {/* Map base */}
       <div style={{ position: "absolute", inset: 0 }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(#dfe5f0 1px,transparent 1px),linear-gradient(90deg,#dfe5f0 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
@@ -81,7 +81,7 @@ function MapScreen({ synced, onSync, onOpen, focusId }) {
       </div>
 
       {/* Floating search */}
-      <div style={{ position: "absolute", top: 8, left: 16, right: 16, zIndex: 10, display: "flex", gap: 10 }}>
+      <div className="gg-map-search">
         <div style={{ flex: 1 }}><SearchField placeholder="在地图上找活动" readOnly /></div>
         <button style={{ width: 48, height: 48, borderRadius: "var(--radius-pill)", border: "1px solid var(--border-subtle)", background: "var(--surface-card)", boxShadow: "var(--shadow-sm)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
           <i data-lucide="locate-fixed" style={{ width: 20, height: 20, color: "var(--brand)" }} />
@@ -96,8 +96,8 @@ function MapScreen({ synced, onSync, onOpen, focusId }) {
       {/* Pins */}
       {acts.map((a) => <MapPin key={a.id} a={a} selected={a.id === sel} onClick={() => setSel(a.id)} />)}
 
-      {/* Location list */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 132, zIndex: 9, padding: "0 14px 8px", display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+      {/* Location list — chip rail on mobile, right-hand panel on desktop */}
+      <div className="gg-map-list">
         {acts.map((a) => {
           const on = a.id === sel;
           return (
@@ -109,8 +109,8 @@ function MapScreen({ synced, onSync, onOpen, focusId }) {
         })}
       </div>
 
-      {/* Bottom card */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10, padding: "0 14px 16px" }}>
+      {/* Bottom card — docks bottom on mobile, bottom-left on desktop */}
+      <div className="gg-map-card">
         <div onClick={() => onOpen(selected)} style={{ cursor: "pointer", background: "var(--surface-card)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-xl)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={{ width: 84, height: 84, borderRadius: "var(--radius-lg)", flex: "none", background: `linear-gradient(150deg, color-mix(in oklch, ${_MCATS[selected.category].color} 88%, #fff), color-mix(in oklch, ${_MCATS[selected.category].color} 60%, var(--indigo-800)))` }} />
           <div style={{ flex: 1, minWidth: 0 }}>

@@ -45,8 +45,8 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack, favorited, onT
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, [favorited, navOpen, reportOpen]);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
+    <div className="gg-detail">
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none" }}>
         {/* Hero */}
         <div style={{ position: "relative", height: 300, ...cover }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(12,13,18,0.30) 0%, rgba(12,13,18,0) 30%, rgba(12,13,18,0.55) 100%)" }} />
@@ -72,7 +72,7 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack, favorited, onT
         </div>
 
         {/* Body */}
-        <div style={{ padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
+        <div style={{ padding: "20px var(--gg-gutter) 16px", display: "flex", flexDirection: "column", gap: 18 }}>
           <div>
             <TrustBanner state={bannerState} action={bannerState === "unverified" ? "查看来源" : undefined} style={{ marginBottom: 14 }} />
             <h1 style={{ fontSize: 25, fontWeight: 800, fontFamily: "var(--font-sans)", color: "var(--text-strong)", lineHeight: 1.25, letterSpacing: "-0.01em" }}>{a.title}</h1>
@@ -211,7 +211,7 @@ function ActivityDetailScreen({ activity, synced, onSync, onBack, favorited, onT
       <ReportSheet open={reportOpen} onClose={() => setReportOpen(false)} />
       <MapAppSheet open={navOpen} onClose={() => setNavOpen(false)} venue={a.venue} coord={a.coord} />
       {/* Sticky CTA */}
-      <div style={{ flex: "none", padding: "14px 20px 22px", borderTop: "1px solid var(--border-subtle)", background: "var(--surface-card)", display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ flex: "none", padding: "14px var(--gg-gutter) 22px", borderTop: "1px solid var(--border-subtle)", background: "var(--surface-card)", display: "flex", alignItems: "center", gap: 14 }}>
         <div>
           <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>票价</div>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: a.price === "免费" ? "var(--accent-strong)" : "var(--text-strong)" }}>{a.price}</div>

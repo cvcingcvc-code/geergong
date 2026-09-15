@@ -55,14 +55,14 @@ function SearchScreen({ synced, onSync, onOpen }) {
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); }, [q]);
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
-      <div style={{ padding: "8px 20px 16px", position: "sticky", top: 0, background: "var(--bg-base)", zIndex: 2 }}>
+    <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none" }}>
+      <div style={{ padding: "8px var(--gg-gutter) 16px", position: "sticky", top: 0, background: "var(--bg-base)", zIndex: 2 }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "var(--text-strong)", marginBottom: 12 }}>搜索</h1>
         <SearchField value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜索活动、地点、标签" size="lg" />
       </div>
 
       {!q && (
-        <div style={{ padding: "0 20px" }}>
+        <div style={{ padding: "0 var(--gg-gutter)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "6px 0 10px" }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>最近搜索</span>
             <button onClick={() => setQ("")} style={{ border: "none", background: "transparent", color: "var(--text-muted)", fontSize: 12.5, cursor: "pointer" }}>清除</button>
@@ -79,10 +79,11 @@ function SearchScreen({ synced, onSync, onOpen }) {
             <i data-lucide="trending-up" style={{ width: 17, height: 17, color: "var(--brand)" }} />
             <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-strong)" }}>本周热搜</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, marginBottom: 24 }}>
+          {/* 2 columns; 3 on desktop */}
+          <div className="gg-grid-3" style={{ marginBottom: 24 }}>
             {TRENDING.map((tr, i) => (
-              <button key={tr.t} onClick={() => setQ(tr.t)} style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--border-subtle)", background: "var(--surface-card)", borderRadius: "var(--radius-md)", padding: "11px 13px", cursor: "pointer", textAlign: "left" }}>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: i < 2 ? "var(--brand)" : "var(--text-faint)", width: 16 }}>{i + 1}</span>
+              <button key={tr.t} onClick={() => setQ(tr.t)} style={{ display: "flex", alignItems: "center", gap: 10, border: "1px solid var(--border-subtle)", background: "var(--surface-card)", borderRadius: "var(--radius-md)", padding: "11px 13px", cursor: "pointer", textAlign: "left", minWidth: 0 }}>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: i < 2 ? "var(--brand)" : "var(--text-faint)", width: 16, flex: "none" }}>{i + 1}</span>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: `var(--cat-${tr.c})`, flex: "none" }} />
                 <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tr.t}</span>
               </button>
@@ -93,9 +94,10 @@ function SearchScreen({ synced, onSync, onOpen }) {
 
       {q && results.length === 0 && <EmptyResults q={q} />}
 
-      <div style={{ padding: "0 20px 24px" }}>
-        {q && results.length > 0 && <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "2px 0 12px" }}>找到 <b style={{ color: "var(--text-strong)" }}>{results.length}</b> 场相关活动</div>}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "0 var(--gg-gutter) 32px" }}>
+        {q && results.length > 0 && <div style={{ fontSize: 13, color: "var(--text-muted)", margin: "2px 0 14px" }}>找到 <b style={{ color: "var(--text-strong)" }}>{results.length}</b> 场相关活动</div>}
+        {/* 1 column on mobile, 2 from tablet up */}
+        <div className="gg-card-grid--two">
           {results.map((a) => (
             <div key={a.id} onClick={() => onOpen(a)} style={{ cursor: "pointer" }}>
               <ActivityCard compact title={a.title} category={a.category} date={a.date} time={a.time} location={a.location} distance={a.distance} image={a.image} synced={!!synced[a.id]} onSync={() => onSync(a.id)} />

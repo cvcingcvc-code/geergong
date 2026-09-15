@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gorgon · 发现你的周末</title>
 <link rel="stylesheet" href="../../styles.css">
+<!-- PHASE 4.1 — responsive layout layer (breakpoints + shell geometry).
+     Loaded after the design system so it can consume its tokens. -->
+<link rel="stylesheet" href="responsive.css">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
@@ -13,10 +16,6 @@
 <!-- Demo MVP extensions (additive; do not modify the recovered design system) -->
 <script src="categories-ext.js"></script>
 <style>
-  html,body{margin:0;height:100%}
-  body{background:radial-gradient(1200px 700px at 50% -10%, #ece9fd 0%, var(--bg-base) 55%);
-    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:28px;font-family:var(--font-sans)}
-  ::-webkit-scrollbar{display:none}
   @keyframes gg-toast-in{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}
   @keyframes gg-detail-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
 </style>
@@ -36,6 +35,8 @@
 <script src="data-adapter.js"></script>
 <script src="store.js"></script>
 <script src="demo-reset.js"></script>
+<!-- Unified responsive primitives: useResponsive() / currentBreakpoint() -->
+<script src="responsive.js"></script>
 <script type="text/babel" src="AppShell.jsx"></script>
 <script type="text/babel" src="DiscoverScreen.jsx"></script>
 <script type="text/babel" src="ActivityDetailScreen.jsx"></script>
@@ -45,12 +46,13 @@
 <script type="text/babel" src="MapScreen.jsx"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script type="text/babel" data-presets="react">
-const { StatusBar, TabBar, PhoneFrame, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
+const { StatusBar, TabBar, PhoneFrame, AppShell, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
+const { useResponsive } = window.GorgonResponsive;
 
 function Toast({ msg }) {
   if (!msg) return null;
   return (
-    <div style={{ position: "absolute", top: 54, left: "50%", transform: "translateX(-50%)", zIndex: 50,
+    <div style={{ position: "absolute", top: "var(--gg-toast-top)", left: "50%", transform: "translateX(-50%)", zIndex: 50,
       background: "var(--ink)", color: "#fff", padding: "11px 18px", borderRadius: "var(--radius-pill)",
       display: "flex", alignItems: "center", gap: 9, boxShadow: "var(--shadow-lg)", animation: "gg-toast-in var(--dur-base) var(--ease-out)", whiteSpace: "nowrap" }}>
       <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
@@ -72,6 +74,10 @@ function App() {
   const [mapFocus, setMapFocus] = React.useState(null);
   const [toast, setToast] = React.useState("");
   const toastTimer = React.useRef(null);
+
+  // Single source of truth for the shell decision. Everything else about
+  // the layout is handled by CSS media queries (responsive.css).
+  const { isMobile } = useResponsive();
 
   const flash = (m) => {
     setToast(m); clearTimeout(toastTimer.current);
@@ -99,32 +105,50 @@ function App() {
 
   const openDetail = (a) => setDetail(a);
   const showOnMap = (a) => { setMapFocus(a.id); setDetail(null); setTab("map"); };
+  const changeTab = (t) => { setDetail(null); setTab(t); };
 
   const syncedCount = Object.keys(synced).filter((k) => synced[k] && ALL_IDS.has(k)).length;
 
   React.useEffect(() => { window.lucide && window.lucide.createIcons(); });
 
-  return (
-    <PhoneFrame>
-      <StatusBar dark={false} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-        {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} />}
-        {tab === "smart" && <NaturalSearchScreen />}
-        {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
-        {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
-        {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
+  // One business tree, two chrome treatments.
+  const content = (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      {tab === "discover" && <DiscoverScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} onGoSmart={() => setTab("smart")} />}
+      {tab === "smart" && <NaturalSearchScreen />}
+      {tab === "search" && <SearchScreen synced={synced} onSync={toggleSync} onOpen={openDetail} />}
+      {tab === "weekend" && <MyWeekendScreen synced={synced} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
+      {tab === "map" && <MapScreen synced={synced} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
 
-        {detail && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 30, background: "var(--bg-base)", display: "flex", flexDirection: "column", animation: "gg-detail-in var(--dur-slow) var(--ease-out)" }}>
-            <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)}
-              onBack={() => setDetail(null)} favorited={favorites.indexOf(detail.id) >= 0}
-              onToggleFavorite={() => toggleFavorite(detail.id)} onShowMap={() => showOnMap(detail)} />
-          </div>
-        )}
-        <Toast msg={toast} />
-      </div>
-      <TabBar active={tab} onChange={(t) => { setDetail(null); setTab(t); }} syncedCount={syncedCount} />
-    </PhoneFrame>
+      {detail && (
+        <div className="gg-detail-overlay" style={{ animation: "gg-detail-in var(--dur-slow) var(--ease-out)" }}>
+          <ActivityDetailScreen activity={detail} synced={!!synced[detail.id]} onSync={() => toggleSync(detail.id)}
+            onBack={() => setDetail(null)} favorited={favorites.indexOf(detail.id) >= 0}
+            onToggleFavorite={() => toggleFavorite(detail.id)} onShowMap={() => showOnMap(detail)} />
+        </div>
+      )}
+      <Toast msg={toast} />
+    </div>
+  );
+
+  if (isMobile) {
+    // Unchanged mobile presentation: phone mock-up + bottom navigation.
+    return (
+      <PhoneFrame>
+        <StatusBar dark={false} />
+        {content}
+        <TabBar active={tab} onChange={changeTab} syncedCount={syncedCount} />
+      </PhoneFrame>
+    );
+  }
+
+  // Tablet & desktop: full-bleed surface, top header + left sidebar.
+  // The bottom TabBar and the phone chassis are intentionally NOT rendered.
+  return (
+    <AppShell tab={tab} onTab={changeTab} syncedCount={syncedCount}
+      onSettings={() => flash("设置（演示版暂未开放）")}>
+      {content}
+    </AppShell>
   );
 }
 

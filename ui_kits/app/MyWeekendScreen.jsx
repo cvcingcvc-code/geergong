@@ -8,12 +8,13 @@ function DayGroup({ label, dateLabel, items, synced, onSync, onOpen }) {
   if (!items.length) return null;
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "0 20px 12px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "0 var(--gg-gutter) 12px" }}>
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 19, color: "var(--text-strong)" }}>{label}</span>
         <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>{dateLabel}</span>
-        <span style={{ marginLeft: "auto", padding: "0 20px 0 0", fontSize: 12.5, color: "var(--text-faint)" }}>{items.length} 场</span>
+        <span style={{ marginLeft: "auto", fontSize: 12.5, color: "var(--text-faint)" }}>{items.length} 场</span>
       </div>
-      <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* 1 column on mobile, 2 from tablet up */}
+      <div className="gg-card-grid--two" style={{ padding: "0 var(--gg-gutter)" }}>
         {items.map((a) => (
           <div key={a.id} onClick={() => onOpen(a)} style={{ cursor: "pointer" }}>
             <ActivityCard compact title={a.title} category={a.category} date={a.date} time={a.time} location={a.location} distance={a.distance} image={a.image} synced={!!synced[a.id]} onSync={() => onSync(a.id)} />
@@ -80,8 +81,8 @@ function MyWeekendScreen({ synced, onSync, onOpen, onDiscover, favorites, onTogg
   const isFav = view === "收藏";
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", scrollbarWidth: "none" }}>
-      <div style={{ padding: "8px 20px 14px" }}>
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflowY: "auto", scrollbarWidth: "none" }}>
+      <div style={{ padding: "8px var(--gg-gutter) 14px" }}>
         <div style={{ fontFamily: "var(--font-display)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: 11, fontWeight: 600, color: "var(--brand)" }}>{isFav ? "Saved" : "My Weekend · 6.20–6.21"}</div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, color: "var(--text-strong)", marginTop: 3, marginBottom: 12 }}>{isFav ? "我的收藏" : "我的周末"}</h1>
         <SegmentedControl options={["我的周末", "收藏"]} value={view} onChange={setView} />
@@ -91,7 +92,7 @@ function MyWeekendScreen({ synced, onSync, onOpen, onDiscover, favorites, onTogg
         <EmptyWeekend onDiscover={onDiscover} />
       ) : (
         <>
-          <div style={{ margin: "0 20px 20px", padding: "16px 18px", borderRadius: "var(--radius-lg)", background: "var(--surface-card)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)", display: "flex", justifyContent: "space-around" }}>
+          <div style={{ margin: "0 var(--gg-gutter) 20px", padding: "16px 18px", borderRadius: "var(--radius-lg)", background: "var(--surface-card)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-sm)", display: "flex", justifyContent: "space-around", maxWidth: 560 }}>
             <StatBlock value={syncedList.length} label="已加入" accent="brand" align="center" />
             <div style={{ width: 1, background: "var(--border-subtle)" }} />
             <StatBlock value={freeCount} label="免费场次" accent="mint" align="center" />
@@ -106,11 +107,14 @@ function MyWeekendScreen({ synced, onSync, onOpen, onDiscover, favorites, onTogg
       {isFav && (favList.length === 0 ? (
         <EmptyFavorites onDiscover={onDiscover} />
       ) : (
-        <div style={{ padding: "0 20px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 2 }}>共收藏 <b style={{ color: "var(--text-strong)" }}>{favList.length}</b> 场</div>
-          {favList.map((a) => (
-            <FavRow key={a.id} a={a} onOpen={onOpen} onRemove={onToggleFavorite} />
-          ))}
+        <div style={{ padding: "0 var(--gg-gutter) 32px" }}>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}>共收藏 <b style={{ color: "var(--text-strong)" }}>{favList.length}</b> 场</div>
+          {/* 1 column on mobile, 2 from tablet up */}
+          <div className="gg-card-grid--two">
+            {favList.map((a) => (
+              <FavRow key={a.id} a={a} onOpen={onOpen} onRemove={onToggleFavorite} />
+            ))}
+          </div>
         </div>
       ))}
     </div>

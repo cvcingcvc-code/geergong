@@ -1,0 +1,76 @@
+
+=== MOBILE 390x844 ===
+PASS  390 breakpoint is mobile  :: mobile
+PASS  390 uses the mobile shell  :: mobile=true wide=false
+PASS  390 bottom navigation visible
+PASS  390 no sidebar
+PASS  390 no desktop header
+PASS  390 no horizontal overflow  :: scrollW=390 winW=390
+PASS  390 discover is 1 column  :: cols=1
+PASS  390 shows the mobile hero only  :: mobileHero=true wideHero=false
+PASS  390 smart search ask box visible  :: w=350
+PASS  390 smart results are stacked, not 2 columns  :: display=flex
+PASS  390 summary sits above the results  :: aside=245 main=479
+PASS  390 console errors = 0
+
+=== DESKTOP 1440x900 ===
+PASS  1440 breakpoint is desktop  :: desktop
+PASS  1440 no phone shell rendered  :: mobile=false .gg-phone=false
+PASS  1440 no bottom navigation
+PASS  1440 sidebar visible  :: w=240
+PASS  1440 sidebar is 240px  :: w=240
+PASS  1440 header visible  :: h=64
+PASS  1440 header is 64px  :: h=64
+PASS  1440 content uses the width  :: containerW=1200
+PASS  1440 no horizontal overflow  :: scrollW=1440
+PASS  1440 discover is 3 columns  :: cols=3
+PASS  1440 shows the wide hero only  :: mobileHero=false wideHero=true
+PASS  1440 empty state renders instead of a blank page  :: 暂时没有符合条件的活动
+试试：
+•
+切换到「全部」兴趣分类
+•
+看看下周末的安排
+PASS  1440 empty state offers 去智能搜索  :: ["去智能搜索"]
+PASS  1440 smart hero headline present  :: 你想参加什么？
+PASS  1440 ask box is wide  :: w=836
+PASS  1440 primary CTA is 帮我找活动  :: 帮我找活动
+PASS  1440 smart grid is a 2-column grid  :: display=grid cols=2
+PASS  1440 aside shows 搜索理解 + 检索任务  :: understanding=true queries=true
+PASS  1440 results column is wider than context  :: main=741 aside=371
+PASS  1440 results are on the left  :: mainLeft=272 asideLeft=1037
+PASS  1440 result cards rendered  :: cards=26
+PASS  1440 review queue is a separate section  :: 待核验 9 个
+PASS  1440 reason list is 2 columns  :: cols=2
+PASS  1440 detail is a centred modal, not full-bleed  :: {"exists":true,"w":760,"left":460}
+PASS  1440 weekend tab renders in the shell
+PASS  1440 map venue list becomes a right panel  :: {"dir":"column","w":280,"top":142}
+PASS  1440 console errors = 0
+
+=== DESKTOP 1920x1080 ===
+PASS  1920 breakpoint is desktop  :: desktop
+PASS  1920 no phone shell rendered
+PASS  1920 no bottom navigation
+PASS  1920 sidebar visible
+PASS  1920 header visible
+PASS  1920 content is capped, not stretched to the window  :: containerW=1280
+PASS  1920 content block is centred  :: left=440
+PASS  1920 no horizontal overflow
+PASS  1920 discover is 3 columns  :: cols=3
+PASS  1920 console errors = 0
+
+=== TABLET 1024x768 ===
+PASS  1024 breakpoint is tablet  :: tablet
+PASS  1024 no phone shell
+PASS  1024 no bottom navigation
+PASS  1024 compact sidebar visible  :: w=76
+PASS  1024 discover is 2 columns  :: cols=2
+PASS  1024 console errors = 0
+
+=== API / PIPELINE REGRESSION ===
+PASS  GET /api/health still 200  :: {"status":"ok","demoData":true,"providers":["fixture:shanghai_ai_events"],"today":"2026-09-15"}
+PASS  POST /api/search still 200
+PASS  summary unchanged (26 raw / 23 canonical / 16 approved)  :: {"rawResults":26,"mergedRawResults":25,"mergedDuplicates":1,"normalized":25,"duplicates":2,"duplicatesExact":1,"duplicatesNear":1,"canonical":23,"approved":16,"needsReview":7,"duplicateCandidates":2,"rejected":0,"ranked":25,"returned":25,"reviewQueue":{"approved":16,"needs_review":5,"low_confidence":2}}
+PASS  top-5 ranking unchanged  :: [89,86,79,77,76]
+
+PHASE 4.1 E2E  PASS=59  FAIL=0

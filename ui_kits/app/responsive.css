@@ -1,0 +1,479 @@
+/* ══════════════════════════════════════════════════════════════════
+   GORGON RESPONSIVE LAYOUT — PHASE 4.1
+   ------------------------------------------------------------------
+   Breakpoints (single source of truth):
+       Mobile   < 768px
+       Tablet   768px – 1199px
+       Desktop  >= 1200px
+
+   LAYOUT ONLY. This file contains no component logic, no business
+   rules and no data. It changes *where things sit*, never *what they
+   are*. Cosmetics stay in the inline styles of the components (they
+   read the responsive custom properties defined below, so the same
+   JSX lays itself out differently per breakpoint).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Responsive custom properties ───────────────────────────────────
+   Components consume these from inline styles, e.g.
+   `padding: "0 var(--gg-gutter)"`. Because they are redefined in
+   media queries, one component instance adapts without any JS. */
+:root {
+  --gg-gutter: 20px;          /* page side padding */
+  --gg-gap: 16px;             /* gap between cards */
+  --gg-card-min: 0px;         /* min width before a grid column wraps */
+  --gg-content-max: 100%;     /* main content column cap */
+  --gg-header-h: 0px;         /* desktop/tablet top header */
+  --gg-sidebar-w: 0px;        /* desktop/tablet left nav */
+  --gg-phone-gap: 28px;
+  --gg-toast-top: 54px;       /* below the mobile status bar */
+}
+
+/* Mobile hides scrollbars (app-like); wide screens show a slim one so the
+   user can tell the content column keeps going. */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+@media (min-width: 768px) {
+  :root {
+    --gg-gutter: 24px;
+    --gg-gap: 20px;
+    --gg-card-min: 280px;
+    --gg-content-max: 1100px;
+    --gg-header-h: 60px;
+    --gg-sidebar-w: 76px;     /* tablet: compact, icon-only rail */
+    --gg-phone-gap: 0px;
+    --gg-toast-top: 20px;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--slate-400); background-clip: content-box; }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --gg-gutter: 32px;
+    --gg-gap: 24px;
+    --gg-card-min: 300px;
+    --gg-content-max: 1280px;
+    --gg-header-h: 64px;
+    --gg-sidebar-w: 240px;    /* desktop: full sidebar with labels */
+    --gg-phone-gap: 0px;
+  }
+}
+
+/* ── Page canvas ────────────────────────────────────────────────────
+   Mobile keeps the original "phone mock-up on a soft backdrop"
+   presentation; tablet/desktop become a real, full-bleed surface. */
+html, body { margin: 0; height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  background: radial-gradient(1200px 700px at 50% -10%, #ece9fd 0%, var(--bg-base) 55%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--gg-phone-gap);
+}
+
+@media (min-width: 768px) {
+  body {
+    /* No phone mock-up backdrop, no wasted margins: the product owns
+       the window. */
+    background: var(--bg-base);
+    display: block;
+    padding: 0;
+  }
+  #root { height: 100vh; }
+}
+
+/* A phone mock-up drawn inside a phone is nonsense, and a 402px chassis
+   overflows a 390px viewport. Below 480px the app goes full-bleed; the
+   screen content, single-column layout and bottom navigation are
+   untouched. Between 480px and 767px the original chassis presentation
+   is preserved for design review. */
+@media (max-width: 479px) {
+  /* `display:block` (not flex) so #root is viewport-width instead of
+     content-width — otherwise a horizontally scrollable rail inside a
+     screen would stretch the whole document. */
+  body { padding: 0; display: block; }
+  #root { width: 100%; height: 100vh; overflow: hidden; }
+  .gg-phone {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: var(--bg-base) !important;
+    box-shadow: none !important;
+  }
+  .gg-phone-inner { border-radius: 0 !important; }
+}
+
+/* ── App shell (tablet + desktop) ───────────────────────────────────
+   Top bar spans the full width; below it sit the nav rail and the
+   content column. */
+.gg-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100vh;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+@media (min-width: 768px) { .gg-app { min-height: 0; } }
+
+.gg-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left navigation */
+.gg-sidebar {
+  flex: none;
+  width: var(--gg-sidebar-w);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 12px 16px;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.gg-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.gg-nav-item:hover { background: var(--bg-sunken); color: var(--text-body); }
+.gg-nav-item.is-active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+/* Compact rail: hide labels, centre the glyph */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .gg-nav-item { justify-content: center; padding: 12px 0; gap: 0; }
+  .gg-nav-item .gg-nav-label { display: none; }
+  .gg-nav-item.is-active { box-shadow: inset 0 0 0 2px var(--brand); }
+}
+
+.gg-nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gg-nav-spacer { flex: 1; }
+.gg-sidebar-divider { height: 1px; background: var(--border-subtle); margin: 8px 4px; }
+
+/* Wordmark in the top bar */
+.gg-wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+.gg-wordmark-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+/* Below 1200px the bar is tighter: drop the tagline */
+@media (max-width: 1199px) {
+  .gg-wordmark-sub { display: none; }
+}
+
+/* Main column */
+.gg-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Top header (tablet + desktop only) */
+.gg-header {
+  flex: none;
+  height: var(--gg-header-h);
+  display: flex;
+  align-items: center;
+  background: color-mix(in oklch, var(--surface-card) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  z-index: 6;
+}
+.gg-header-inner {
+  width: 100%;
+  max-width: var(--gg-content-max);
+  margin: 0 auto;
+  padding: 0 var(--gg-gutter);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Content viewport: centres the content column, never stretches to 4K */
+.gg-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+}
+.gg-container {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  max-width: var(--gg-content-max);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Card grids ─────────────────────────────────────────────────────
+   1 column on mobile, 2 on tablet, 3 on desktop. */
+.gg-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gg-gap);
+}
+@media (min-width: 768px) {
+  .gg-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .gg-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* A grid that stays at 2 columns even on desktop (compact rows) */
+.gg-card-grid--two { display: grid; grid-template-columns: 1fr; gap: var(--gg-gap); }
+@media (min-width: 768px) {
+  .gg-card-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Generic 2 → 3 column grid for things that are not activity cards */
+.gg-grid-3 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+@media (min-width: 1200px) {
+  .gg-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── Smart search: results 2fr / context 1fr ────────────────────────
+   One component tree. On mobile the aside is ordered first (matching
+   the original mobile reading order); on desktop it becomes the
+   right-hand context column. */
+.gg-smart-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gg-gap);
+}
+.gg-smart-aside { order: -1; }
+@media (min-width: 1200px) {
+  .gg-smart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--gg-gap);
+    align-items: start;
+  }
+  /* Explicit placement: results left, context right — independent of DOM
+     order (the aside comes first in the markup so mobile reads
+     summary-first). */
+  .gg-smart-main { grid-column: 1; grid-row: 1; min-width: 0; }
+  .gg-smart-aside { grid-column: 2; grid-row: 1; order: 0; position: sticky; top: 0; }
+}
+
+/* ── Discover hero ─────────────────────────────────────────────────
+   Mobile: the signature full-bleed gradient strip.
+   Tablet/desktop: a summary card that uses the width. */
+/* NOTE: `display` for these two lives HERE, never in an inline style —
+   an inline `display` would beat the media query and leak the mobile
+   hero onto the desktop. */
+.gg-hero-mobile { display: flex; align-items: center; justify-content: space-between; }
+.gg-hero-wide { display: none; }
+@media (min-width: 768px) {
+  .gg-hero-mobile { display: none; }
+  .gg-hero-wide { display: block; }
+}
+
+/* ── Section head: title + meta on one row on wide screens ───────── */
+.gg-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+@media (min-width: 768px) {
+  .gg-section-head {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+/* ── Split view: list + panel side by side on desktop ───────────── */
+.gg-split {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+@media (min-width: 1200px) {
+  .gg-split { flex-direction: row; }
+  .gg-split-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+  .gg-split-aside {
+    flex: none;
+    width: 360px;
+    border-left: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+/* ── Smart search: the "ask" box ────────────────────────────────────
+   One component; the media queries below give it desktop presence
+   without a second implementation. */
+.gg-ask-wrap { padding: 8px var(--gg-gutter) 0; }
+
+.gg-ask-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 15px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.gg-ask-box:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--focus-ring), var(--shadow-sm);
+}
+.gg-ask-box textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-strong);
+  min-height: 48px;
+  padding: 0;
+}
+.gg-ask-box textarea::placeholder { color: var(--text-faint); }
+.gg-ask-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.gg-ask-hint { font-size: 11.5px; color: var(--text-faint); margin-right: auto; }
+
+@media (max-width: 767px) {
+  .gg-ask-hint { display: none; }
+}
+@media (min-width: 1200px) {
+  /* STEP 15 — the desktop first screen puts the question front and centre. */
+  .gg-ask-wrap {
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 0 var(--gg-gutter) 36px;
+  }
+  .gg-ask-box {
+    padding: 20px 22px;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+  }
+  .gg-ask-box textarea { font-size: 18px; min-height: 62px; }
+}
+
+/* ── Result card: reason list gets denser on desktop ─────────────── */
+.gg-reasons { display: flex; flex-direction: column; gap: 3px; }
+@media (min-width: 1200px) {
+  .gg-reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 22px; }
+}
+
+/* ── Map ────────────────────────────────────────────────────────────
+   The map canvas is fluid at every width. Below 1200px the venue list
+   stays a horizontal chip rail above the bottom card; on desktop it
+   becomes a right-hand panel and the selected-activity card docks left. */
+.gg-map-search {
+  position: absolute; top: 8px; left: 16px; right: 16px; z-index: 10;
+  display: flex; gap: 10px;
+}
+.gg-map-list {
+  position: absolute; left: 0; right: 0; bottom: 132px; z-index: 9;
+  padding: 0 14px 8px; display: flex; gap: 8px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.gg-map-card {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 10;
+  padding: 0 14px 16px;
+}
+@media (min-width: 768px) {
+  .gg-map-search { right: auto; width: min(520px, calc(100% - 32px)); }
+}
+@media (min-width: 1200px) {
+  .gg-map-list {
+    left: auto; right: 16px; top: 78px; bottom: 150px; width: 280px; padding: 0;
+    flex-direction: column; overflow-x: hidden; overflow-y: auto;
+  }
+  .gg-map-list > button { width: 100%; justify-content: flex-start; }
+  .gg-map-card { right: auto; left: 16px; width: min(560px, calc(100% - 330px)); }
+}
+
+/* ── Detail overlay ─────────────────────────────────────────────────
+   Mobile keeps the original full-screen push. On tablet/desktop the
+   detail becomes a centred modal card instead of a 1280px-wide phone
+   screen — same component, same content. */
+.gg-detail-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+}
+.gg-detail { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+@media (min-width: 768px) {
+  .gg-detail-overlay {
+    background: color-mix(in oklch, var(--ink) 32%, transparent);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    align-items: center;
+    padding: 28px 32px;
+  }
+  .gg-detail {
+    max-width: 760px;
+    width: 100%;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    background: var(--bg-base);
+  }
+}
+
+/* ── Misc ───────────────────────────────────────────────────────── */
+.gg-tnum { font-variant-numeric: tabular-nums; }
+.gg-divider { height: 1px; background: var(--border-subtle); margin: var(--gg-gap) 0; }
+.gg-scroll { overflow-y: auto; scrollbar-width: none; }
+.gg-scroll::-webkit-scrollbar { display: none; }
