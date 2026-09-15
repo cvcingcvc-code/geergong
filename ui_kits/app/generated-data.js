@@ -45,7 +45,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://example.com/ai/a02/signup",
     "sourceUrl": "https://example.com/ai/a02",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "a03",
@@ -89,7 +93,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://example.com/ai/a03",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "a04",
@@ -134,7 +142,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://example.com/ai/a04/signup",
     "sourceUrl": "https://example.com/ai/a04",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "a05",
@@ -177,7 +189,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://example.com/ai/a05",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "a08",
@@ -221,7 +237,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://example.com/ai/a08/signup",
     "sourceUrl": "https://example.com/ai/a08",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "a10",
@@ -264,7 +284,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://example.com/ai/a10/signup",
     "sourceUrl": "https://example.com/ai/a10",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b03",
@@ -307,7 +331,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://bbs.example.com/t/9003/form",
     "sourceUrl": "https://bbs.example.com/t/9003",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b05",
@@ -351,7 +379,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://bbs.example.com/t/9005",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b06",
@@ -395,7 +427,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://bbs.example.com/t/9006/form",
     "sourceUrl": "https://bbs.example.com/t/9006",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b07",
@@ -439,7 +475,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://bbs.example.com/t/9007",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b08",
@@ -482,7 +522,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://bbs.example.com/t/9008",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "b09",
@@ -526,7 +570,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://bbs.example.com/t/9009",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "c03",
@@ -569,7 +617,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://portal.example.com/ev/703/reg",
     "sourceUrl": "https://portal.example.com/ev/703",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "c04",
@@ -613,7 +665,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://portal.example.com/ev/704",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "c05",
@@ -657,7 +713,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://portal.example.com/ev/705/reg",
     "sourceUrl": "https://portal.example.com/ev/705",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "c06",
@@ -700,7 +760,11 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": null,
     "sourceUrl": "https://portal.example.com/ev/706",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   },
   {
     "id": "c07",
@@ -743,6 +807,10 @@ window.GORGON_GENERATED_DATA = [
     "refund": null,
     "registrationUrl": "https://portal.example.com/ev/707/reg",
     "sourceUrl": "https://portal.example.com/ev/707",
-    "duplicateOf": null
+    "duplicateOf": null,
+    "reviewedBy": null,
+    "reviewDecision": null,
+    "reviewedAt": null,
+    "humanEdited": null
   }
 ];

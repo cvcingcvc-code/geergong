@@ -144,7 +144,7 @@ class TestTrust(unittest.TestCase):
         clean, _ = score_activity(_full_activity())
         conflict, reasons = score_activity(_full_activity(endTime="08:00"))
         self.assertLess(conflict, clean)
-        self.assertIn("time_conflict", reasons)
+        self.assertIn("invalid_time_range", reasons)
 
 
 class TestReviewRouting(unittest.TestCase):

@@ -91,7 +91,7 @@ def score_activity(act, source_counts=None, conflict=False):
         score += PENALTIES["spammy_title"]; reasons.append("spammy_title")
 
     if act.get("startTime") and act.get("endTime") and act["endTime"] <= act["startTime"]:
-        score += PENALTIES["time_conflict"]; reasons.append("time_conflict")
+        score += PENALTIES["time_conflict"]; reasons.append("invalid_time_range")
 
     if conflict:
         score += PENALTIES["cross_source_conflict"]; reasons.append("cross_source_conflict")
@@ -99,39 +99,68 @@ def score_activity(act, source_counts=None, conflict=False):
     return max(0, min(100, score)), reasons
 
 
-def score_all(activities):
-    """Score every activity; also flags cross-source conflicts.
+def _conflict_groups(acts):
+    """Deterministic cross-source conflict detection (PHASE 9).
 
-    Conflict rule (deterministic): same title_key+startDate appears in
-    records with different venue keys -> both conflicting records flagged.
+    Groups canonical records by (title, startDate); within a group, compares
+    venue / start time / price. Returns ({key: [conflict dicts]}, {key: n}).
     """
-    acts = [dict(a) for a in activities]
-
-    # source_counts counts distinct sourceNames per (title, date).
-    counts = {}
-    venue_by_key = {}
+    groups = {}
     for act in acts:
         if act.get("duplicateOf"):
             continue
         key = (act.get("title") or "", act.get("startDate") or "")
         if not key[0] or not key[1]:
             continue
-        src = act.get("sourceName") or ""
-        counts.setdefault(key, set()).add(src)
-        vk = (act.get("venue") or "").casefold()
-        venue_by_key.setdefault(key, set()).add(vk)
+        groups.setdefault(key, []).append(act)
 
-    conflict_keys = {
-        key for key, venues in venue_by_key.items()
-        if len([v for v in venues if v]) > 1
-    }
+    conflicts = {}
+    counts = {}
+    for key, members in groups.items():
+        counts[key] = len({m.get("sourceName") or "" for m in members})
+        found = []
+
+        venues = sorted({(m.get("venue") or "").strip() for m in members if (m.get("venue") or "").strip()})
+        if len(venues) > 1:
+            found.append({"type": "location_conflict", "detail": "场地不一致: %s" % " vs ".join(venues)})
+
+        times = sorted({m.get("startTime") for m in members if m.get("startTime")})
+        if len(times) > 1:
+            found.append({"type": "time_conflict", "detail": "开始时间不一致: %s" % " vs ".join(times)})
+
+        prices = sorted({(m.get("priceType"), m.get("price")) for m in members})
+        if len(prices) > 1:
+            def _fmt(pair):
+                pt, p = pair
+                return "免费" if pt == "free" else ("¥%g" % p if pt == "paid" and p is not None else "未知")
+            found.append({"type": "price_conflict", "detail": "价格不一致: %s" % " vs ".join(_fmt(p) for p in prices)})
+
+        if found:
+            conflicts[key] = found
+    return conflicts, counts
+
+
+def score_all(activities):
+    """Score every activity; also flags cross-source conflicts.
+
+    Conflict rule (deterministic): same normalized title+date appears in
+    records with different venue / start time / price -> all members of the
+    group get cross_source_conflict + a specific *_conflict reason, and a
+    `conflicts` detail list. Never auto-resolved: routing sends them to
+    needs_review.
+    """
+    acts = [dict(a) for a in activities]
+    conflicts, counts = _conflict_groups(acts)
 
     for act in acts:
         key = (act.get("title") or "", act.get("startDate") or "")
-        src_n = len(counts.get(key, set())) if (key[0] and key[1]) else 1
-        # confirmed_by_multiple_sources requires 2+ DISTINCT sources
-        conflict = key in conflict_keys
+        src_n = counts.get(key, 1)
+        conflict = key in conflicts
         score, reasons = score_activity(act, source_counts=None if src_n <= 1 else {key: src_n}, conflict=conflict)
+        if conflict:
+            for c in conflicts[key]:
+                reasons.append(c["type"])
+            act["conflicts"] = conflicts[key]
         act["trustScore"] = score
         act["trustReasons"] = sorted(set(list(act.get("trustReasons") or []) + reasons))
     return acts

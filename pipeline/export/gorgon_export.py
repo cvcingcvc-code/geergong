@@ -122,6 +122,11 @@ def to_gorgon_record(act):
         "registrationUrl": act.get("registrationUrl"),
         "sourceUrl": act.get("sourceUrl"),
         "duplicateOf": act.get("duplicateOf"),
+        # Human Review Loop provenance (PHASE 11)
+        "reviewedBy": act.get("reviewedBy"),
+        "reviewDecision": act.get("reviewDecision"),
+        "reviewedAt": act.get("reviewedAt"),
+        "humanEdited": act.get("humanEdited"),
     }
 
 

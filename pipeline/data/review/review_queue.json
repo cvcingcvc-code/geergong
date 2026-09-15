@@ -30,7 +30,7 @@
         "sourceUrl": "https://example.com/ai/a01",
         "registrationUrl": "https://example.com/ai/a01/signup",
         "publishedAt": "2026-09-01T10:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "priceType": "free",
         "trustScore": 85,
@@ -44,11 +44,18 @@
           "has_registration_url",
           "has_source_url",
           "has_venue",
+          "location_conflict",
           "source_fields_complete"
         ],
         "duplicateOf": null,
         "duplicateConfidence": null,
-        "_extra": {}
+        "_extra": {},
+        "conflicts": [
+          {
+            "type": "location_conflict",
+            "detail": "场地不一致: 浦东图书馆 vs 西岸智塔 AI 空间"
+          }
+        ]
       },
       "reason": "cross_source_conflict",
       "trustScore": 85,
@@ -74,7 +81,7 @@
         "sourceName": "ai_community",
         "sourceUrl": "https://example.com/ai/a06",
         "publishedAt": "2026-09-06T18:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "address": null,
         "endDate": null,
@@ -111,7 +118,7 @@
         "price": 0,
         "sourceName": "ai_community",
         "publishedAt": "2026-09-07T10:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "venue": null,
         "address": null,
@@ -158,7 +165,7 @@
         "sourceName": "ai_community",
         "sourceUrl": "https://example.com/ai/a09",
         "publishedAt": "2026-09-09T10:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "address": null,
         "endDate": null,
@@ -204,7 +211,7 @@
         "sourceUrl": "https://bbs.example.com/t/9001",
         "registrationUrl": "https://bbs.example.com/t/9001/form",
         "publishedAt": "2026-09-02T08:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "endDate": null,
         "priceType": "free",
@@ -253,7 +260,7 @@
         "sourceName": "campus_bbs",
         "sourceUrl": "https://bbs.example.com/t/9010",
         "publishedAt": "2026-09-11T08:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "address": null,
         "city": "上海",
@@ -307,7 +314,7 @@
         "sourceUrl": "https://portal.example.com/ev/701",
         "registrationUrl": "https://portal.example.com/ev/701/reg",
         "publishedAt": "2026-09-03T14:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "endDate": null,
         "priceType": "free",
@@ -357,7 +364,7 @@
         "sourceName": "city_portal",
         "sourceUrl": "https://portal.example.com/ev/708",
         "publishedAt": "2026-09-10T14:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "address": null,
         "endDate": null,
@@ -371,8 +378,8 @@
           "has_organizer",
           "has_source_url",
           "has_venue",
-          "source_fields_complete",
-          "time_conflict"
+          "invalid_time_range",
+          "source_fields_complete"
         ],
         "duplicateOf": null,
         "duplicateConfidence": null,
@@ -392,7 +399,7 @@
         "price": null,
         "sourceName": "city_portal",
         "publishedAt": "2026-09-11T14:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "venue": null,
         "address": null,
@@ -440,7 +447,7 @@
         "sourceName": "city_portal",
         "sourceUrl": "https://portal.example.com/ev/710",
         "publishedAt": "2026-09-12T14:00:00",
-        "collectedAt": "2026-09-15T16:59:46",
+        "collectedAt": "2026-09-15T17:50:18",
         "status": "needs_review",
         "address": null,
         "endDate": null,
@@ -457,11 +464,18 @@
           "has_organizer",
           "has_source_url",
           "has_venue",
+          "location_conflict",
           "source_fields_complete"
         ],
         "duplicateOf": null,
         "duplicateConfidence": null,
-        "_extra": {}
+        "_extra": {},
+        "conflicts": [
+          {
+            "type": "location_conflict",
+            "detail": "场地不一致: 浦东图书馆 vs 西岸智塔 AI 空间"
+          }
+        ]
       },
       "reason": "cross_source_conflict",
       "trustScore": 80,
