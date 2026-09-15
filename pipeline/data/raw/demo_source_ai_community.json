@@ -1,0 +1,96 @@
+{
+  "_notice": "DEMO DATA — 测试用样例数据，非真实活动。来源A：AI 社区。",
+  "DEMO_DATA": true,
+  "activities": [
+    {
+      "id": "a01", "title": "AI Agent Hackathon 上海站", "description": "48小时 Agent 极客马拉松，现场组队，评委来自头部大厂。",
+      "startDate": "2026/09/20", "startTime": "09:00-21:00", "endDate": "2026-09-21", "endTime": "18:00",
+      "venue": "西岸智塔 AI 空间", "address": "上海市徐汇区龙腾大道2350号", "district": "上海市徐汇区", "city": "上海",
+      "category": "hackathon", "tags": ["AI", "Agent", "黑客松"],
+      "price": "免费", "organizer": "上海 AI 开发者社区",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a01", "registrationUrl": "https://example.com/ai/a01/signup",
+      "publishedAt": "2026-09-01T10:00:00"
+    },
+    {
+      "id": "a02", "title": "大模型应用实战工作坊（零基础）", "description": "带笔记本电脑，3小时跑通一个 RAG 应用。",
+      "startDate": "2026-09-20", "startTime": "13:30", "endTime": "17:00",
+      "venue": "创智天地 7 号楼", "address": "上海市杨浦区淞沪路创智天地", "district": "杨浦", "city": "上海",
+      "category": "study", "tags": ["AI", "工作坊", "零基础"],
+      "price": "学生 ¥29", "organizer": "复旦 AI 研习社",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a02", "registrationUrl": "https://example.com/ai/a02/signup",
+      "publishedAt": "2026-09-02T09:00:00"
+    },
+    {
+      "id": "a03", "title": "周末民谣现场：城市夜晚与吉他", "description": "三位独立音乐人轮番上场。",
+      "startDate": "2026/9/20", "startTime": "20:00", "endTime": "22:00",
+      "venue": "育音堂", "district": "长宁", "city": "上海",
+      "tags": ["音乐", "民谣"],
+      "price": "￥0", "organizer": "育音堂",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a03",
+      "publishedAt": "2026-09-03T12:00:00"
+    },
+    {
+      "id": "a04", "title": "开源之夏 · 上海 Meetup", "description": "开源项目维护者面对面，Lightning Talk 报名中。",
+      "startDate": "9月21日", "startTime": "14:00", "endTime": "17:00",
+      "venue": "杨浦区图书馆", "district": "杨浦", "city": "上海",
+      "tags": ["开源", "技术", " meetup "],
+      "price": "free", "organizer": "开源社",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a04", "registrationUrl": "https://example.com/ai/a04/signup",
+      "publishedAt": "2026-09-04T09:00:00"
+    },
+    {
+      "id": "a05", "title": "生成式艺术展：机器的梦", "description": "20位艺术家的 AIGC 作品联合展出。",
+      "startDate": "2026-09-19", "startTime": "10:00", "endTime": "18:00",
+      "venue": "西岸美术馆", "district": "徐汇", "city": "上海",
+      "category": "art", "tags": ["展览", "AIGC"],
+      "price": "¥45", "organizer": "西岸美术馆",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a05",
+      "publishedAt": "2026-09-05T10:00:00"
+    },
+    {
+      "id": "a06", "title": "趣味跑：滨江10公里夜跑团", "description": "配速630，欢迎新人。",
+      "startDate": "2026-09-19", "startTime": "19:00", "endTime": "21:00",
+      "venue": "滨江步道", "district": "徐汇", "city": "上海",
+      "category": "sport", "tags": ["跑步", "夜跑"],
+      "price": "0元",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a06",
+      "publishedAt": "2026-09-06T18:00:00"
+    },
+    {
+      "id": "a07", "title": "【速看】惊了！！这场讲座千万别错过！！！", "description": "???",
+      "startDate": "2026-09-20",
+      "district": "徐汇",
+      "tags": ["讲座"],
+      "price": "免费",
+      "sourceName": "ai_community",
+      "publishedAt": "2026-09-07T10:00:00"
+    },
+    {
+      "id": "a08", "title": "AI 产品开放日 · 生成式应用 Demo Night", "description": "十多个学生与独立开发者上台路演。",
+      "startDate": "2026年9月20日", "startTime": "晚上7点", "endTime": "21:30",
+      "venue": "西岸智塔 AI 空间", "district": "徐汇", "city": "上海",
+      "category": "ai", "tags": ["AI", "Demo", "免费"],
+      "price": "免费", "organizer": "上海 AI 开发者社区",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a08", "registrationUrl": "https://example.com/ai/a08/signup",
+      "publishedAt": "2026-09-08T10:00:00"
+    },
+    {
+      "id": "a09", "title": "桌游之夜：入门德州扑克与狼人杀", "description": "免费桌游吧体验局。",
+      "startDate": "2026-09-20", "startTime": "18:30", "endTime": "22:30",
+      "venue": "大隐书局", "district": "黄浦", "city": "上海",
+      "category": "social", "tags": ["桌游", "社交"],
+      "price": "¥0",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a09",
+      "publishedAt": "2026-09-09T10:00:00"
+    },
+    {
+      "id": "a10", "title": "咖啡烘焙品鉴入门", "description": "从生豆到杯子的入门课。",
+      "startDate": "2026-09-21", "startTime": "10:00", "endTime": "12:00",
+      "venue": "永康路咖啡实验室", "district": "徐汇", "city": "上海",
+      "category": "food", "tags": ["咖啡", "品鉴"],
+      "price": "88元", "organizer": "咖啡实验室",
+      "sourceName": "ai_community", "sourceUrl": "https://example.com/ai/a10", "registrationUrl": "https://example.com/ai/a10/signup",
+      "publishedAt": "2026-09-10T10:00:00"
+    }
+  ]
+}

@@ -1,0 +1,471 @@
+{
+  "summary": {
+    "approved": 17,
+    "needs_review": 5,
+    "low_confidence": 2
+  },
+  "queue": [
+    {
+      "activity": {
+        "id": "a01",
+        "title": "AI Agent Hackathon 上海站",
+        "description": "48小时 Agent 极客马拉松，现场组队，评委来自头部大厂。",
+        "startDate": "2026-09-20",
+        "startTime": "09:00",
+        "endDate": "2026-09-21",
+        "endTime": "21:00",
+        "venue": "西岸智塔 AI 空间",
+        "address": "上海市徐汇区龙腾大道2350号",
+        "district": "徐汇",
+        "city": "上海",
+        "category": "hackathon",
+        "tags": [
+          "AI",
+          "Agent",
+          "黑客松"
+        ],
+        "price": 0,
+        "organizer": "上海 AI 开发者社区",
+        "sourceName": "ai_community",
+        "sourceUrl": "https://example.com/ai/a01",
+        "registrationUrl": "https://example.com/ai/a01/signup",
+        "publishedAt": "2026-09-01T10:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "priceType": "free",
+        "trustScore": 85,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "cross_source_conflict",
+      "trustScore": 85,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "a06",
+        "title": "趣味跑:滨江10公里夜跑团",
+        "description": "配速630，欢迎新人。",
+        "startDate": "2026-09-19",
+        "startTime": "19:00",
+        "endTime": "21:00",
+        "venue": "滨江步道",
+        "district": "徐汇",
+        "city": "上海",
+        "category": "sport",
+        "tags": [
+          "跑步",
+          "夜跑"
+        ],
+        "price": 0,
+        "sourceName": "ai_community",
+        "sourceUrl": "https://example.com/ai/a06",
+        "publishedAt": "2026-09-06T18:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "address": null,
+        "endDate": null,
+        "priceType": "free",
+        "organizer": null,
+        "registrationUrl": null,
+        "trustScore": 70,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "medium_confidence",
+      "trustScore": 70,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "a07",
+        "title": "【速看】惊了!这场讲座千万别错过!",
+        "description": "?",
+        "startDate": "2026-09-20",
+        "district": "徐汇",
+        "tags": [
+          "讲座"
+        ],
+        "price": 0,
+        "sourceName": "ai_community",
+        "publishedAt": "2026-09-07T10:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "venue": null,
+        "address": null,
+        "city": "上海",
+        "endDate": null,
+        "startTime": null,
+        "endTime": null,
+        "priceType": "free",
+        "category": null,
+        "organizer": null,
+        "sourceUrl": null,
+        "registrationUrl": null,
+        "trustScore": 15,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "spammy_title"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "low_confidence",
+      "trustScore": 15,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "a09",
+        "title": "桌游之夜:入门德州扑克与狼人杀",
+        "description": "免费桌游吧体验局。",
+        "startDate": "2026-09-20",
+        "startTime": "18:30",
+        "endTime": "22:30",
+        "venue": "大隐书局",
+        "district": "黄浦",
+        "city": "上海",
+        "category": "social",
+        "tags": [
+          "桌游",
+          "社交"
+        ],
+        "price": 0,
+        "sourceName": "ai_community",
+        "sourceUrl": "https://example.com/ai/a09",
+        "publishedAt": "2026-09-09T10:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "address": null,
+        "endDate": null,
+        "priceType": "free",
+        "organizer": null,
+        "registrationUrl": null,
+        "trustScore": 70,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "medium_confidence",
+      "trustScore": 70,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "b01",
+        "title": "上海 AI Agent Hackathon",
+        "description": "48小时组队做 Agent！评委阵容豪华，奖金池丰厚。",
+        "startDate": "2026-09-20",
+        "startTime": "09:00",
+        "endTime": "21:00",
+        "venue": "西岸智塔AI空间",
+        "address": "徐汇区龙腾大道 2350 号",
+        "district": "徐汇",
+        "city": "上海市",
+        "tags": [
+          "Hackathon",
+          "AI"
+        ],
+        "price": 0,
+        "organizer": "上海 AI 开发者社区",
+        "sourceName": "campus_bbs",
+        "sourceUrl": "https://bbs.example.com/t/9001",
+        "registrationUrl": "https://bbs.example.com/t/9001/form",
+        "publishedAt": "2026-09-02T08:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "endDate": null,
+        "priceType": "free",
+        "category": null,
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "near_match:title_similarity=0.86",
+          "source_fields_complete"
+        ],
+        "duplicateOf": "a01",
+        "duplicateConfidence": 0.865,
+        "_extra": {}
+      },
+      "reason": "duplicate_candidate",
+      "trustScore": 85,
+      "duplicateCandidates": [
+        {
+          "duplicateOf": "a01",
+          "duplicateConfidence": 0.865
+        }
+      ]
+    },
+    {
+      "activity": {
+        "id": "b10",
+        "title": "趣味跑:滨江10公里夜跑团(第42期)",
+        "description": "滨江10公里夜跑，配速630。",
+        "startDate": "2026-09-19",
+        "startTime": "19:00",
+        "endTime": "21:00",
+        "venue": "滨江步道",
+        "district": "徐汇",
+        "tags": [
+          "跑步",
+          "夜跑"
+        ],
+        "price": 0,
+        "organizer": "跑者联盟",
+        "sourceName": "campus_bbs",
+        "sourceUrl": "https://bbs.example.com/t/9010",
+        "publishedAt": "2026-09-11T08:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "address": null,
+        "city": "上海",
+        "endDate": null,
+        "priceType": "free",
+        "category": null,
+        "registrationUrl": null,
+        "trustScore": 80,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "near_match:title_similarity=0.86",
+          "source_fields_complete"
+        ],
+        "duplicateOf": "a06",
+        "duplicateConfidence": 0.857,
+        "_extra": {}
+      },
+      "reason": "duplicate_candidate",
+      "trustScore": 80,
+      "duplicateCandidates": [
+        {
+          "duplicateOf": "a06",
+          "duplicateConfidence": 0.857
+        }
+      ]
+    },
+    {
+      "activity": {
+        "id": "c01",
+        "title": "上海 AI Agent Hackathon",
+        "description": "48小时 Agent 马拉松！现场提供餐饮。",
+        "startDate": "2026-09-20",
+        "startTime": "09:00",
+        "endTime": "21:00",
+        "venue": "西岸智塔AI空间",
+        "address": "徐汇区龙腾大道2350号",
+        "district": "徐汇",
+        "city": "上海",
+        "tags": [
+          "AI",
+          "黑客松"
+        ],
+        "price": 0,
+        "organizer": "上海AI开发者社区",
+        "sourceName": "city_portal",
+        "sourceUrl": "https://portal.example.com/ev/701",
+        "registrationUrl": "https://portal.example.com/ev/701/reg",
+        "publishedAt": "2026-09-03T14:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "endDate": null,
+        "priceType": "free",
+        "category": null,
+        "trustScore": 85,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_registration_url",
+          "has_source_url",
+          "has_venue",
+          "near_match:title_similarity=0.86",
+          "source_fields_complete"
+        ],
+        "duplicateOf": "a01",
+        "duplicateConfidence": 0.865,
+        "_extra": {}
+      },
+      "reason": "duplicate_candidate",
+      "trustScore": 85,
+      "duplicateCandidates": [
+        {
+          "duplicateOf": "a01",
+          "duplicateConfidence": 0.865
+        }
+      ]
+    },
+    {
+      "activity": {
+        "id": "c08",
+        "title": "错误时间示范场:午夜观影会",
+        "description": "结束时间早于开始时间，用于测试时间冲突扣分。",
+        "startDate": "2026-09-20",
+        "startTime": "23:00",
+        "endTime": "21:00",
+        "venue": "大光明电影院",
+        "district": "黄浦",
+        "city": "上海",
+        "category": "social",
+        "tags": [
+          "观影"
+        ],
+        "price": 40,
+        "organizer": "午夜场俱乐部",
+        "sourceName": "city_portal",
+        "sourceUrl": "https://portal.example.com/ev/708",
+        "publishedAt": "2026-09-10T14:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "address": null,
+        "endDate": null,
+        "priceType": "paid",
+        "registrationUrl": null,
+        "trustScore": 70,
+        "trustReasons": [
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete",
+          "time_conflict"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "medium_confidence",
+      "trustScore": 70,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "c09",
+        "title": "完全没日期的活动",
+        "description": "这条记录没有日期也没有地点，用于测试低分路径。",
+        "title_missing_note": null,
+        "tags": [],
+        "price": null,
+        "sourceName": "city_portal",
+        "publishedAt": "2026-09-11T14:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "venue": null,
+        "address": null,
+        "city": null,
+        "district": null,
+        "startDate": null,
+        "endDate": null,
+        "startTime": null,
+        "endTime": null,
+        "priceType": "unknown",
+        "category": null,
+        "organizer": null,
+        "sourceUrl": null,
+        "registrationUrl": null,
+        "trustScore": 0,
+        "trustReasons": [
+          "missing_date",
+          "missing_place"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "low_confidence",
+      "trustScore": 0,
+      "duplicateCandidates": []
+    },
+    {
+      "activity": {
+        "id": "c10",
+        "title": "AI Agent Hackathon 上海站",
+        "description": "同一活动的另一个转载版本，但场地写错，用于测试来源冲突。",
+        "startDate": "2026-09-20",
+        "startTime": "09:00",
+        "endTime": "21:00",
+        "venue": "浦东图书馆",
+        "district": "浦东",
+        "city": "上海",
+        "tags": [
+          "AI",
+          "黑客松"
+        ],
+        "price": 0,
+        "organizer": "上海AI开发者社区",
+        "sourceName": "city_portal",
+        "sourceUrl": "https://portal.example.com/ev/710",
+        "publishedAt": "2026-09-12T14:00:00",
+        "collectedAt": "2026-09-15T16:59:46",
+        "status": "needs_review",
+        "address": null,
+        "endDate": null,
+        "priceType": "free",
+        "category": null,
+        "registrationUrl": null,
+        "trustScore": 80,
+        "trustReasons": [
+          "confirmed_by_multiple_sources",
+          "cross_source_conflict",
+          "has_district_or_address",
+          "has_explicit_date",
+          "has_explicit_time",
+          "has_organizer",
+          "has_source_url",
+          "has_venue",
+          "source_fields_complete"
+        ],
+        "duplicateOf": null,
+        "duplicateConfidence": null,
+        "_extra": {}
+      },
+      "reason": "cross_source_conflict",
+      "trustScore": 80,
+      "duplicateCandidates": []
+    }
+  ]
+}

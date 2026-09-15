@@ -1,0 +1,96 @@
+{
+  "_notice": "DEMO DATA — 测试用样例数据，非真实活动。来源B：校园 BBS。故意包含大量格式差异。",
+  "DEMO_DATA": true,
+  "activities": [
+    {
+      "id": "b01", "title": "上海 AI Agent Hackathon", "description": "48小时组队做 Agent！评委阵容豪华，奖金池丰厚。",
+      "startDate": "2026-09-20", "startTime": "9:00", "endTime": "21:00",
+      "venue": "西岸智塔AI空间", "address": "徐汇区龙腾大道 2350 号", "district": "上海市徐汇区", "city": "上海市",
+      "tags": ["Hackathon", "AI"],
+      "price": "0", "organizer": "上海 AI 开发者社区",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9001", "registrationUrl": "https://bbs.example.com/t/9001/form",
+      "publishedAt": "2026-09-02T08:00:00"
+    },
+    {
+      "id": "b02", "title": "大模型应用实战工作坊 (零基础）", "description": "零基础 3 小时跑通 RAG 应用，欢迎自带电脑。",
+      "startDate": "09-20", "startTime": "13:30", "endTime": "17:00",
+      "venue": "创智天地7号楼", "district": "上海市杨浦区", "city": "上海",
+      "tags": ["AI", "工作坊"],
+      "price": "¥29", "organizer": "复旦 AI 研习社",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9002",
+      "publishedAt": "2026-09-03T08:00:00"
+    },
+    {
+      "id": "b03", "title": "JavaScript Workshop：从零写一个解释器", "description": "用 500 行 JS 写一个迷你 Lisp 解释器。",
+      "startDate": "2026/09/26", "startTime": "14:00", "endTime": "17:30",
+      "venue": "创智天地 7 号楼", "district": "杨浦", "city": "上海",
+      "category": "study", "tags": ["JavaScript", "编程"],
+      "price": "19元", "organizer": "前端之友",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9003", "registrationUrl": "https://bbs.example.com/t/9003/form",
+      "publishedAt": "2026-09-04T08:00:00"
+    },
+    {
+      "id": "b04", "title": "javascript workshop：从零写一个解释器", "description": "用500行JS写一个迷你Lisp解释器（校内转载）。",
+      "startDate": "2026-09-26", "startTime": "14:00", "endTime": "17:30",
+      "venue": "创智天地7号楼", "district": "杨浦",
+      "tags": ["编程", "JavaScript"],
+      "price": "19元", "organizer": "前端之友",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9004",
+      "publishedAt": "2026-09-05T08:00:00"
+    },
+    {
+      "id": "b05", "title": "秋日滨江骑行：杨浦大桥往返", "description": "20km 休闲骑，需要自备自行车。",
+      "startDate": "9月20日", "startTime": "8:00", "endTime": "11:30",
+      "venue": "杨浦滨江", "district": "杨浦", "city": "上海",
+      "category": "outdoor", "tags": ["骑行", "户外"],
+      "price": "免费", "organizer": "杨浦骑行会",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9005",
+      "publishedAt": "2026-09-06T08:00:00"
+    },
+    {
+      "id": "b06", "title": "公益图书馆整理志愿活动", "description": "周末给社区图书馆整理书架，4小时志愿时长。",
+      "startDate": "2026-09-20", "startTime": "9:30", "endTime": "12:30",
+      "venue": "杨浦图书馆少儿馆", "district": "杨浦", "city": "上海",
+      "category": "charity", "tags": ["公益", "志愿"],
+      "price": "免费", "organizer": "杨浦志愿者协会",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9006", "registrationUrl": "https://bbs.example.com/t/9006/form",
+      "publishedAt": "2026-09-07T08:00:00"
+    },
+    {
+      "id": "b07", "title": "🗂️ 周末旧书市集 🗂️", "description": "100+ 摊位，淘绝版书。",
+      "startDate": "2026.09.20", "startTime": "10:00", "endTime": "18:00",
+      "venue": "大学路", "district": "上海市杨浦区", "city": "上海",
+      "category": "market", "tags": ["市集", "旧书"],
+      "price": "免费", "organizer": "大学路集市办",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9007",
+      "publishedAt": "2026-09-08T08:00:00"
+    },
+    {
+      "id": "b08", "title": "Open MIC 开放麦：九月场", "description": "脱口秀、民谣、诗歌都可以上台。",
+      "startDate": "2026-09-20", "startTime": "19:30", "endTime": "22:00",
+      "venue": "育音堂", "district": "长宁",
+      "tags": ["演出", "社交"],
+      "price": "¥35", "organizer": "育音堂",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9008",
+      "publishedAt": "2026-09-09T08:00:00"
+    },
+    {
+      "id": "b09", "title": "AI 讲座：多模态大模型的2026", "description": "高校教授分享多模态前沿进展。",
+      "startDate": "2026-09-21", "startTime": "18:30", "endTime": "20:30",
+      "venue": "复旦大学邯郸校区", "district": "杨浦", "city": "上海",
+      "category": "talk", "tags": ["AI", "讲座"],
+      "price": "免费", "organizer": "复旦计算机学院",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9009",
+      "publishedAt": "2026-09-10T08:00:00"
+    },
+    {
+      "id": "b10", "title": "趣味跑：滨江10公里夜跑团（第42期）", "description": "滨江10公里夜跑，配速630。",
+      "startDate": "2026-09-19", "startTime": "19:00", "endTime": "21:00",
+      "venue": "滨江步道", "district": "徐汇",
+      "tags": ["跑步", "夜跑"],
+      "price": "0元", "organizer": "跑者联盟",
+      "sourceName": "campus_bbs", "sourceUrl": "https://bbs.example.com/t/9010",
+      "publishedAt": "2026-09-11T08:00:00"
+    }
+  ]
+}
