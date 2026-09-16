@@ -1,0 +1,185 @@
+{
+  "_comment": "Shared corpus for the two twin implementations of source-prose normalisation: pipeline/search/textnorm.py and ui_kits/app/activity-view.js. Both are asserted against these exact expectations, so a rule added to one side can never silently drift from the other.",
+  "cases": [
+    {
+      "why": "the real Meetup case: Markdown body, Chinese text",
+      "input": "**Bringing Dubai AI to Shanghai** 我们每周六 19:30 线下聚会",
+      "keepNewlines": true,
+      "expected": "Bringing Dubai AI to Shanghai 我们每周六 19:30 线下聚会"
+    },
+    {
+      "why": "`\\w` matches CJK in Python but not in JS — the boundary guard must be ASCII in both",
+      "input": "我们**每周**聚会",
+      "keepNewlines": true,
+      "expected": "我们每周聚会"
+    },
+    {
+      "why": "double-escaped JSON leftovers",
+      "input": "\\*\\*Bringing Dubai AI\\*\\*\\n我们每周六 19:30 线下聚会",
+      "keepNewlines": true,
+      "expected": "Bringing Dubai AI\n我们每周六 19:30 线下聚会"
+    },
+    {
+      "why": "a second marker on the same line must still be reached",
+      "input": "**a** **b** **c**",
+      "keepNewlines": true,
+      "expected": "a b c"
+    },
+    {
+      "why": "two markers with no trailing space: a greedy inner group would swallow both",
+      "input": "**a** **b**",
+      "keepNewlines": true,
+      "expected": "a b"
+    },
+    {
+      "why": "bold+italic collapses to the bare word",
+      "input": "***x***",
+      "keepNewlines": true,
+      "expected": "x"
+    },
+    {
+      "why": "markers separated by punctuation instead of a space",
+      "input": "(**a**)**b**",
+      "keepNewlines": true,
+      "expected": "(a)b"
+    },
+    {
+      "why": "an unpaired run is a leftover MARKER, not content — half-stripping it (a*b*c) was the shipped defect",
+      "input": "a**b**c",
+      "keepNewlines": true,
+      "expected": "abc"
+    },
+    {
+      "why": "an italic closer must not eat one asterisk out of a `**` run and strand the other",
+      "input": "hidden gem)**21:30. After-Hours:**We move on.",
+      "keepNewlines": true,
+      "expected": "hidden gem)21:30. After-Hours:We move on."
+    },
+    {
+      "why": "a bold pair whose closing marker is followed by a digit never pairs, so it was left on screen",
+      "input": "the discussion closes. **19:30–21:30. Venue in the group**21:30. After-Hours:",
+      "keepNewlines": true,
+      "expected": "the discussion closes. 19:30–21:30. Venue in the group21:30. After-Hours:"
+    },
+    {
+      "why": "the real shipped defect: markers sitting next to punctuation",
+      "input": "**Cost:** **Free**(Come as a regular customer).",
+      "keepNewlines": true,
+      "expected": "Cost: Free(Come as a regular customer)."
+    },
+    {
+      "why": "a heading marker stranded mid-line by a flattened source",
+      "input": "ideas.What this event is about: ## The Venue",
+      "keepNewlines": true,
+      "expected": "ideas.What this event is about: The Venue"
+    },
+    {
+      "why": "\"#1\" in an event title is not a heading marker",
+      "input": "参加 #1 上海最佳活动 — Join #1 Top Best Event",
+      "keepNewlines": true,
+      "expected": "参加 #1 上海最佳活动 — Join #1 Top Best Event"
+    },
+    {
+      "why": "multiplication is not emphasis",
+      "input": "票价 5 * 3 = 15 * 2",
+      "keepNewlines": true,
+      "expected": "票价 5 * 3 = 15 * 2"
+    },
+    {
+      "why": "snake_case must survive the underscore rule",
+      "input": "调用 get_user_name 方法",
+      "keepNewlines": true,
+      "expected": "调用 get_user_name 方法"
+    },
+    {
+      "why": "an unknown backslash escape is left verbatim (Windows path)",
+      "input": "素材在 C:\\Users\\a\\img",
+      "keepNewlines": true,
+      "expected": "素材在 C:\\Users\\a\\img"
+    },
+    {
+      "why": "links keep their text, drop their syntax",
+      "input": "报名见 [官网](https://x.test/a) 页面",
+      "keepNewlines": true,
+      "expected": "报名见 官网 页面"
+    },
+    {
+      "why": "images carry no information without the picture",
+      "input": "日程 ![图](https://x.test/a.png) 如下",
+      "keepNewlines": true,
+      "expected": "日程 如下"
+    },
+    {
+      "why": "heading, blockquote and rule markers",
+      "input": "## 活动介绍",
+      "keepNewlines": true,
+      "expected": "活动介绍"
+    },
+    {
+      "why": "blockquote marker",
+      "input": "> 到场请提前 10 分钟",
+      "keepNewlines": true,
+      "expected": "到场请提前 10 分钟"
+    },
+    {
+      "why": "a horizontal rule is a paragraph separator",
+      "input": "上半场\n---\n下半场",
+      "keepNewlines": true,
+      "expected": "上半场\n\n下半场"
+    },
+    {
+      "why": "code fences and inline code",
+      "input": "```\nnpm run dev\n```",
+      "keepNewlines": true,
+      "expected": "npm run dev"
+    },
+    {
+      "why": "inline code",
+      "input": "用 `npm install` 安装",
+      "keepNewlines": true,
+      "expected": "用 npm install 安装"
+    },
+    {
+      "why": "strikethrough",
+      "input": "~~旧时间~~ 新时间",
+      "keepNewlines": true,
+      "expected": "旧时间 新时间"
+    },
+    {
+      "why": "italic",
+      "input": "报名 *免费* 入场",
+      "keepNewlines": true,
+      "expected": "报名 免费 入场"
+    },
+    {
+      "why": "whitespace tidying, paragraph collapses to two newlines",
+      "input": "  a \t b \n\n\n\n c  ",
+      "keepNewlines": true,
+      "expected": "a b\n\nc"
+    },
+    {
+      "why": "single-line mode flattens paragraphs",
+      "input": "a\nb",
+      "keepNewlines": false,
+      "expected": "a b"
+    },
+    {
+      "why": "ordinary Chinese prose is untouched",
+      "input": "面向开发者与产品经理的 Agent 线下交流，含现场 Demo。",
+      "keepNewlines": true,
+      "expected": "面向开发者与产品经理的 Agent 线下交流，含现场 Demo。"
+    },
+    {
+      "why": "blank input stays missing",
+      "input": "   \n  ",
+      "keepNewlines": true,
+      "expected": null
+    },
+    {
+      "why": "a field that is nothing but an unpaired marker is not content",
+      "input": "**",
+      "keepNewlines": true,
+      "expected": null
+    }
+  ]
+}

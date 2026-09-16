@@ -31,13 +31,13 @@
 #     plus a recorded reason, so one dead source cannot kill a search
 
 import json
-import json
 import re
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
+from pipeline.search import textnorm
 from pipeline.search.models import RawSearchResult, new_raw_result
 from pipeline.search.provider import SearchProvider
 from pipeline.search.settings import SearchSettings
@@ -578,10 +578,17 @@ def parse_bing_html(html, settings=None):
 
 
 def _text(value):
+    """One-line field out of a platform page.
+
+    Runs through the shared normaliser so a source's own Markdown (`**bold**`
+    in a Meetup body) never reaches the UI as literal asterisks. Single-line,
+    because every caller here is a title / snippet / venue / price.
+    """
     if value is None:
         return None
     import html as _html
-    return re.sub(r"\s+", " ", _html.unescape(_TAG_STRIP_RE.sub(" ", value))).strip() or None
+    text = _html.unescape(_TAG_STRIP_RE.sub(" ", str(value)))
+    return textnorm.plain_text(text, keep_newlines=False)
 
 
 # --- real event platforms --------------------------------------------------

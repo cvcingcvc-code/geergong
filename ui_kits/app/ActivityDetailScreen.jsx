@@ -127,10 +127,13 @@
               </span>
             )}
           </div>
-          {v.trustReasons.length > 0 && (
+          {v.trustReasonItems.length > 0 && (
             <div style={{ marginTop: 11, display: "flex", flexDirection: "column", gap: 5 }}>
-              {v.trustReasons.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--text-body)", lineHeight: 1.5 }}>· {r}</div>
+              {v.trustReasonItems.map((r) => (
+                <div key={r.code} style={{
+                  fontSize: 12, lineHeight: 1.5,
+                  color: r.risk ? "var(--danger)" : "var(--text-body)",
+                }}>· {r.label}</div>
               ))}
             </div>
           )}

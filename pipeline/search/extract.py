@@ -21,6 +21,12 @@ import re
 import urllib.parse
 from dataclasses import dataclass, field
 
+from pipeline.search import textnorm
+
+# `<br>` and paragraph closers ARE line breaks in prose; every other tag is
+# just noise between words.
+_BR_RE = re.compile(r"</?br\s*/?>|</p\s*>|</div\s*>|</li\s*>", re.I)
+
 # --- image provenance vocabulary ------------------------------------------
 
 IMG_OG = "og:image"
@@ -174,14 +180,28 @@ def _attrs(tag):
 
 
 def _clean_text(value, limit=4000):
+    """Single-line field (title, venue…): tags out, entities decoded, one line."""
     if not value:
         return None
     text = re.sub(r"<[^>]+>", " ", str(value))
     text = _html.unescape(text)
-    text = re.sub(r"\s+", " ", text).strip()
-    if not text:
+    return textnorm.plain_text(text, limit=limit, keep_newlines=False)
+
+
+def _clean_prose(value, limit=4000):
+    """Prose field (description): same, but paragraph breaks survive.
+
+    Sources publish their own Markdown (Meetup bodies especially), and the
+    detail page renders this block with pre-wrap. Flattening it would both
+    leak `**` into the UI and destroy the author's paragraphs, so markup is
+    stripped while newlines are kept.
+    """
+    if not value:
         return None
-    return text[:limit]
+    text = _BR_RE.sub("\n", str(value))
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = _html.unescape(text)
+    return textnorm.plain_text(text, limit=limit, keep_newlines=True)
 
 
 def _absolutize(url, base):
@@ -640,7 +660,7 @@ def parse_page(html, url=None, final_url=None, extract_agenda_rows=True):
         url=url,
         finalUrl=base,
         title=_clean_text(title, 300),
-        description=_clean_text(description, 2000),
+        description=_clean_prose(description, 2000),
         siteName=meta.get("og:site_name") or meta.get("application-name"),
         canonicalUrl=canonical,
         lang=meta.get("og:locale") or _html_lang(html),

@@ -175,6 +175,113 @@ ok(restoredConflicts[restored.id], "a restored snapshot still participates in co
 ok(V.toView(restored).__view === true && restored.__view === true,
   "a restored view is recognised as a view (not re-normalised)");
 
+// ── trust reasons read as sentences, not as developer strings ─────────────
+// The scorer's rule names are the data contract (pipeline/trust/scorer.py);
+// the UI must translate the whole closed vocabulary, because a screenshot
+// showing "cross_source_conflict" is not information for a reader.
+eq(cv.trustReasonItems.length, 1, "canonical record carries one trust reason");
+eq(cv.trustReasonItems[0].code, "confirmed_by_multiple_sources", "raw code is still available for debugging");
+eq(cv.trustReasonItems[0].label, "多个来源互相印证", "positive rule translated");
+eq(cv.trustReasonItems[0].risk, false, "a reassurance is not a caveat");
+
+const conflicted = V.toView({
+  id: "c1", title: "冲突活动", status: "approved",
+  trustReasons: ["has_explicit_date", "cross_source_conflict", "location_conflict"],
+});
+eq(conflicted.trust, "conflict", "a cross-source conflict still reads as 存在冲突");
+eq(conflicted.trustReasonItems.map((r) => r.label),
+  ["多个来源信息存在冲突", "多个来源的场地不一致", "日期明确"],
+  "caveats are listed first, then the reassurances");
+eq(conflicted.trustReasonItems[0].risk, true, "a caveat is flagged for the danger tint");
+
+const unknownReason = V.toView({ id: "u1", trustReasons: ["some_future_rule"] });
+eq(unknownReason.trustReasonItems[0].label, "some_future_rule",
+  "an unrecognised rule is shown verbatim, never silently dropped");
+
+const dupReason = V.toView({ id: "u2", trustReasons: ["has_venue", "has_venue"] });
+eq(dupReason.trustReasonItems.length, 1, "duplicate rules collapse to one line");
+
+// Exact coverage of the scorer's vocabulary is asserted on the Python side
+// (pipeline/tests/test_trust_labels.py derives it from scorer.py); here we only
+// guard that the table still exists and is populated.
+ok(Object.keys(V.TRUST_REASON_LABEL).length >= 18, "the trust-reason table is populated");
+ok(V.trustReasonItems({}).length === 0, "no reasons -> no block");
+ok(V.trustReasonItems(null).length === 0, "missing record is tolerated");
+
+// ── source prose: Markdown is markup, not content ─────────────────────────
+// A Meetup body is written in Markdown and reached the detail page verbatim.
+const markdown = V.toView({
+  id: "m1",
+  title: "**Bringing Dubai AI** 上海站",
+  description: "**Bringing Dubai AI to Shanghai**\n\n我们每周六 19:30 线下聚会\n\n---\n\n报名见 [官网](https://x.test/a)。",
+});
+eq(markdown.title, "Bringing Dubai AI 上海站", "a bold title renders without its asterisks");
+ok(markdown.description.includes("Bringing Dubai AI to Shanghai"), "the sentence survives");
+ok(!markdown.description.includes("**"), "no emphasis markers reach the page");
+ok(!markdown.description.includes("]("), "no link syntax reaches the page");
+ok(markdown.description.includes("官网"), "link TEXT is kept — only the syntax is dropped");
+ok(markdown.description.includes("\n"), "paragraph breaks survive for pre-wrap rendering");
+
+const escaped = V.toView({
+  id: "m2",
+  description: String.raw`\*\*Bringing Dubai AI\*\*\n我们每周六 19:30 线下聚会`,
+});
+eq(escaped.description, "Bringing Dubai AI\n我们每周六 19:30 线下聚会",
+  "a double-escaped body is decoded and unwrapped in one pass");
+
+const markupOnly = V.toView({ id: "m3", description: "**" });
+eq(markupOnly.description, null, "a field that is nothing but markup counts as missing");
+eq(markupOnly.hasDescription, false, "…and the detail page shows its honest empty state");
+eq(markupOnly.rawDescription, "**", "the untouched value is retained for debugging");
+
+const plainProse = V.toView({ id: "m4", description: "面向开发者与产品经理的 Agent 线下交流，含现场 Demo。" });
+eq(plainProse.description, "面向开发者与产品经理的 Agent 线下交流，含现场 Demo。",
+  "ordinary prose passes through untouched");
+eq(V.plainText("票价 5 * 3 = 15 * 2"), "票价 5 * 3 = 15 * 2", "multiplication is not emphasis");
+eq(V.plainText("调用 get_user_name 方法"), "调用 get_user_name 方法", "snake_case survives");
+eq(V.plainText(null), null, "missing prose stays missing");
+eq(V.plainText("   "), null, "blank prose stays missing");
+eq(V.plainText(V.plainText("## 标题\n**粗体** 和 [链接](https://x.test)")),
+  V.plainText("## 标题\n**粗体** 和 [链接](https://x.test)"), "the normaliser is idempotent");
+
+// ── shared corpus: the JS twin must match textnorm.py exactly ──────────────
+// `activity-view.js` re-implements the normaliser because it also renders
+// legacy records and localStorage-persisted views that never passed through
+// the pipeline. pipeline/tests/test_textnorm.py asserts the SAME file, so a
+// rule added to one side fails on the other.
+const CORPUS = JSON.parse(readFileSync(
+  resolve(HERE, "fixtures", "textnorm_corpus.json"), "utf8"));
+ok(CORPUS.cases.length > 0, "shared corpus is present and non-empty");
+for (const c of CORPUS.cases) {
+  eq(V.plainText(c.input, null, c.keepNewlines), c.expected, "corpus: " + c.why);
+}
+
+// ── a view saved by an older build still opens ────────────────────────────
+// My Weekend keeps whole views in localStorage, so a snapshot written before
+// `trustReasonItems` existed is a real thing to encounter after an upgrade.
+// Without the in-place upgrade the detail page throws instead of rendering.
+const legacySnapshot = {
+  __view: true, id: "old1", title: "旧快照",
+  description: "**Bringing Dubai AI**\n我们每周六 19:30 线下聚会",
+  trustReasons: ["has_venue", "cross_source_conflict"],
+};
+ok(legacySnapshot.trustReasonItems === undefined, "the fixture really lacks the field");
+const upgraded = V.toView(legacySnapshot);
+ok(upgraded === legacySnapshot, "an old snapshot is upgraded in place, not re-derived");
+eq(upgraded.trustReasonItems.map((r) => r.label),
+  ["多个来源信息存在冲突", "场地明确"], "the backfilled reasons are translated");
+eq(upgraded.hasDescription, true, "hasDescription is backfilled");
+eq(upgraded.description, "Bringing Dubai AI\n我们每周六 19:30 线下聚会",
+  "an old snapshot's Markdown is normalised too, so it cannot leak either");
+eq(upgraded.rawDescription, "**Bringing Dubai AI**\n我们每周六 19:30 线下聚会",
+  "the source's own text is preserved as the raw value");
+eq(V.toView(upgraded).trustReasonItems.length, 2, "upgrading twice changes nothing");
+
+// A snapshot with no reasons at all is still safe to render.
+const bareSnapshot = V.toView({ __view: true, id: "old2", title: "空快照" });
+eq(bareSnapshot.trustReasonItems, [], "a view with no reasons backfills to an empty list");
+eq(bareSnapshot.hasDescription, false, "a view with no description backfills honestly");
+
 // ── report ────────────────────────────────────────────────────────────────
 console.log("\nUI view-model tests: " + passed + " passed, " + failures.length + " failed");
 if (failures.length) {
