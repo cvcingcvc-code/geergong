@@ -13,13 +13,16 @@ involved in any figure marked REAL.
 | | |
 |---|---|
 | Branch | `feature/human-review-loop` |
-| This phase, main landing | `79e7399` feat(search): real web retrieval + event images + desktop search/detail UI |
+| Main landing | `79e7399` feat(search): real web retrieval + event images + desktop search/detail UI |
 | Relevance / Meetup / image fixes | `d6cdd69` fix(search): real-source relevance, Meetup provider, image provenance |
-| Detail-page copy + this report | `7b87b93` PHASE 5: detail-page copy reads as prose, not as pipeline internals |
+| Detail-page copy (D-1, D-2) | `7b87b93` |
+| Image contract, headline count, this report (D-3, D-4) | `b7bcaec` |
+| Source bullet stars (D-5) | `0e3e31b` |
 | `.git` backup | `~/.workbuddy/gorgon-git-safe/phase5-quality-*` |
 
-This machine silently drops writes to `.git/refs`, so every commit is verified
-with `git rev-parse HEAD` **and** by reading the ref file back. Both agree.
+HEAD at the time of writing: `fab4ba8`. Working tree clean; every commit verified
+by `git rev-parse HEAD` **and** by reading the ref file back, because this machine
+silently drops writes to `.git/refs`.
 
 ---
 
