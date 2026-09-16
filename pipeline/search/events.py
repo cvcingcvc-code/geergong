@@ -327,7 +327,8 @@ class EventExtractor(object):
         """(imageUrl, imageSource, imageType) following the fixed priority."""
         candidates = list(page.images or []) if page else []
 
-        from pipeline.search.extract import ImageCandidate, IMG_EMBEDDED, IMG_THUMBNAIL
+        from pipeline.search.extract import (ImageCandidate, IMG_EMBEDDED,
+                                             IMG_THUMBNAIL, upgrade_image_size)
         if embedded_image:
             candidates.append(ImageCandidate(url=embedded_image, source=IMG_EMBEDDED))
 
@@ -338,7 +339,7 @@ class EventExtractor(object):
         candidates = [c for c in candidates if c and c.url]
         if candidates:
             best = sorted(candidates, key=lambda c: -c.priority)[0]
-            return best.url, best.source, "remote"
+            return upgrade_image_size(best.url), best.source, "remote"
 
         slug = placeholders.slug_for(
             (extract.city if extract else None) or (hint or {}).get("city"),

@@ -16,9 +16,10 @@
 # Failure isolation: a single dead site yields a hit with fewer facts and a
 # `fetch` record explaining why — the search itself still succeeds.
 
+from pipeline.search import placeholders
 from pipeline.search.cache import MetadataCache, NullCache
 from pipeline.search.events import EventExtractor
-from pipeline.search.extract import IMG_PLACEHOLDER, parse_page
+from pipeline.search.extract import IMG_PLACEHOLDER, IMG_THUMBNAIL, parse_page
 from pipeline.search.fetcher import PageFetcher
 from pipeline.search.placeholders import is_placeholder
 from pipeline.search.settings import SearchSettings
@@ -123,6 +124,8 @@ class Enricher(object):
             # a placeholder URL must never be presented as real artwork.
             if not result.imageSource and result.imageUrl and is_placeholder(result.imageUrl):
                 result.imageSource = IMG_PLACEHOLDER
+            result.imageType = cached.get("imageType") or (
+                "placeholder" if result.imageSource == IMG_PLACEHOLDER else "remote")
             result.extractInfo = info
             if (cached.get("imageType") or "remote") == "placeholder":
                 self.stats["placeholderImages"] += 1
@@ -164,6 +167,8 @@ class Enricher(object):
         if extracted.tags:
             result.tags = list(extracted.tags)
         result.imageSource = extracted.imageSource
+        result.imageType = extracted.imageType or (
+            "placeholder" if extracted.imageSource == IMG_PLACEHOLDER else "remote")
         info["confidence"] = extracted.confidence
         info["fieldSources"] = applied
         info["agenda"] = [dict(a) for a in extracted.agenda]
@@ -214,6 +219,7 @@ class Enricher(object):
                 result.extractInfo = {"skipped": "fetch_disabled", "fetch": None,
                                       "confidence": "thin", "fieldSources": {},
                                       "agenda": []}
+                self._finalise_image(result)
             return list(results), self.stats
 
         targets = list(results[:max(0, limit)])
@@ -251,7 +257,43 @@ class Enricher(object):
                 done[index] = self._guarded(result)
 
         enriched = [done.get(i, targets[i]) for i in range(len(targets))]
+        for result in enriched + untouched:
+            self._finalise_image(result)
         return enriched + untouched, self.stats
+
+    # -- image consistency --------------------------------------------------
+
+    def _finalise_image(self, result):
+        """Leave every row with an image triple that does not contradict itself.
+
+        Rows the enricher never reached (over the fetch limit, or past the time
+        budget) still have to tell the UI something true about their picture.
+        Two cases, both stated rather than implied:
+
+        * a picture exists but its origin was never recorded — label it from
+          the URL itself (a listing-row image is a thumbnail, our own
+          placeholder artwork is a placeholder);
+        * no picture exists at all — that is the category placeholder, and
+          saying so keeps the withImage / placeholderImage counters honest
+          instead of reporting a missing image as a real one.
+        """
+        if result.imageUrl:
+            if not result.imageSource:
+                result.imageSource = (IMG_PLACEHOLDER
+                                      if is_placeholder(result.imageUrl)
+                                      else IMG_THUMBNAIL)
+            if not result.imageType:
+                result.imageType = ("placeholder"
+                                    if result.imageSource == IMG_PLACEHOLDER
+                                    else "remote")
+            return result
+
+        slug = placeholders.slug_for(result.city, result.title,
+                                    result.tags, result.title)
+        result.imageUrl = placeholders.placeholder_url(slug)
+        result.imageSource = IMG_PLACEHOLDER
+        result.imageType = "placeholder"
+        return result
 
     def _guarded(self, result):
         try:

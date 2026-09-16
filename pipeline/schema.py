@@ -36,6 +36,7 @@ ACTIVITY_FIELDS = [
     "registrationUrl",       # str|null
     "imageUrl",              # str|null (real image URL, or a local placeholder)
     "imageSource",           # str|null (og:image | twitter:image | json-ld | hero | thumbnail | placeholder)
+    "imageType",             # str|null (remote | placeholder)
     "agenda",                # list[{time,start,end,title}] — only when the source published one
     "publishedAt",           # str|null (source-provided publish time)
     "collectedAt",           # str|null (when our ingest collected it)
@@ -67,6 +68,7 @@ DEFAULTS = {
     "registrationUrl": None,
     "imageUrl": None,
     "imageSource": None,
+    "imageType": None,
     "agenda": [],
     "publishedAt": None,
     "collectedAt": None,

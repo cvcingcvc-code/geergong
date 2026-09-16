@@ -33,6 +33,7 @@ _FIELD_MAP = {
     "source": "sourceName",
     "imageUrl": "imageUrl",
     "imageSource": "imageSource",
+    "imageType": "imageType",
 }
 
 # Non-canonical keys the pipeline must still see at top level:

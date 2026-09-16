@@ -195,6 +195,7 @@ class RawSearchResult:
     organizer: str = None
     imageUrl: str = None
     imageSource: str = None
+    imageType: str = None      # remote | placeholder — how the URL was obtained
     tags: list = field(default_factory=list)
     # Populated by the enrichment stage (pipeline/search/enrich.py):
     #   {"url", "fetch": {...}, "confidence", "fieldSources", "agenda",

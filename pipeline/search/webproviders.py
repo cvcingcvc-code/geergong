@@ -31,6 +31,7 @@
 #     plus a recorded reason, so one dead source cannot kill a search
 
 import json
+import json
 import re
 import time
 import urllib.error
@@ -72,6 +73,28 @@ DOUBAN_CATEGORIES = (
     ("week-commonweal", ("公益", "志愿")),
 )
 
+# Meetup addresses a location as "<country>--<City>"; its own city vocabulary is
+# English while the planner speaks Chinese, so this bridge has to be explicit.
+MEETUP_CITIES = {
+    "上海": "Shanghai", "北京": "Beijing", "深圳": "Shenzhen", "广州": "Guangzhou",
+    "杭州": "Hangzhou", "成都": "Chengdu", "南京": "Nanjing", "武汉": "Wuhan",
+    "西安": "Xian", "苏州": "Suzhou", "重庆": "Chongqing", "长沙": "Changsha",
+    "天津": "Tianjin", "青岛": "Qingdao",
+}
+MEETUP_EN_CITY = {v: k for k, v in MEETUP_CITIES.items()}
+
+# The planner's query text is a sentence ("上海 AI 活动 本周末"); a search box
+# wants the distinctive term. Most specific rule first — "AI Agent" must win
+# over "AI", or every Agent query collapses into the broader term.
+MEETUP_KEYWORDS = (
+    ("vibe coding", ("vibe coding", "vibecoding", "氛围编程")),
+    ("hackathon", ("hackathon", "黑客松", "黑客马拉松")),
+    ("AI Agent", ("agent", "智能体", "agentic")),
+    ("demo day", ("demo day", "路演", "demo 展示")),
+    ("startup", ("创业", "startup", "融资")),
+    ("AI", ("ai", "人工智能", "大模型", "llm", "gpt", "机器学习", "生成式")),
+)
+
 # 活动行 tag hints: the platform's own tag vocabulary benefits from the exact
 # words its own listings use.
 HUODONGXING_TAGS = (
@@ -105,6 +128,20 @@ def detect_douban_category(text):
     for slug, words in DOUBAN_CATEGORIES:
         if any(w in lowered for w in words):
             return slug
+    return None
+
+
+def detect_search_keyword(text):
+    """The distinctive term to put in a source's own search box.
+
+    Returns None when the query carries no recognisable topic — in that case
+    the caller browses rather than searches, which is the honest reading of
+    "这个周末上海有什么活动".
+    """
+    lowered = (text or "").casefold()
+    for keyword, words in MEETUP_KEYWORDS:
+        if any(w in lowered for w in words):
+            return keyword
     return None
 
 
@@ -207,27 +244,39 @@ def _topic_words(topic):
 
 
 def _row_matches(row, words):
-    haystack = " ".join(str(x).casefold() for x in (
+    haystack = " ".join(str(x) for x in (
         row.get("title"), row.get("snippet"), row.get("organizer"),
         " ".join(row.get("tags") or []),
     ) if x)
-    return any(w and w in haystack for w in words)
+    from pipeline.search.matching import mentions
+    return mentions(haystack, words)
 
 
-def relevance_gate(rows, words):
+def relevance_gate(rows, words, strict=False):
     """Keep the rows that actually address the query's topic.
 
     A browse-style listing page answers "everything in this city", not the
     user's question, so a topic-specific query has to narrow it — exactly
-    what a search layer is for. Two safety rules keep this from hiding
-    reality: the filter only runs when the planner produced an explicit
-    topic, and if nothing matches we return the UNFILTERED set rather than
-    an empty list (silently zeroing recall would be the worse failure).
+    what a search layer is for.
+
+    `strict` decides what happens when the filter removes everything, and the
+    two cases are genuinely different:
+
+    * strict=False (a search engine's results): the rows are query-derived by
+      construction, so an unmatched row is a near miss rather than a
+      different topic. Returning the unfiltered set preserves recall.
+    * strict=True (a platform's own browse listing): the rows are "everything
+      on this platform today". Keeping them when none match the topic is not
+      recall — it is a browse page wearing a search result's clothes, and it
+      is how 音乐剧 and 脱口秀 end up in an answer about AI meetups. An empty
+      list is the honest answer, and the caller reports it as such.
     """
     if not words or not rows:
         return rows
     kept = [r for r in rows if _row_matches(r, words)]
-    return kept or rows
+    if kept or strict:
+        return kept
+    return rows
 
 
 def _today():
@@ -251,6 +300,14 @@ def _not_ended(raw_date, today=None):
 
 def _query_text(query):
     return getattr(query, "text", None) or str(query)
+
+
+def _listing_image_source(url):
+    """Provenance label for an image taken straight off a listing row."""
+    if not url:
+        return None
+    from pipeline.search.extract import IMG_THUMBNAIL
+    return IMG_THUMBNAIL
 
 
 # --- generic web search ----------------------------------------------------
@@ -587,8 +644,12 @@ class EventSiteProvider(SearchProvider):
             return []
 
         gate_before = len(rows)
-        rows = relevance_gate(rows, _topic_words(topic))
-        self.lastGate = {"topic": topic, "before": gate_before, "after": len(rows)}
+        # strict: these are platform browse listings, not query-derived hits,
+        # so a topic query that matches nothing must yield nothing — see
+        # relevance_gate for why the lenient fallback would be a lie here.
+        rows = relevance_gate(rows, _topic_words(topic), strict=True)
+        self.lastGate = {"topic": topic, "before": gate_before, "after": len(rows),
+                         "dropped": gate_before - len(rows)}
 
         self.requestCount += 1
         results = []
@@ -620,6 +681,11 @@ class EventSiteProvider(SearchProvider):
                 rawPrice=row.get("rawPrice"),
                 organizer=row.get("organizer"),
                 imageUrl=row.get("thumbnail"),
+                # The pair must never disagree: an image that came from the
+                # listing row is a thumbnail, and saying so is what lets the
+                # detail page upgrade it later. Rows the enricher never
+                # reaches keep this honest label instead of a blank.
+                imageSource=_listing_image_source(row.get("thumbnail")),
                 tags=list(row.get("tags") or []),
             ))
         self.status = ProviderStatus(self.name, self.kind, True, hits=len(results))
@@ -827,10 +893,13 @@ def _abs_image(url):
     if not url:
         return None
     if url.startswith("//"):
-        return "https:" + url
-    if url.startswith("/"):
-        return "https://www.douban.com" + url
-    return url
+        absolute = "https:" + url
+    elif url.startswith("/"):
+        absolute = "https://www.douban.com" + url
+    else:
+        absolute = url
+    from pipeline.search.extract import upgrade_image_size
+    return upgrade_image_size(absolute)
 
 
 # SegmentFault 技术活动 — https://segmentfault.com/events?city=上海
@@ -931,12 +1000,154 @@ class SegmentFaultProvider(EventSiteProvider):
         return rows
 
 
+# --- Meetup -----------------------------------------------------------------
+#
+# https://www.meetup.com/find/?keywords=AI&location=cn--Shanghai
+#
+# The one source here that is genuinely keyword-scoped: Meetup's own search
+# runs the term inside a city, so its rows are query-derived rather than a
+# browse dump. The results ship as a normalised Apollo cache inside
+# __NEXT_DATA__, which means every field is read from the platform's own
+# record — no text scraping, nothing inferred from prose.
+
+_MU_NEXT_DATA_RE = re.compile(
+    r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
+
+
+def _meetup_state(html):
+    """The Apollo cache inside __NEXT_DATA__, or None when it is absent."""
+    match = _MU_NEXT_DATA_RE.search(html or "")
+    if not match:
+        return None
+    try:
+        payload = json.loads(match.group(1))
+    except (ValueError, TypeError):
+        return None
+    page_props = ((payload or {}).get("props") or {}).get("pageProps") or {}
+    state = page_props.get("__APOLLO_STATE__")
+    return state if isinstance(state, dict) else None
+
+
+def _split_meetup_dt(value):
+    """'2026-09-19T19:30:00+08:00' -> ('2026-09-19', '19:30')."""
+    m = re.match(r"(20\d{2})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", str(value or ""))
+    if not m:
+        return None, None
+    return ("%s-%s-%s" % (m.group(1), m.group(2), m.group(3)),
+            "%s:%s" % (m.group(4), m.group(5)))
+
+
+def _meetup_price(fee_settings):
+    """The price Meetup states, or None.
+
+    `feeSettings` carries {amount, currency} for a ticketed event. It is
+    absent for most events — and absent is NOT the same as free: the page
+    renders no 免费/Free marker either, so we hold no source fact about the
+    price and report null rather than guessing one.
+    """
+    if not isinstance(fee_settings, dict):
+        return None
+    amount = fee_settings.get("amount")
+    if amount in (None, ""):
+        return None
+    currency = fee_settings.get("currency")
+    return ("%s %s" % (currency, amount)) if currency else str(amount)
+
+
+class MeetupProvider(EventSiteProvider):
+    """Meetup 公开搜索页 — real keyword search, no API key required."""
+
+    name = "events:meetup"
+    sourceName = "Meetup"
+    sourceTrust = "medium"
+    homepage = "https://www.meetup.com"
+
+    def build_url(self, query_text):
+        city = detect_city(query_text) or DEFAULT_CITY
+        keyword = detect_search_keyword(query_text)
+        params = {"location": "cn--%s" % MEETUP_CITIES.get(city, "Shanghai")}
+        if keyword:
+            params["keywords"] = keyword
+        return "%s/find/?%s" % (self.homepage, urllib.parse.urlencode(params))
+
+    def _run(self, query_text):
+        state = _meetup_state(self._fetch(self.build_url(query_text)))
+        if state is None:
+            raise ProviderUnavailable(REASON_PARSE,
+                                      "Meetup 页面未包含可解析的活动数据")
+        return self.parse_state(state)
+
+    def parse_state(self, state):
+        rows = []
+        for _key, node in (state or {}).items():
+            if not isinstance(node, dict) or node.get("__typename") != "Event":
+                continue
+            title = _text(node.get("title"))
+            url = node.get("eventUrl")
+            if not title or not url:
+                continue
+
+            raw_date, raw_time = _split_meetup_dt(node.get("dateTime"))
+            if not _not_ended(raw_date):
+                continue
+
+            venue = _deref(state, node.get("venue")) or {}
+            group = _deref(state, node.get("group")) or {}
+            online = str(node.get("eventType") or "").upper() == "ONLINE"
+
+            rows.append({
+                "title": title,
+                # The platform's own description also acts as the snippet: it
+                # is where an event whose title says "language model" states
+                # the word AI, so the topic gate can actually see it. It is
+                # never promoted to our description — the detail page is.
+                "snippet": _text(node.get("description")),
+                "url": url,
+                "registrationUrl": url,   # the event page IS the RSVP page
+                "rawDate": raw_date,
+                "rawTime": raw_time,
+                "city": MEETUP_EN_CITY.get(_text(venue.get("city")) or ""),
+                "district": None,         # Meetup gives a street, not a 区
+                "rawVenue": "线上活动" if online else _text(venue.get("name")),
+                "address": _text(venue.get("address")),
+                "rawPrice": _meetup_price(node.get("feeSettings")),
+                "organizer": _text(group.get("name")),
+                "thumbnail": _meetup_photo(state, node),
+                "tags": [],
+                "sourceName": self.sourceName,
+                "sourceTrust": self.sourceTrust,
+            })
+        return rows
+
+
+def _deref(state, node):
+    """Apollo stores either an inline object or {"__ref": "Type:id"}."""
+    if not isinstance(node, dict):
+        return None
+    ref = node.get("__ref")
+    if not ref:
+        return node
+    target = (state or {}).get(ref)
+    return target if isinstance(target, dict) else None
+
+
+def _meetup_photo(state, node):
+    for field in ("featuredEventPhoto", "displayPhoto"):
+        info = _deref(state, node.get(field))
+        if info:
+            photo = info.get("highResUrl") or info.get("baseUrl")
+            if photo:
+                return photo
+    return None
+
+
 # --- registry ---------------------------------------------------------------
 
 EVENT_SITE_CLASSES = {
     "segmentfault": SegmentFaultProvider,
     "eventxing": HuodongxingProvider,
     "douban": DoubanEventsProvider,
+    "meetup": MeetupProvider,
 }
 
 API_BACKEND_SET = ("brave", "bing", "serper", "tavily", "searxng")

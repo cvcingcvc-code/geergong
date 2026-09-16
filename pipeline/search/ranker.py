@@ -9,6 +9,7 @@
 import re
 from datetime import date
 
+from pipeline.search import matching
 from pipeline.search.models import RankedEvent, SearchRequest
 from pipeline.search.planner import TOPIC_LEXICON, resolve_date_range
 
@@ -78,12 +79,18 @@ def _activity_text(activity):
 
 
 def _topic_hits(activity, topics):
-    """-> list of topics the activity actually mentions."""
+    """-> list of topics the activity actually mentions.
+
+    Matching goes through pipeline.search.matching so that "ai" cannot be
+    satisfied by "Shanghai" — a false positive here does not merely misorder
+    results, it prints a claim ("AI 主题高度匹配") that the activity does not
+    support.
+    """
     text = _activity_text(activity)
     hits = []
     for topic in topics:
-        words = _TOPIC_WORD_INDEX.get(topic) or [topic.casefold()]
-        if any(w and w in text for w in words):
+        words = _TOPIC_WORD_INDEX.get(topic) or [topic]
+        if matching.mentions(text, words):
             hits.append(topic)
     return hits
 
@@ -184,12 +191,16 @@ def score_location_fit(activity, request):
         return NEUTRAL_LOCATION_SCORE, []
     district = activity.get("district")
     city = activity.get("city")
+    # A wrong city is decidable even when the district is unknown. Checking it
+    # first matters: the missing-district branch used to return early, so a
+    # 北京 event with no district scored "unknown" and outranked in-city
+    # events. "Not in your city" is a fact we already hold — use it.
+    if city and request.city and city != request.city:
+        return LOCATION_SCORES["other_city"], ["不在%s" % request.city]
     if not district:
         return LOCATION_SCORES["unknown"], ["活动区域待确认"]
     if district == pref:
         return LOCATION_SCORES["exact"], ["位于%s" % district]
-    if city and request.city and city != request.city:
-        return LOCATION_SCORES["other_city"], ["不在%s" % (request.city or "本市")]
     return LOCATION_SCORES["same_city"], ["在%s，不在%s附近" % (district, pref)]
 
 

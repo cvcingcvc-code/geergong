@@ -44,7 +44,7 @@ KEYLESS_BACKENDS = ("bing_html",)
 
 # Event-platform providers: a platform's own public listing/search page.
 # These are real sources, not a search engine we built ourselves.
-EVENT_SOURCES = ("segmentfault", "eventxing", "douban")
+EVENT_SOURCES = ("segmentfault", "eventxing", "douban", "meetup")
 
 # How the generic web-search slot is filled.
 WEB_SEARCH_MODES = ("auto", "off", "bing_html")

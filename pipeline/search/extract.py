@@ -200,6 +200,27 @@ def _absolutize(url, base):
     return None
 
 
+# Sources publish several renditions of the same artwork, and the one they put
+# in a listing or in og:image is the small one. A search card is ~150px wide and
+# a detail hero is full-bleed, so asking for the largest published rendition is a
+# free quality win: same artwork, same origin, same provenance, more pixels.
+# Only renditions verified reachable are listed (douban's `medium` 418s).
+_IMAGE_SIZE_UPGRADES = (
+    (re.compile(r"/pview/event_poster/(?:small|median|thumb)/"),
+     "/pview/event_poster/large/"),
+)
+
+
+def upgrade_image_size(url):
+    """Swap a thumbnail rendition for the largest one the source also serves."""
+    if not url:
+        return url
+    for pattern, replacement in _IMAGE_SIZE_UPGRADES:
+        if pattern.search(url):
+            return pattern.sub(replacement, url)
+    return url
+
+
 def _usable_image(url, base):
     """Reject data:, blob:, tracking pixels and 1x1 spacers by URL alone."""
     if not url:
@@ -216,7 +237,7 @@ def _usable_image(url, base):
             and "/image" not in absolute and "?" not in absolute:
         # No extension and no query string: almost certainly not a photo.
         return None
-    return absolute
+    return upgrade_image_size(absolute)
 
 
 def parse_meta_tags(html):
