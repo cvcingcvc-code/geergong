@@ -185,17 +185,17 @@ traceable link says so instead of inventing one.
 | Suite | Count | Command |
 |---|---|---|
 | Python (unittest) | **206** | `python -m unittest discover -s pipeline/tests -t .` |
-| JS view model | **121** | `node pipeline/tests/ui_view_model.test.mjs` |
+| JS view model | **125** | `node pipeline/tests/ui_view_model.test.mjs` |
 | Browser E2E | **35** | `node pipeline/tests/e2e_phase5.mjs` |
 
 New this phase: `test_search_relevance.py` (35), `test_textnorm.py` (20),
 `test_trust_labels.py` (3, derives the vocabulary from `trust/scorer.py` and
 asserts the UI translates it **exactly** — no gaps, no dead entries).
 
-`fixtures/textnorm_corpus.json` is asserted by **both** the Python and the JS
-suite, because the normaliser exists twice (the app also renders legacy records
-and localStorage snapshots that never pass through the pipeline). Adding that
-corpus immediately exposed three real divergences.
+`fixtures/textnorm_corpus.json` (34 cases) is asserted by **both** the Python and
+the JS suite, because the normaliser exists twice (the app also renders legacy
+records and localStorage snapshots that never pass through the pipeline). Adding
+that corpus immediately exposed three real divergences.
 
 ## BROWSER E2E
 
