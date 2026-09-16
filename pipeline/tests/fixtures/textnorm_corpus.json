@@ -56,6 +56,30 @@
       "expected": "hidden gem)21:30. After-Hours:We move on."
     },
     {
+      "why": "the organiser's own inline bullet stars — the punctuation-positioned ones are markup and go; the one after a word is indistinguishable from prose and stays",
+      "input": "after the discussion closes. *19:30 - 21:30: Venue in the group * 21:30+ After-Hours: we move on. * Cost: Free",
+      "keepNewlines": true,
+      "expected": "after the discussion closes. 19:30 - 21:30: Venue in the group * 21:30+ After-Hours: we move on. Cost: Free"
+    },
+    {
+      "why": "a bullet star straight after punctuation with no space, and a line-start bullet",
+      "input": "actually want?* * How to share revenue\n* Meetup Pages: https://x.test",
+      "keepNewlines": true,
+      "expected": "actually want? * How to share revenue\nMeetup Pages: https://x.test"
+    },
+    {
+      "why": "a bullet rule must not eat the asterisk in multiplication",
+      "input": "价格 5 * 3 = 15 * 2",
+      "keepNewlines": true,
+      "expected": "价格 5 * 3 = 15 * 2"
+    },
+    {
+      "why": "an italic pair is resolved before the bullet rule sees it",
+      "input": "备注：*重要* 请提前到场",
+      "keepNewlines": true,
+      "expected": "备注：重要 请提前到场"
+    },
+    {
       "why": "a bold pair whose closing marker is followed by a digit never pairs, so it was left on screen",
       "input": "the discussion closes. **19:30–21:30. Venue in the group**21:30. After-Hours:",
       "keepNewlines": true,

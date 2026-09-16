@@ -100,6 +100,20 @@ _MD_ITALIC_U_RE = re.compile(
 _NOISE_ONLY_RE = re.compile(r"^[\s*_~`#>=\-—.·]+$")
 
 
+# A LONE `*` in bullet position — `* Item` or `*Item`, after a line start or a
+# sentence end. Meetup organisers write their lists inline like this
+# (`closes. *19:30 - 21:30:`, `approval) * Meetup Pages:`), and the asterisk is
+# markup, not content.
+#
+# Deliberately narrow, because a single asterisk is otherwise indistinguishable
+# from prose: the preceding character must be sentence punctuation or a newline,
+# so `5 * 3` (digit, space, star) is never touched, and `group * 21:30` keeps its
+# star too — after a word there is nothing left to tell a bullet from prose.
+# `(?!\*)` stops it eating the FIRST half of a `**` run, which would leave a
+# single stranded asterisk behind. Runs after the emphasis rules, so a genuine
+# `*italic*` has already been resolved.
+_MD_BULLET_RE = re.compile(r"(^|[.。:;!?)\]）]|\n)[ \t]*\*(?!\*)[ \t]*", re.M)
+
 # Leftover emphasis runs — the safety net, and the reason this module guarantees
 # "no marker ever reaches the page".
 #
@@ -135,6 +149,7 @@ def strip_markup(text):
     text = _MD_BOLD_U_RE.sub(r"\1", text)
     text = _MD_ITALIC_RE.sub(r"\1", text)
     text = _MD_ITALIC_U_RE.sub(r"\1", text)
+    text = _MD_BULLET_RE.sub(r"\1 ", text)
     text = _MD_LEFTOVER_STAR_RE.sub("", text)
     text = _MD_LEFTOVER_UNDERSCORE_RE.sub("", text)
     return text

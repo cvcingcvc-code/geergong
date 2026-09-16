@@ -161,6 +161,12 @@
       .replace(/`([^`\n]+)`/g, "$1")
       .replace(/~~(?=\S)([\s\S]*?\S)~~/g, "$1");
     text = stripInlineMarkup(text);
+    // A LONE `*` in bullet position (`closes. *19:30`, `): *Item`) is the
+    // organiser's own list marker, not content. Narrow on purpose: the star must
+    // follow sentence punctuation or a line start, so `5 * 3` is never touched
+    // and `group * 21:30` keeps its star (after a word, nothing distinguishes a
+    // bullet from prose). `(?!\*)` stops it biting the first half of a `**` run.
+    text = text.replace(/(^|[.。:;!?)\]）]|\n)[ \t]*\*(?!\*)[ \t]*/gm, "$1 ");
     // Safety net: the paired rules above refuse ambiguous delimiters on purpose
     // (they must not eat `snake_case` or `5 * 3`), but a `**` run still standing
     // after that is unambiguously a marker — refusing it is what produced

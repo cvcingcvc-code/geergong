@@ -240,9 +240,15 @@ the scorer's vocabulary and fails if a new rule has no label.
 page, half-stripped: `**19:30–21:30 … hidden gem**21:30`, with `##` stranded
 mid-line. Cause: no prose normalisation, and the upstream cleaner flattened
 newlines so line-anchored rules could never match. Now: shared
-`textnorm.plain_text`, newlines preserved, and a leftover sweep so no `**`/`__`
-marker can survive (single `*`/`_` are untouched — `5 * 3` and
-`get_user_name` are safe).
+`textnorm.plain_text`, newlines preserved, `##` handled mid-line, and a leftover
+sweep so no `**`/`__` marker can survive.
+
+The organiser's own **single** `*` bullets are treated narrowly: a star that
+follows sentence punctuation or a line start (`closes. *19:30`, `）: *Item`) is
+markup and goes. A star sitting between a word and a space (`group * 21:30`) is
+left alone, because that position is **structurally identical to `5 * 3`** —
+there is no rule that removes the first without destroying the second. See
+limitation 9.
 
 **D-3 — the headline count contradicted the list.** It stated
 `summary.canonical` (11) above 13 rendered cards. Cause: canonical counts
@@ -278,6 +284,13 @@ states what is listed, and the E2E asserts **equality** instead of merely
    are absent by design, and the UI says so.
 8. Meetup returns 429 under sustained probing; the provider treats it as a
    degraded source rather than retrying.
+9. **A source's own single `*` bullets can still appear.** Across the 12 rows of
+   the reported run, 59 asterisks in the raw text normalise to 28 — and every
+   survivor sits in the one position that cannot be disambiguated from
+   multiplication (word, space, `*`, space). Removing them would also delete the
+   `*` in `5 * 3`, so they are kept deliberately. Zero `**` / `](` / `\n` leaks
+   remain; this is only about lone asterisks, which read as list bullets to a
+   human anyway.
 
 ## NEXT 3 TASKS
 
