@@ -357,23 +357,30 @@
     // view), a plain URL string, or absent — handle all three.
     var explicit = rec.imageUrl || null;
     var source = rec.imageSource || null;
+    // The pipeline states the kind outright (`remote` | `thumbnail` |
+    // `placeholder`); that declaration wins, the derivation below is only for
+    // legacy records that predate it.
+    var declared = rec.imageType || null;
     if (!explicit && rec.image) {
       if (typeof rec.image === "string") {
         explicit = rec.image;
       } else if (rec.image.url) {
         explicit = rec.image.url;
         source = source || rec.image.source || null;
+        declared = declared || rec.image.type || null;
       }
     }
     // The category slug mirrors the pipeline's own choice, so the browser
     // fallback and the pipeline placeholder are the same artwork.
     var pick = slug || placeholderSlug([rec.category, rec.title, (rec.tags || []).join(" "), rec.description, rec.desc]);
     if (typeof explicit === "string" && explicit) {
+      var isPlaceholder = declared === "placeholder" || source === "placeholder"
+        || isPlaceholderUrl(explicit);
       return {
         url: resolveUrl(explicit),
-        source: source || "remote",
+        source: source || (isPlaceholder ? "placeholder" : "remote"),
         slug: pick,
-        type: source === "placeholder" || isPlaceholderUrl(explicit) ? "placeholder" : "remote",
+        type: declared || (isPlaceholder ? "placeholder" : "remote"),
       };
     }
     // No URL at all: fall back to the category placeholder, clearly labelled.

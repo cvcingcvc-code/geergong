@@ -124,6 +124,22 @@ eq(pipelinePlaceholder.image.type, "placeholder", "pipeline placeholder is recog
 ok(V.isPlaceholderUrl("/assets/placeholders/ai.svg"), "isPlaceholderUrl detects the shipped set");
 ok(!V.isPlaceholderUrl("https://cdn.test/hero.jpg"), "isPlaceholderUrl rejects real art");
 
+// The imageUrl/imageSource/imageType triple is a contract, so a stated kind
+// wins over the one derived from the URL.
+const listingThumb = V.toView({
+  id: "e4", title: "行内列表活动", imageUrl: "https://cdn.test/t.jpg",
+  imageSource: "thumbnail", imageType: "thumbnail",
+});
+eq(listingThumb.image.type, "thumbnail", "a declared thumbnail is not silently reported as remote");
+eq(listingThumb.image.source, "thumbnail", "the stated source is kept");
+
+const declaredPlaceholder = V.toView({
+  id: "e5", title: "占位", imageUrl: "https://cdn.test/whatever.jpg",
+  imageType: "placeholder",
+});
+eq(declaredPlaceholder.image.type, "placeholder", "a declared placeholder is honoured even off-set");
+eq(declaredPlaceholder.image.source, "placeholder", "…and the source agrees, so the triple stays consistent");
+
 const demoShape = V.toView({
   id: "d1", title: "Demo", date: "周六 6.20", day: "sat", time: "19:00", end: "21:30",
   venue: "西岸智塔", district: "徐汇", location: "上海·徐汇", price: "免费",

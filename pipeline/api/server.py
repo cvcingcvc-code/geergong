@@ -42,7 +42,7 @@ PUBLIC_ACTIVITY_FIELDS = (
     "id", "title", "description", "startDate", "startTime", "endDate", "endTime",
     "venue", "address", "district", "city", "category", "tags",
     "priceType", "price", "organizer", "sourceName", "sourceUrl",
-    "registrationUrl", "imageUrl", "imageSource", "agenda",
+    "registrationUrl", "imageUrl", "imageSource", "imageType", "agenda",
     "publishedAt", "trustScore", "trustReasons",
     "status", "duplicateOf",
 )

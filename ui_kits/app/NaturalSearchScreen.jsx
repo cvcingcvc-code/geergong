@@ -389,10 +389,17 @@
     const notices = (data && data.notices) || [];
 
     // The headline sentence the spec asks for: raw information in, events out.
+    //
+    // The second number is deliberately `results.length` — the count the reader
+    // can verify by counting the cards below — and NOT `summary.canonical`.
+    // Canonical counts deduped entities, while the list also renders the rows
+    // flagged as suspected duplicates, so the two disagree (13 cards under a
+    // headline claiming 11 activities). The dedupe detail stays in the context
+    // column, where it explains the difference instead of contradicting it.
     const headline = data ? (
       <span>
         找到 <b style={{ color: "var(--text-strong)" }}>{summary.rawResults || 0}</b> 条相关信息，为你整理出{" "}
-        <b style={{ color: "var(--text-strong)" }}>{summary.canonical || 0}</b> 个活动。
+        <b style={{ color: "var(--text-strong)" }}>{results.length}</b> 个活动。
       </span>
     ) : null;
 

@@ -139,13 +139,16 @@ async function main() {
   const badge = await s.eval("return (document.body.innerText.match(/REAL SEARCH|DEMO DATA/) || [''])[0]");
   check("provider badge states the data origin", badge === "REAL SEARCH", `badge="${badge}"`);
 
+  // The stated count must equal what is listed. A headline claiming 11
+  // activities above 13 cards is the kind of quiet untruth this suite exists
+  // to catch, so this asserts equality rather than merely "> 0".
   const stats = await s.eval(`
     const t = document.body.innerText;
-    const m = t.match(/整理出\\s*(\\d+)\\s*个活动/) || t.match(/(\\d+)\\s*个活动/);
+    const m = t.match(/整理出\\s*(\\d+)\\s*个活动/);
     return { cards: document.querySelectorAll('article.gg-result').length, stated: m ? Number(m[1]) : null };
   `);
-  check("result count is stated in the summary",
-    stats.stated !== null && stats.stated > 0, JSON.stringify(stats));
+  check("the stated result count matches the cards listed",
+    stats.stated !== null && stats.stated === stats.cards, JSON.stringify(stats));
 
   // ---- images ------------------------------------------------------------
   const imgs = await settleImages(s);
