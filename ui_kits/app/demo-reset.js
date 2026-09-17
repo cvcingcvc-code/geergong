@@ -40,6 +40,7 @@
           localStorage.removeItem("gorgon_favorites");
           localStorage.removeItem("gorgon_admin_review");
           localStorage.removeItem("gorgon_demo_v1");
+          localStorage.removeItem("gorgon_selected_district");
         } catch (e) {}
       }
       location.reload();

@@ -15,6 +15,9 @@
   var K_FAVORITES = "gorgon_favorites"; // string[] of activity ids
   var K_ADMIN = "gorgon_admin_review"; // { [itemId]: "approve" | "return" | "reject" }
   var K_SEED = "gorgon_demo_v1"; // flag: demo dataset has been seeded once
+  // The one district selection the whole app shares (Discover / Search / Map /
+  // 智能). Stored as the plain district name, or "全上海" for no filter.
+  var K_DISTRICT = "gorgon_selected_district";
 
   function read(key, fallback) {
     try {
@@ -47,6 +50,7 @@
     KEYS: {
       weekend: K_WEEKEND, weekendItems: K_WEEKEND_ITEMS,
       favorites: K_FAVORITES, admin: K_ADMIN, seed: K_SEED,
+      district: K_DISTRICT,
     },
 
     // ---- My Weekend ----------------------------------------------------
@@ -94,6 +98,37 @@
       write(K_ADMIN, obj && typeof obj === "object" ? obj : {});
     },
 
+    // ---- District selection --------------------------------------------
+    /**
+     * The stored district, sanitised.
+     *
+     * Only "全上海" or a district the app actually recognises is accepted;
+     * anything else (hand-edited storage, a district from an older dataset
+     * build) falls back to "全上海". Falling back WIDENS the result set — it
+     * can never hide activities behind a district that does not exist.
+     */
+    getDistrict: function () {
+      var raw = read(K_DISTRICT, null);
+      var D = window.GorgonDistrict;
+      if (typeof raw !== "string" || !raw.trim()) return D ? D.ALL : "全上海";
+      var v = raw.trim();
+      if (!D) return v;
+      if (D.isAll(v)) return D.ALL;
+      return D.isKnownDistrict(v) ? v : D.ALL;
+    },
+    setDistrict: function (value) {
+      var D = window.GorgonDistrict;
+      var v = typeof value === "string" ? value.trim() : "";
+      if (D) {
+        if (!v || D.isAll(v)) v = D.ALL;
+        else if (!D.isKnownDistrict(v)) v = D.ALL;
+      } else if (!v) {
+        v = "全上海";
+      }
+      write(K_DISTRICT, v);
+      return v;
+    },
+
     // ---- Demo seed flag (so the demo starts clean but non-empty) -------
     isSeeded: function () {
       return read(K_SEED, false) === true;
@@ -110,6 +145,7 @@
         localStorage.removeItem(K_FAVORITES);
         localStorage.removeItem(K_ADMIN);
         localStorage.removeItem(K_SEED);
+        localStorage.removeItem(K_DISTRICT);
       } catch (e) {}
     }
   };

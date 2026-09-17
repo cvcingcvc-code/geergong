@@ -14,6 +14,10 @@
   const { useResponsive } = window.GorgonResponsive;
   const V = window.GorgonActivityView;
   const C = window.GorgonCommon;
+  const D = window.GorgonDistrict;
+  // Loaded just before this file (index.html); the fallback keeps the module
+  // harmless rather than throwing if it is ever loaded standalone.
+  const DistrictPicker = (window.GorgonApp && window.GorgonApp.DistrictPicker) || function () { return null; };
 
   const HOME_DISTRICT = (window.GORGON_DATA.user.campus || "").split("·")[1] || "";
 
@@ -63,7 +67,7 @@
   function DiscoverCard({ v, synced, onSync, onOpen }) {
     const isSynced = !!synced[v.id];
     return (
-      <article className="gg-disc-card" onClick={() => onOpen(v)}>
+      <article className="gg-disc-card" data-gg-card-district={v.district || ""} onClick={() => onOpen(v)}>
         <div style={{ padding: 10, paddingBottom: 0 }}>
           <C.ActivityImage image={v.image} alt={v.title} ratio="16 / 10" radius="var(--radius-md)">
             <C.PlaceholderNote image={v.image} />
@@ -98,7 +102,7 @@
     );
   }
 
-  function EmptyDiscover({ onReset, onGoSmart, anyFilter }) {
+  function EmptyDiscover({ onReset, onGoSmart, anyFilter, title }) {
     const tips = [anyFilter ? "清除筛选条件" : "切换到「全部」兴趣分类", "看看下周末的安排", "使用「智能」告诉 Gorgon 你想找什么"];
     return (
       <div className="gg-empty" style={{ padding: "40px var(--gg-gutter) 48px", display: "flex", justifyContent: "center" }}>
@@ -106,7 +110,7 @@
           <div style={{ width: 76, height: 76, borderRadius: "var(--radius-2xl)", background: "var(--bg-sunken)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
             <i data-lucide="search-x" style={{ width: 34, height: 34, color: "var(--text-faint)" }} />
           </div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>暂时没有符合条件的活动</h2>
+          <h2 data-gg-empty-title style={{ fontFamily: "var(--font-display)", fontSize: 21, fontWeight: 700, color: "var(--text-strong)", marginBottom: 10 }}>{title || "暂时没有符合条件的活动"}</h2>
           <div style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.8, marginBottom: 20 }}>
             <div style={{ marginBottom: 6 }}>试试：</div>
             {tips.map((t, i) => (
@@ -124,32 +128,31 @@
     );
   }
 
-  function DiscoverScreen({ synced, onSync, onOpen, onGoSearch, onGoSmart }) {
+  function DiscoverScreen({ synced, onSync, onOpen, onGoSearch, onGoSmart, district, onDistrictChange }) {
     const { user, activities } = window.GORGON_DATA;
     const { isMobile } = useResponsive();
     const [cat, setCat] = React.useState("all");
     const [when, setWhen] = React.useState("本周末");
     const [showFilters, setShowFilters] = React.useState(false);
     const [onlyFree, setOnlyFree] = React.useState(false);
-    const [district, setDistrict] = React.useState(null);
 
-    const districts = React.useMemo(() => {
-      const s = [];
-      activities.forEach((a) => { const d = a.district || (a.location || "").split("·")[1]; if (d && s.indexOf(d) < 0) s.push(d); });
-      return s;
-    }, [activities]);
+    // The picker's menu: the baseline districts plus whatever this dataset
+    // actually contains — never a district that exists nowhere in the data.
+    const districts = React.useMemo(() => D.options(activities, district), [activities, district]);
+
+    const districtActive = !D.isAll(district);
 
     const list = React.useMemo(() => activities.filter((a) => {
       if (cat !== "all" && a.category !== cat) return false;
       if (onlyFree && a.price !== "免费" && a.priceType !== "free") return false;
-      if (district && (a.district || "") !== district) return false;
+      if (!D.matches(a, district)) return false;
       return true;
     }), [activities, cat, onlyFree, district]);
 
     const views = React.useMemo(() => list.map((a) => V.toView(a)), [list]);
 
-    const anyFilter = onlyFree || !!district;
-    const resetFilters = () => { setOnlyFree(false); setDistrict(null); };
+    const anyFilter = onlyFree || districtActive;
+    const resetFilters = () => { setOnlyFree(false); onDistrictChange(D.ALL); };
 
     const nearCount = views.filter((v) => v.district === HOME_DISTRICT).length;
     const freeCount = views.filter((v) => v.priceType === "free").length;
@@ -172,9 +175,9 @@
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none" }} data-gg-screen="discover">
         {isMobile && (
           <div style={{ padding: "8px var(--gg-gutter) 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text-muted)", fontSize: 12.5, fontWeight: 500 }}>
-                <i data-lucide="map-pin" style={{ width: 13, height: 13 }} />{user.campus}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <DistrictPicker value={district} onChange={onDistrictChange} activities={activities} size="sm" />
                 <C.ProviderBadge mode="demo" size="sm" />
               </div>
               <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 23, color: "var(--text-strong)", letterSpacing: "-0.01em", marginTop: 3 }}>
@@ -200,9 +203,9 @@
                 </h1>
                 <C.ProviderBadge mode="demo" />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13.5, color: "var(--text-muted)", fontWeight: 500 }}>
-                <i data-lucide="map-pin" style={{ width: 14, height: 14, color: "var(--brand)" }} />
-                上海{spans ? ` · ${spans}` : ""}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, fontSize: 13.5, color: "var(--text-muted)", fontWeight: 500, flexWrap: "wrap" }}>
+                <DistrictPicker value={district} onChange={onDistrictChange} activities={activities} />
+                {spans && <span>· {spans}</span>}
                 <span style={{ color: "var(--text-faint)" }}>· 本地演示数据集（非实时检索）</span>
               </div>
             </div>
@@ -259,7 +262,7 @@
         <div style={{ padding: "0 var(--gg-gutter) 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <SegmentedControl options={["本周末", "下周末", "全部"]} value={when} onChange={setWhen} />
           <button onClick={() => setShowFilters((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 5, border: "none", background: "transparent", color: (showFilters || anyFilter) ? "var(--brand)" : "var(--text-muted)", fontSize: 13, fontWeight: 600, cursor: "pointer", flex: "none" }}>
-            <i data-lucide="sliders-horizontal" style={{ width: 16, height: 16 }} />筛选{anyFilter ? " ·" + (district ? 1 : 0) + (onlyFree ? 1 : 0) : ""}
+            <i data-lucide="sliders-horizontal" style={{ width: 16, height: 16 }} />筛选{anyFilter ? " ·" + (districtActive ? 1 : 0) + (onlyFree ? 1 : 0) : ""}
           </button>
         </div>
 
@@ -269,8 +272,10 @@
               <button onClick={() => setOnlyFree((v) => !v)} style={pillStyle(onlyFree)}>
                 <i data-lucide="ticket" style={{ width: 14, height: 14 }} />只看免费
               </button>
+              {/* The same district state as the picker above — two controls, one
+                  source of truth. Clicking the active one clears the filter. */}
               {districts.map((d) => (
-                <button key={d} onClick={() => setDistrict(district === d ? null : d)} style={pillStyle(district === d)}>{d}</button>
+                <button key={d} onClick={() => onDistrictChange(district === d ? D.ALL : d)} style={pillStyle(district === d)}>{d}</button>
               ))}
             </div>
             {anyFilter && (
@@ -282,7 +287,8 @@
         )}
 
         {views.length === 0 ? (
-          <EmptyDiscover anyFilter={anyFilter} onReset={resetFilters} onGoSmart={onGoSmart} />
+          <EmptyDiscover anyFilter={anyFilter} onReset={resetFilters} onGoSmart={onGoSmart}
+            title={D.emptyTitle(district, cat !== "all" || onlyFree)} />
         ) : (
           <div style={{ padding: "0 var(--gg-gutter) 32px" }}>
             <div className="gg-section-head" style={{ marginBottom: 16 }}>
@@ -290,7 +296,7 @@
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 共 <b style={{ color: "var(--text-strong)" }}>{views.length}</b> 场活动
                 {cat !== "all" ? ` · ${(window.GORGON_DATA.categories.find((c) => c.key === cat) || {}).label || ""}` : ""}
-                {onlyFree ? " · 仅免费" : ""}{district ? ` · ${district}` : ""}
+                {onlyFree ? " · 仅免费" : ""}{districtActive ? ` · ${district}` : ""}
               </div>
             </div>
 

@@ -1,0 +1,53 @@
+{
+  "why": "地区口语料的唯一真源。pipeline/normalize/location.py::normalize_district 与 ui_kits/app/district.js::normalizeDistrict 必须对同一组输入给出同一结果 —— Python 套件(test_district.py)和 JS 套件(district.test.mjs)都读这个文件。两边一旦漂移，必然有一套测试变红，而不是界面悄悄按另一套规则筛选。",
+  "districts": [
+    "黄浦", "徐汇", "长宁", "静安", "普陀", "虹口", "杨浦",
+    "闵行", "宝山", "嘉定", "浦东", "金山", "松江", "青浦",
+    "奉贤", "崇明"
+  ],
+  "cities": [
+    "上海", "北京市", "北京", "杭州市", "杭州", "南京市", "南京",
+    "深圳市", "深圳", "广州市", "广州"
+  ],
+  "cases": [
+    { "input": "徐汇", "expected": "徐汇", "why": "已经是短名" },
+    { "input": "徐汇区", "expected": "徐汇", "why": "带区字后缀" },
+    { "input": "上海市徐汇区", "expected": "徐汇", "why": "省市全称 + 区字" },
+    { "input": "上海徐汇", "expected": "徐汇", "why": "城市前缀无分隔符" },
+    { "input": "上海·徐汇", "expected": "徐汇", "why": "真实 location 字段的写法" },
+    { "input": "上海 - 徐汇", "expected": "徐汇", "why": "带空格与连字符的分隔" },
+    { "input": "上海—徐汇", "expected": "徐汇", "why": "破折号分隔" },
+    { "input": "上海，徐汇", "expected": "徐汇", "why": "全角逗号分隔" },
+    { "input": "  上海市徐汇区  ", "expected": "徐汇", "why": "首尾空白先被剥掉" },
+    { "input": "上海市徐汇区龙腾大道2600号", "expected": "徐汇", "why": "地址串里带路名号牌" },
+    { "input": "浦东新区", "expected": "浦东", "why": "浦东新区是官方全称" },
+    { "input": "上海市浦东新区", "expected": "浦东", "why": "省市区连写" },
+    { "input": "上海·浦东", "expected": "浦东", "why": "location 写法，浦东" },
+    { "input": "杨浦", "expected": "杨浦", "why": "短名" },
+    { "input": "杨浦区", "expected": "杨浦", "why": "带区字" },
+    { "input": "上海市杨浦区淞沪路创智天地", "expected": "杨浦", "why": "区字在地址中间（尾字不是区，回落分支必须仍能命中）" },
+    { "input": "静安", "expected": "静安", "why": "短名" },
+    { "input": "静安区", "expected": "静安", "why": "带区字" },
+    { "input": "黄浦区", "expected": "黄浦", "why": "带区字" },
+    { "input": "长宁区", "expected": "长宁", "why": "带区字" },
+    { "input": "普陀区", "expected": "普陀", "why": "带区字" },
+    { "input": "虹口区", "expected": "虹口", "why": "带区字" },
+    { "input": "闵行区", "expected": "闵行", "why": "带区字" },
+    { "input": "宝山区", "expected": "宝山", "why": "带区字" },
+    { "input": "嘉定区", "expected": "嘉定", "why": "带区字" },
+    { "input": "松江区", "expected": "松江", "why": "带区字" },
+    { "input": "徐汇/静安", "expected": "徐汇", "why": "分隔符切片时取第一个命中，顺序确定" },
+    { "input": "静安/徐汇", "expected": "静安", "why": "同上，先出现的赢" },
+    { "input": "上海", "expected": null, "why": "只有城市，没有区 —— 不猜" },
+    { "input": "上海·", "expected": null, "why": "分隔符后是空的 —— 不猜" },
+    { "input": "火星", "expected": null, "why": "未知地区保持未知" },
+    { "input": "", "expected": null, "why": "空串" },
+    { "input": "   ", "expected": null, "why": "只有空白" },
+    { "input": null, "expected": null, "why": "缺字段" },
+    { "input": "北京", "expected": null, "why": "外地城市不映射到上海区" },
+    { "input": "北京·朝阳", "expected": null, "why": "外地城市+区" },
+    { "input": "北京市朝阳区", "expected": null, "why": "外地省市区全称" },
+    { "input": "杭州西湖区", "expected": null, "why": "外地城市+区（西湖不是上海区）" },
+    { "input": "深圳南山", "expected": null, "why": "外地城市+区" }
+  ]
+}

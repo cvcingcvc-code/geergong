@@ -121,9 +121,17 @@ function NotifyButton({ hasDot }) {
 
 /** Full-width top bar: wordmark + tagline · city · notifications + avatar.
  *  Deliberately contains NO fake device chrome (no 9:41 / signal / wifi /
- *  battery) — that belongs to the mobile mock-up only. */
-function DesktopHeader() {
+ *  battery) — that belongs to the mobile mock-up only.
+ *
+ *  The location chip mirrors the SHARED district selection rather than the
+ *  user's static profile campus: once the district is a real, changeable
+ *  filter, a chrome chip that never moves would be a second, contradicting
+ *  location display on the same screen. Changing it happens in the content
+ *  (the picker), so this stays a label. */
+function DesktopHeader({ district }) {
   const { user } = window.GORGON_DATA;
+  const D = window.GorgonDistrict;
+  const text = D ? D.label(district) : user.campus;
   return (
     <header className="gg-header" data-gg-region="header">
       <div className="gg-header-inner">
@@ -136,9 +144,11 @@ function DesktopHeader() {
         <div style={{ flex: 1, minWidth: 0 }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-body)", whiteSpace: "nowrap" }}>
+          <span data-gg-region="header-district" data-gg-district={district || ""}
+            title="当前地区筛选（在页面中修改）"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-body)", whiteSpace: "nowrap" }}>
             <i data-lucide="map-pin" style={{ width: 15, height: 15, color: "var(--brand)" }} />
-            {user.campus}
+            {text}
           </span>
           <NotifyButton hasDot />
           <Avatar name={user.name} size="sm" ring />
@@ -189,10 +199,10 @@ function DesktopSidebar({ active, onChange, syncedCount, onSettings }) {
 
 /** The tablet/desktop frame. The screen keeps its own scroll container,
  *  so there is exactly ONE scroller (no nested scrollbars). */
-function AppShell({ tab, onTab, syncedCount, onSettings, children }) {
+function AppShell({ tab, onTab, syncedCount, onSettings, district, children }) {
   return (
     <div className="gg-app" data-gg-shell="wide">
-      <DesktopHeader />
+      <DesktopHeader district={district} />
       <div className="gg-body">
         <DesktopSidebar active={tab} onChange={onTab} syncedCount={syncedCount} onSettings={onSettings} />
         <div className="gg-main">

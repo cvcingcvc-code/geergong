@@ -14,6 +14,8 @@
   const { useResponsive } = window.GorgonResponsive;
   const V = window.GorgonActivityView;
   const C = window.GorgonCommon;
+  const D = window.GorgonDistrict;
+  const DistrictPicker = (window.GorgonApp && window.GorgonApp.DistrictPicker) || function () { return null; };
 
   const DEMO_QUERY = "这个周末上海有什么 AI / Agent / Vibe Coding 的活动？最好免费，徐汇附近，下午开始。";
   const API_URL = "/api/search";
@@ -169,7 +171,7 @@
     const isSynced = !!synced[view.id];
 
     return (
-      <article className="gg-result" style={{
+      <article className="gg-result" data-gg-card-district={view.district || ""} style={{
         border: pending ? "1px dashed var(--border-strong, var(--border-subtle))" : "1px solid var(--border-subtle)",
       }}>
         <div className="gg-result-media">
@@ -306,8 +308,9 @@
     );
   }
 
-  function SummaryPanel({ summary, providers, providerMode, source }) {
+  function SummaryPanel({ summary, providers, providerMode, source, district, shown }) {
     const failed = (providers || []).filter((p) => p.available === false);
+    const filtered = !D.isAll(district);
     return (
       <Panel kicker="检索结果汇总">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: "13px 10px" }}>
@@ -321,7 +324,15 @@
           <div>去重合并 {summary.duplicates || 0} 条 · 疑似重复 {summary.duplicateCandidates || 0} 个</div>
           <div>数据来源：{source === "api" ? "实时检索接口" : "离线演示结果"}</div>
           {failed.length > 0 && (
-            <div style={{ color: "#9A6300" }}>不可用来源：{failed.map((p) => p.name).join("、")}</div>
+            <div style={{ color: "#9A6300" }}>部分来源暂时不可用：{failed.map((p) => p.name).join("、")}</div>
+          )}
+          {/* The numbers above describe the RETRIEVAL; the list below is
+              narrowed by the district. Saying so is what keeps the panel from
+              contradicting the cards. */}
+          {filtered && (
+            <div style={{ color: "var(--brand)", fontWeight: 600 }}>
+              已按地区筛选：仅显示 {district} 的活动（{shown} 个），合计 {summary.canonical} 个活动来自整个上海
+            </div>
           )}
         </div>
       </Panel>
@@ -330,7 +341,7 @@
 
   /* ── Screen ──────────────────────────────────────────────────────── */
 
-  function NaturalSearchScreen({ synced, onSync, onOpen }) {
+  function NaturalSearchScreen({ synced, onSync, onOpen, district, onDistrictChange }) {
     const { isMobile, isDesktop } = useResponsive();
     const [q, setQ] = React.useState("");
     const [topic, setTopic] = React.useState("all");
@@ -381,12 +392,31 @@
 
     const backToAsk = () => { setPhase("idle"); setData(null); setError(null); };
 
-    const results = (data && data.results) || [];
+    const allResults = (data && data.results) || [];
+    // The retrieval is district-agnostic; the LIST is not. Filtering happens on
+    // the already-fetched results through the same predicate every other screen
+    // uses — the search provider, the request and trust scoring are untouched.
+    // A degraded provider therefore never switches the district off: the filter
+    // still runs, the "部分来源暂时不可用" notice still shows, and no other
+    // district's rows ever leak into this list.
+    const results = React.useMemo(() => {
+      if (D.isAll(district)) return allResults;
+      return allResults.filter((r) => D.matches(r.activity || {}, district));
+    }, [allResults, district]);
+
     const approved = results.filter((r) => r.bucket === "approved");
     const pending = results.filter((r) => r.bucket !== "approved");
     const summary = (data && data.summary) || {};
     const providerMode = (data && data.providerMode) || "demo";
     const notices = (data && data.notices) || [];
+
+    // Counts for the picker: how many retrieved results sit in each district.
+    // Untouched by the current selection, so the menu can be trusted.
+    const resultActivities = React.useMemo(
+      () => allResults.map((r) => r.activity || {}),
+      [allResults]
+    );
+    const districtActive = !D.isAll(district);
 
     // The headline sentence the spec asks for: raw information in, events out.
     //
@@ -396,10 +426,18 @@
     // flagged as suspected duplicates, so the two disagree (13 cards under a
     // headline claiming 11 activities). The dedupe detail stays in the context
     // column, where it explains the difference instead of contradicting it.
+    // With a district active the same rule applies to the district: the number
+    // stays equal to the cards, and the range is named.
     const headline = data ? (
       <span>
+        {districtActive && <span>在 <b style={{ color: "var(--text-strong)" }}>{district}</b> 范围内，</span>}
         找到 <b style={{ color: "var(--text-strong)" }}>{summary.rawResults || 0}</b> 条相关信息，为你整理出{" "}
         <b style={{ color: "var(--text-strong)" }}>{results.length}</b> 个活动。
+        {districtActive && allResults.length > results.length ? (
+          <span style={{ color: "var(--text-faint)" }}>
+            （另有 {allResults.length - results.length} 个结果不在 {district}，已隐藏）
+          </span>
+        ) : null}
       </span>
     ) : null;
 
@@ -418,6 +456,12 @@
             <p style={{ fontSize: isMobile ? 13 : 15, color: "var(--text-muted)", margin: "0 0 18px", lineHeight: 1.65, maxWidth: 720 }}>
               告诉 Gorgon 你想参加什么活动，我们会帮你检索、整理并推荐。
             </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+              <DistrictPicker value={district} onChange={onDistrictChange} activities={[]} showCounts={false} />
+              <span style={{ fontSize: 12.5, color: "var(--text-faint)" }}>
+                {D.isAll(district) ? "检索范围：整个上海" : "结果只会保留 " + district + " 区域内的活动"}
+              </span>
+            </div>
             <AskBox value={q} onChange={setQ} onSubmit={() => submit()} loading={phase === "loading"} />
             <div style={{ marginTop: 14 }}>
               <TopicChips value={topic} onChange={setTopic} disabled={phase === "loading"} />
@@ -445,6 +489,14 @@
             <AskBox value={q} onChange={setQ} onSubmit={() => submit()} loading={phase === "loading"} compact />
             <div style={{ marginTop: 11 }}>
               <TopicChips value={topic} onChange={setTopic} disabled={phase === "loading"} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+              <DistrictPicker value={district} onChange={onDistrictChange}
+                activities={resultActivities}
+                showCounts={allResults.length > 0} />
+              <span style={{ fontSize: 12.5, color: "var(--text-faint)" }}>
+                {D.isAll(district) ? "结果范围：整个上海" : "正在只看 " + district + " 的结果"}
+              </span>
             </div>
           </div>
         )}
@@ -516,17 +568,41 @@
 
             {data.status === "unavailable" || results.length === 0 ? (
               <div style={{ padding: "0 var(--gg-gutter) 40px" }}>
-                <C.NoticeBlock
-                  icon="search-x" tone="warning"
-                  title="没有找到符合条件的活动"
-                  body={"真实检索没有返回可用结果。可以换一个说法，或稍后重试 —— Gorgon 不会用演示数据冒充检索结果。"}
-                  action={<button onClick={backToAsk} className="gg-chip">修改问题</button>}
-                />
+                {data.status === "unavailable" ? (
+                  <C.NoticeBlock
+                    icon="search-x" tone="warning"
+                    title="没有找到符合条件的活动"
+                    body={"真实检索没有返回可用结果。可以换一个说法，或稍后重试 —— Gorgon 不会用演示数据冒充检索结果。"}
+                    action={<button onClick={backToAsk} className="gg-chip">修改问题</button>}
+                  />
+                ) : districtActive && allResults.length > 0 ? (
+                  /* The retrieval DID find things — just none in this district.
+                     Say exactly that, and never quietly widen the filter. */
+                  <C.NoticeBlock
+                    icon="map-pin-off" tone="warning"
+                    title={D.emptyTitle(district, true)}
+                    body={"本次检索找到 " + allResults.length + " 个活动，其中没有位于 " + district + " 的。不会用其他区域的结果填充这个列表。"}
+                    action={
+                      <span style={{ display: "inline-flex", gap: 8, flexWrap: "wrap" }}>
+                        <button onClick={() => onDistrictChange(D.ALL)} className="gg-chip">查看全上海结果</button>
+                        <button onClick={backToAsk} className="gg-chip">修改问题</button>
+                      </span>
+                    }
+                  />
+                ) : (
+                  <C.NoticeBlock
+                    icon="search-x" tone="warning"
+                    title="没有找到符合条件的活动"
+                    body={"真实检索没有返回可用结果。可以换一个说法，或稍后重试 —— Gorgon 不会用演示数据冒充检索结果。"}
+                    action={<button onClick={backToAsk} className="gg-chip">修改问题</button>}
+                  />
+                )}
               </div>
             ) : (
               <div className="gg-smart-grid" style={{ padding: "0 var(--gg-gutter) 40px" }}>
                 <aside className="gg-smart-aside" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <SummaryPanel summary={summary} providers={data.providers} providerMode={providerMode} source={data.__source} />
+                  <SummaryPanel summary={summary} providers={data.providers} providerMode={providerMode} source={data.__source}
+                    district={district} shown={results.length} />
                   <UnderstandingPanel request={data.request || {}} plan={data.plan} />
                   <PlanPanel plan={data.plan} />
                 </aside>
@@ -549,7 +625,7 @@
                       <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <i data-lucide="shield-alert" style={{ width: 15, height: 15, color: "#9A6300" }} />
                         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-strong)" }}>
-                          待核验 {summary.needsReview || pending.length} 个
+                          待核验 {pending.length} 个
                         </span>
                         <span style={{ fontSize: 11.5, color: "var(--text-faint)" }}>信息有冲突或来源不足，人工确认前不作为推荐</span>
                       </div>

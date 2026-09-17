@@ -323,6 +323,13 @@
       view.description = plainText(view.rawDescription, null, true);
     }
     if (view.hasDescription === undefined) view.hasDescription = !!view.description;
+    // A snapshot written before the district normaliser existed can carry the
+    // source's raw string ("上海市徐汇区"). Normalise it in place for the same
+    // reason as the description — the UI prints one vocabulary, not two.
+    if (view.district && window.GorgonDistrict) {
+      var nd = window.GorgonDistrict.normalizeDistrict(view.district);
+      if (nd) view.district = nd;
+    }
     return view;
   }
 
@@ -428,10 +435,17 @@
       dateText = rec.date;
     }
 
-    var district = rec.district || null;
-    if (!district && rec.location) {
-      var parts = String(rec.location).split("·");
-      district = parts[1] || null;
+    // The district goes through the SAME module the district filter uses, so
+    // the value a card prints and the value the picker filters on are one and
+    // the same ("上海市徐汇区" renders as 徐汇, and is found under 徐汇).
+    // Falls back to the old naive split only if that module is not loaded.
+    var districtMod = window.GorgonDistrict;
+    var district = districtMod ? districtMod.districtOf(rec) : null;
+    if (district == null) {
+      district = rec.district || null;
+      if (!district && rec.location) {
+        district = String(rec.location).split("·")[1] || null;
+      }
     }
 
     var city = rec.city || null;

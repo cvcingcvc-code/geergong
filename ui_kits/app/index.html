@@ -33,6 +33,10 @@
 <script src="generated-search-demo.js"></script>
 <script src="data.js"></script>
 <script src="data-adapter.js"></script>
+<!-- PHASE 5.1: the ONE Shanghai district vocabulary/normaliser the whole app
+     filters on (mirrors pipeline/normalize/location.py). Must load before
+     store.js (which sanitises against it) and before activity-view.js. -->
+<script src="district.js"></script>
 <script src="store.js"></script>
 <script src="demo-reset.js"></script>
 <!-- Unified responsive primitives: useResponsive() / currentBreakpoint() -->
@@ -41,6 +45,8 @@
 <script src="activity-view.js"></script>
 <!-- PHASE 5: shared atoms — image w/ fallback, trust chip, provider badge -->
 <script type="text/babel" src="common.jsx"></script>
+<!-- PHASE 5.1: the shared district picker (Discover / Search / Map / 智能) -->
+<script type="text/babel" src="district-picker.jsx"></script>
 <script type="text/babel" src="AppShell.jsx"></script>
 <script type="text/babel" src="DiscoverScreen.jsx"></script>
 <script type="text/babel" src="ActivityDetailScreen.jsx"></script>
@@ -50,9 +56,10 @@
 <script type="text/babel" src="MapScreen.jsx"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script type="text/babel" data-presets="react">
-const { StatusBar, TabBar, PhoneFrame, AppShell, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen } = window.GorgonApp;
+const { StatusBar, TabBar, PhoneFrame, AppShell, DiscoverScreen, ActivityDetailScreen, SearchScreen, NaturalSearchScreen, MyWeekendScreen, MapScreen, DistrictPicker } = window.GorgonApp;
 const { useResponsive } = window.GorgonResponsive;
 const ActivityView = window.GorgonActivityView;
+const District = window.GorgonDistrict;
 
 function Toast({ msg }) {
   if (!msg) return null;
@@ -89,10 +96,17 @@ function App() {
   const [favorites, setFavorites] = React.useState(() => window.GorgonStore.getFavorites());
   const [detail, setDetail] = React.useState(null);
   const [mapFocus, setMapFocus] = React.useState(null);
+  // ONE district selection for the whole app (Discover / Search / Map / 智能),
+  // restored from localStorage so a refresh keeps the user's choice.
+  const [district, setDistrictState] = React.useState(() => window.GorgonStore.getDistrict());
   const [toast, setToast] = React.useState("");
   const toastTimer = React.useRef(null);
 
   const { isMobile } = useResponsive();
+
+  const setDistrict = (d) => {
+    setDistrictState(window.GorgonStore.setDistrict(d));
+  };
 
   const flash = (m) => {
     setToast(m); clearTimeout(toastTimer.current);
@@ -130,11 +144,11 @@ function App() {
 
   const content = (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
-      {tab === "discover" && <DiscoverScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} onGoSmart={() => setTab("smart")} />}
-      {tab === "smart" && <NaturalSearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} />}
-      {tab === "search" && <SearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} />}
+      {tab === "discover" && <DiscoverScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} onGoSearch={() => setTab("search")} onGoSmart={() => setTab("smart")} district={district} onDistrictChange={setDistrict} />}
+      {tab === "smart" && <NaturalSearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} district={district} onDistrictChange={setDistrict} />}
+      {tab === "search" && <SearchScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} district={district} onDistrictChange={setDistrict} />}
       {tab === "weekend" && <MyWeekendScreen weekend={weekend} onSync={toggleSync} onOpen={openDetail} onDiscover={() => setTab("discover")} favorites={favorites} onToggleFavorite={toggleFavorite} />}
-      {tab === "map" && <MapScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} />}
+      {tab === "map" && <MapScreen synced={weekend} onSync={toggleSync} onOpen={openDetail} focusId={mapFocus} district={district} onDistrictChange={setDistrict} />}
 
       {detail && (
         <div className="gg-detail-overlay" style={{ animation: "gg-detail-in var(--dur-base) var(--ease-out)" }}>
@@ -157,7 +171,7 @@ function App() {
   }
 
   return (
-    <AppShell tab={tab} onTab={changeTab} syncedCount={syncedCount}
+    <AppShell tab={tab} onTab={changeTab} syncedCount={syncedCount} district={district}
       onSettings={() => flash("设置（演示版暂未开放）")}>
       {content}
     </AppShell>
