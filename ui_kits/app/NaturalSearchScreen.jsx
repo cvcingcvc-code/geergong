@@ -56,26 +56,45 @@
   }
 
   /** Call the API; fall back to the recorded demo payload when unavailable. */
+  // The API lives on the SAME origin as the page (PHASE 8 public deployment),
+  // so `/api/search` works unchanged behind a tunnel. The timeout is a backstop
+  // above the server's own 40s deadline: the server's readable 504 should win,
+  // and only a genuinely wedged connection gets aborted here.
+  const REQUEST_TIMEOUT_MS = 45000;
+
   async function fetchSearch(query, topics) {
+    const body = { query: query, maxResults: 30 };
+    if (topics && topics.length) body.topics = topics;
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
     try {
-      const body = { query: query, maxResults: 30 };
-      if (topics && topics.length) body.topics = topics;
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller ? controller.signal : undefined,
       });
       if (res.ok) {
         const data = await res.json();
         data.__source = "api";
         return data;
       }
-      // A 5xx from a live server is a real failure, not "no API" — report it.
+      // A 4xx/5xx from a live server is a real failure, not "no API" — report it.
+      // The server sends a human-readable `message`; `detail` is the legacy key.
       let detail = "";
-      try { detail = (await res.json()).detail || ""; } catch (e) { /* ignore */ }
+      try {
+        const payload = await res.json();
+        detail = payload.message || payload.detail || "";
+      } catch (e) { /* ignore */ }
       return { __source: "error", __status: res.status, __detail: detail };
     } catch (e) {
+      if (e && e.name === "AbortError") {
+        return { __source: "error", __status: 0,
+                 __detail: "检索超时，请稍后重试，或换一个更具体的关键词。" };
+      }
       /* API not running — expected on a plain static server */
+    } finally {
+      if (timer) clearTimeout(timer);
     }
 
     const demo = window.GORGON_SEARCH_DEMO;
@@ -523,7 +542,7 @@
             <C.NoticeBlock
               icon="plug-zap" tone="warning"
               title="检索服务未启动"
-              body={"当前是静态演示模式，只能回答问题库里已有的问题。运行 python pipeline/api/server.py --port 8000 即可实时检索。"}
+              body={"暂时无法连接检索服务，只能回答示例问题库里已有的问题。请稍后重试，或先看看示例问题的效果。"}
               action={<button onClick={() => submit(DEMO_QUERY)} className="gg-chip">用示例问题看看效果</button>}
             />
           </div>

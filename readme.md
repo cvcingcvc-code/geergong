@@ -8,20 +8,30 @@
 
 ```bash
 # 在项目根目录（含 _ds_bundle.js 的那一层）
-python -m http.server 8000
+python pipeline/api/server.py --port 8000
 ```
 
+一个进程同时提供**界面**和**检索接口**（`POST /api/search`）。
+要把它发布到公网（只读、无登录）请看 **`docs/PUBLIC_DEPLOYMENT.md`**。
+
 > 首次加载需要联网（React / Babel / Lucide / 字体来自 CDN）。
-> 建议用 `127.0.0.1` 打开，例如 `http://localhost:8000/…`。
 
 ## 访问地址
 
 | 界面 | 地址 |
 |---|---|
-| 📱 移动 App（发现 / 搜索 / 我的周末 / 地图） | `http://localhost:8000/ui_kits/app/` |
-| 🛠 审核后台（爬取 → 自动校验 → 人工审核） | `http://localhost:8000/ui_kits/admin/` |
-| 🖥 桌面规划台 | `http://localhost:8000/ui_kits/dashboard/` |
-| 🎞 Pitch 幻灯片 | `http://localhost:8000/slides/` |
+| 📱 App（发现 / 搜索 / 智能 / 我的周末 / 地图） | `http://localhost:8000/` → 跳到 `/ui_kits/app/` |
+
+> **审核后台 / 桌面规划台 / 幻灯片不在这个服务里。** 它们是内部工具，
+> `pipeline/api/server.py` 刻意只放行 App 及其资源（白名单），其余路径一律 404。
+> 确实要看它们，就在根目录另起一个纯静态服务：
+>
+> ```bash
+> python -m http.server 8001    # 然后访问 /ui_kits/admin/、/ui_kits/dashboard/、/slides/
+> ```
+>
+> ⚠️ `http.server` **没有任何访问控制、目录列表也开着**（`pipeline/data/`、`.git/` 都能读到），
+> **只允许在本机用，绝对不要挂到公网。**
 
 **Demo 模式**：在地址后加 `?demo=1`（例如 `.../ui_kits/app/?demo=1`），角落里会出现一个很淡的
 **「重置 Demo」** 按钮，用来一键清空演示状态。

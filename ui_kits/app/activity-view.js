@@ -48,8 +48,10 @@
   var PLACEHOLDER_BASE = "/assets/placeholders/";
 
   // Server-root paths must be resolvable even when the app is opened from a
-  // nested static server (or file://). The app always ships under
-  // <repo>/ui_kits/app/, so "../../" climbs back to the repo root.
+  // nested static server, or straight off the disk with no server at all.
+  // The app always ships under <repo>/ui_kits/app/, so "../../" climbs back
+  // to the repo root. Over HTTP the path is already absolute and is returned
+  // untouched — this branch never produces a local-file URL.
   function resolveUrl(url) {
     if (!url) return null;
     if (/^(https?:|data:|blob:)/i.test(url)) return url;
