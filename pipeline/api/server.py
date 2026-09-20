@@ -32,6 +32,7 @@
 
 import argparse
 import json
+import os
 import re
 import sys
 import threading
@@ -113,9 +114,12 @@ PUBLIC_DENY_EXT = (".md", ".py", ".pyc", ".map", ".ts", ".sh")
 # own origin, so a compromised/3rd-party script cannot exfiltrate the results
 # the user is looking at. `script-src` has to stay permissive because the app
 # runs Babel in the browser (needs eval) and ships one inline bootstrap script.
+# No external script origin is allowed: React/Babel/lucide are vendored under
+# assets/vendor/ (see ui_kits/app/index.html). Style/font still point at Google
+# Fonts, which degrades to the system font stack rather than breaking the page.
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' data: https://fonts.gstatic.com; "
     "img-src 'self' data: blob: https:; "
@@ -730,11 +734,29 @@ def make_server(port=8000, host="127.0.0.1", debug=False, today=None,
     return ThreadingHTTPServer((host, port), handler)
 
 
+def resolve_bind_defaults(env=None):
+    """Pick the bind host/port from the environment.
+
+    Hosting sandboxes inject ``PORT`` when they start a service behind their
+    reverse proxy. Seeing it means something else is terminating the public
+    connection for us, so we have to accept connections on every interface.
+    A plain local run has no ``PORT`` and stays on loopback, so the demo is
+    never exposed to the LAN (or a tunnel) just by being started.
+    """
+    env = os.environ if env is None else env
+    raw_port = str(env.get("PORT") or "").strip()
+    port = int(raw_port) if raw_port.isdigit() else 8000
+    host = str(env.get("GORGON_HOST") or "").strip() or (
+        "0.0.0.0" if raw_port.isdigit() else "127.0.0.1")
+    return host, port
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Gorgon static server + /api/search (read-only public build)")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--host", default="127.0.0.1")
+    _default_host, _default_port = resolve_bind_defaults()
+    parser.add_argument("--port", type=int, default=_default_port)
+    parser.add_argument("--host", default=_default_host)
     parser.add_argument("--debug", action="store_true",
                         help="include internal debug payload (LOCAL ONLY — never tunnel this)")
     parser.add_argument("--today", help="pin the reference date (YYYY-MM-DD) for demos/tests")

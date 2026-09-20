@@ -1,0 +1,10 @@
+# Vendored browser runtime (assets/vendor/).
+#
+# These files are pinned by the `integrity="sha384-…"` hashes in
+# ui_kits/app/index.html. Git's line-ending normalisation (core.autocrlf) would
+# silently rewrite LF to CRLF on checkout, the SHA-384 would no longer match,
+# and the browser would then REFUSE to execute React/Babel — a blank page with
+# one console error. They must be stored and checked out byte for byte.
+#
+# -diff too: nobody reviews a 3 MB minified bundle as a text diff.
+assets/vendor/* -text -diff

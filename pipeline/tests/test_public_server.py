@@ -8,7 +8,10 @@
 # `demo` mode, so there is no network and no fixture churn — the only thing
 # under test is the HTTP boundary itself.
 
+import base64
+import hashlib
 import json
+import re
 import sys
 import threading
 import unittest
@@ -25,7 +28,8 @@ for p in (str(REPO_ROOT), str(PIPELINE_DIR)):
 
 from pipeline.api.server import (  # noqa: E402
     DISTRICT_WHITELIST, MAX_QUERY_CHARS, MAX_RESULTS_CAP, MAX_TOPICS,
-    GorgonRequestHandler, RateLimiter, make_server, validate_search_payload,
+    GorgonRequestHandler, RateLimiter, make_server, resolve_bind_defaults,
+    validate_search_payload,
 )
 from pipeline.search.settings import SearchSettings  # noqa: E402
 
@@ -495,6 +499,79 @@ class ValidationUnitTest(unittest.TestCase):
             clean, error = validate_search_payload(payload)
             self.assertNotEqual(clean is None, error is None,
                                 "one of the two must be set: %r" % (payload,))
+
+
+class BindDefaultsTest(unittest.TestCase):
+    """The deployment sandbox sets PORT; a local run must NOT go wide."""
+
+    def test_local_run_stays_on_loopback(self):
+        self.assertEqual(resolve_bind_defaults({}), ("127.0.0.1", 8000))
+
+    def test_injected_port_also_opens_the_interface(self):
+        # Hosting sandboxes only inject PORT when they terminate the public
+        # connection themselves, so we have to listen on every interface.
+        self.assertEqual(resolve_bind_defaults({"PORT": "3000"}), ("0.0.0.0", 3000))
+
+    def test_garbage_port_falls_back_to_local_defaults(self):
+        for bad in ("", "   ", "abc", "80.5", "-1"):
+            self.assertEqual(resolve_bind_defaults({"PORT": bad}),
+                             ("127.0.0.1", 8000), bad)
+
+    def test_explicit_host_wins_over_the_inferred_one(self):
+        self.assertEqual(
+            resolve_bind_defaults({"PORT": "9000", "GORGON_HOST": "127.0.0.1"}),
+            ("127.0.0.1", 9000))
+
+    def test_reads_the_real_environment_when_called_without_arguments(self):
+        # The default path is the one the process actually starts on, so it has
+        # to be exercised rather than assumed (a missing `import os` here only
+        # shows up at server start-up, not in a dict-driven test).
+        host, port = resolve_bind_defaults()
+        self.assertIsInstance(host, str)
+        self.assertIsInstance(port, int)
+        self.assertTrue(host)
+        self.assertGreater(port, 0)
+
+
+APP_INDEX = REPO_ROOT / "ui_kits" / "app" / "index.html"
+
+
+class FrontendIsolationTest(unittest.TestCase):
+    """The public page must boot with no third-party origin involved.
+
+    Vendoring React/Babel/lucide is not a style preference. unpkg is
+    unreachable from a lot of networks, and when it fails the app renders a
+    blank page — the one failure mode a link you hand to strangers cannot have.
+    """
+
+    def test_index_html_loads_no_external_script(self):
+        srcs = re.findall(r'<script[^>]*\ssrc="([^"]+)"',
+                          APP_INDEX.read_text(encoding="utf-8"))
+        external = [s for s in srcs if s.startswith(("http://", "https://", "//"))]
+        self.assertEqual(external, [],
+                         "an external script origin is back: %r" % (external,))
+
+    def test_vendored_runtime_matches_the_declared_hashes(self):
+        html = APP_INDEX.read_text(encoding="utf-8")
+        pairs = re.findall(r'src="([^"]+)"\s+integrity="sha384-([^"]+)"', html)
+        self.assertTrue(pairs, "no integrity-pinned script found — tags changed?")
+        for src, digest in pairs:
+            path = (APP_INDEX.parent / src).resolve()
+            self.assertTrue(path.is_file(), "missing vendored file: %s" % (path,))
+            got = base64.b64encode(hashlib.sha384(path.read_bytes()).digest())
+            self.assertEqual(got.decode(), digest,
+                             "vendored bytes drifted: %s" % (path.name,))
+
+    def test_no_shipped_source_reaches_for_a_cdn(self):
+        roots = [REPO_ROOT / "ui_kits" / "app", REPO_ROOT / "components"]
+        offenders = []
+        for root in roots:
+            for path in list(root.rglob("*.js")) + list(root.rglob("*.jsx")):
+                text = path.read_text(encoding="utf-8", errors="ignore")
+                for host in ("unpkg.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com"):
+                    if host in text:
+                        offenders.append("%s -> %s" % (path.name, host))
+        self.assertEqual(offenders, [])
 
 
 if __name__ == "__main__":

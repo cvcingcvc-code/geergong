@@ -14,7 +14,11 @@ python pipeline/api/server.py --port 8000
 一个进程同时提供**界面**和**检索接口**（`POST /api/search`）。
 要把它发布到公网（只读、无登录）请看 **`docs/PUBLIC_DEPLOYMENT.md`**。
 
-> 首次加载需要联网（React / Babel / Lucide / 字体来自 CDN）。
+> 首次加载**不需要**外网 CDN：React / Babel / Lucide 已本地化到 `assets/vendor/`。
+> 唯一的外域请求是 Google Fonts，取不到时退化为系统字体，页面照常可用。
+
+**线上（已发布）**：<https://shanghai-activity-search.app.workbuddy.host/>
+— 服务跑在托管沙箱里，不依赖本机开机。地址与验证步骤见 `docs/PUBLIC_DEPLOYMENT.md`。
 
 ## 访问地址
 
