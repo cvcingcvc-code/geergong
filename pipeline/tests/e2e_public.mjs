@@ -129,18 +129,34 @@ async function typeKeyword(s, text) {
   `);
 }
 
-/** Drive the smart screen's ask box and submit it. */
+/** Drive the smart screen's ask box and submit it.
+ *
+ *  The value has to be committed to React BEFORE the button is clicked.
+ *  Setting the textarea and clicking in the same tick submits whatever query
+ *  the button's closure captured at the last render — which, right after a
+ *  programmatic input event, can still be the empty string. A real visitor
+ *  cannot do that (typing and clicking are separate events), so the harness
+ *  must not either: otherwise "0 cards" means "we clicked too early", and the
+ *  test blames the product for its own race.
+ */
 async function typeAsk(s, text) {
-  return s.eval(`
+  const typed = await s.eval(`
     const ta = document.querySelector('textarea');
     if (!ta) return false;
     const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
     setter.call(ta, ${JSON.stringify(text)});
     ta.dispatchEvent(new Event('input', { bubbles: true }));
+    return ta.value === ${JSON.stringify(text)};
+  `);
+  if (!typed) return { typed, clicked: false };
+  await sleep(150);
+  const clicked = await s.eval(`
     const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '帮我找活动');
-    if (btn) btn.click();
+    if (!btn) return false;
+    btn.click();
     return true;
   `);
+  return { typed, clicked };
 }
 
 /* ── the run ────────────────────────────────────────────────────────────── */
@@ -359,22 +375,35 @@ async function main() {
   // The smart screen is the real-retrieval surface; only worth driving when
   // the operator actually started the server in real mode.
   if (MODE === "real") {
+    // Check 4 left the district on 徐汇, and the app scopes results to the
+    // picked district on the client. Without this reset the smart screen gets
+    // judged through a filter this check never asked for — and on a thin
+    // dataset that filter can legitimately narrow to nothing, which then looks
+    // like "retrieval is broken on the public URL". Reset it, and keep the
+    // district in the assertion so the leak cannot come back unnoticed.
+    const reset = await chooseDistrict(s, "全上海");
+    await sleep(500);
     await goTab(s, "smart");
     await sleep(600);
-    await typeAsk(s, "这个周末上海有什么 AI / Agent 活动？");
+    const asked = await typeAsk(s, "这个周末上海有什么 AI / Agent 活动？");
     const gotReal = await s.waitFor(
       "document.querySelectorAll('article.gg-result').length > 0",
       { timeout: 240000, interval: 1000 });
     const smart = await s.eval(`
+      const pill = document.querySelector('[data-gg-region="district-picker"]');
       return {
         cards: document.querySelectorAll('article.gg-result').length,
+        district: pill ? pill.dataset.ggDistrict : null,
         real: /REAL SEARCH/.test(document.body.innerText),
         demo: /DEMO DATA/.test(document.body.innerText),
       };
     `);
+    // `asked` is reported so a mis-click fails loudly here instead of looking
+    // like the retrieval returned nothing.
     check("13. the smart screen still retrieves for real over the public URL",
-      gotReal && smart.cards > 0 && smart.real && !smart.demo,
-      JSON.stringify(smart));
+      reset && asked.typed && asked.clicked && gotReal && smart.cards > 0 &&
+        smart.district === "全上海" && smart.real && !smart.demo,
+      JSON.stringify(Object.assign({}, smart, { asked })));
     await s.shot(path.join(OUT, "public-5-smart-real.png"));
   }
 

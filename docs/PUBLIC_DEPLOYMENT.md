@@ -474,7 +474,7 @@ GORGON_EXPECT_MODE=real node pipeline/tests/e2e_public.mjs
 | 调试面 | `debug` 与 `mode` **只认服务端 `--debug` 开关**，客户端传了也无效 |
 | 输入校验 | `query` ≤ 300 字符；`district` 对照上海区白名单；`maxResults` 1–50 整数；`topics` ≤ 8 个且每个 ≤ 40 字符；请求体 ≤ 64 KB |
 | 超时 | 单次检索 40 秒上限，超时返回可读的 504；线程池上限 8 |
-| 限流 | 每 IP 每分钟 30 次检索请求，超出返回 429 与 `retryAfter` |
+| 限流 | 每位访客每分钟 30 次检索请求，超出返回 429 与 `retryAfter`（访客身份取自 `X-Forwarded-For`，见下） |
 | 错误处理 | 详细堆栈只写服务端 stderr，浏览器只拿到一句可读中文 |
 | 响应头 | `X-Content-Type-Options: nosniff`、`Referrer-Policy: no-referrer`、`X-Frame-Options: SAMEORIGIN`、CSP（`connect-src 'self'`，`script-src` 无任何外域） |
 | 前端自持 | React / ReactDOM / Babel / lucide **已本地化到 `assets/vendor/`**，不再从 `unpkg.com` 加载 |
@@ -489,7 +489,13 @@ GORGON_EXPECT_MODE=real node pipeline/tests/e2e_public.mjs
 3. **密钥不进仓库、不进截图、不进聊天记录。** 用环境变量；`SEARCH_API_KEY` 只在服务端使用，永远不会下发到浏览器。
    （本仓库目前**没有** `.env` 文件，发布时也不会把密钥传上去。）
 4. **URL 就是凭证。** Quick Tunnel 与平台链接都没有鉴权，任何拿到 URL 的人都能用。
-5. **限流是进程内的。** 重启即清零，也不跨进程共享；如果将来跑多实例，需要换成外部限流。
+5. **限流是给访客算的，不是给代理算的，而且是进程内的。**
+   两种部署方式前面都有一个代理（平台网关 / cloudflared 走 loopback），所以 socket 对端地址**不是访客**。
+   如果按它计数，所有访客会共用一个 30 次/分钟的额度——一分钟后第 31 次检索会让**所有人**被 429，
+   这在分享链接上不是限流而是宕机。因此当对端是工作区地址、或沙箱注入了 `PORT` 时，服务改用
+   `X-Forwarded-For` 的**最后一跳**（那是我们自己的代理追加的，客户端伪造不了）。
+   反过来，没有代理时一律用 socket 地址，避免有人靠发这个头来换新额度。
+   重启即清零，也不跨进程共享；跑多实例时需要换成外部限流。
 6. **真实检索有出站成本。** 第三方来源的配额、速率限制与封禁风险由你承担；限流是为此加的第一道闸。
 7. **字体仍来自 `fonts.googleapis.com`。** JS 运行时已本地化，字体没有；取不到时会退到系统字体栈，
    页面照常可用（这是有意的取舍：字体不影响功能）。要彻底自持就把字体也下到 `assets/vendor/`。

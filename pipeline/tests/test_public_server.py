@@ -28,8 +28,8 @@ for p in (str(REPO_ROOT), str(PIPELINE_DIR)):
 
 from pipeline.api.server import (  # noqa: E402
     DISTRICT_WHITELIST, MAX_QUERY_CHARS, MAX_RESULTS_CAP, MAX_TOPICS,
-    GorgonRequestHandler, RateLimiter, make_server, resolve_bind_defaults,
-    validate_search_payload,
+    GorgonRequestHandler, RateLimiter, client_identity, make_server,
+    peer_is_a_proxy, resolve_bind_defaults, validate_search_payload,
 )
 from pipeline.search.settings import SearchSettings  # noqa: E402
 
@@ -462,6 +462,37 @@ class PublicServerTestCase(unittest.TestCase):
         self.assertIn("message", payload)
         self.assertIn("retryAfter", payload)
 
+    def test_rate_limit_counts_visitors_not_the_proxy(self):
+        """Behind a gateway every request arrives from the SAME socket address.
+
+        Keying the bucket on that address lets one visitor's searches 429
+        everybody else, which on a shared link is an outage rather than a rate
+        limit. So the forwarded hop is what the bucket has to be built from.
+        """
+
+        def ask(forwarded):
+            data = json.dumps({"query": "AI 活动"}).encode("utf-8")
+            headers = {"Content-Type": "application/json"}
+            if forwarded is not None:
+                headers["X-Forwarded-For"] = forwarded
+            request = urllib.request.Request(
+                self.base + "/api/search", data=data, headers=headers,
+                method="POST")
+            return fetch(request)[0]
+
+        original = GorgonRequestHandler.rate_limiter
+        GorgonRequestHandler.rate_limiter = RateLimiter(limit=2)
+        try:
+            self.assertEqual(ask("203.0.113.1"), 200)   # visitor 1, first ask
+            self.assertEqual(ask("203.0.113.2"), 200)   # visitor 2, first ask
+            # The third request overall. Ignoring the header and counting the
+            # (single) socket peer would already answer 429 here.
+            self.assertEqual(ask("203.0.113.1"), 200)   # visitor 1, second ask
+            self.assertEqual(ask("203.0.113.1"), 429)   # visitor 1 is over
+            self.assertEqual(ask("203.0.113.3"), 200)   # visitor 3 unaffected
+        finally:
+            GorgonRequestHandler.rate_limiter = original
+
 
 class ValidationUnitTest(unittest.TestCase):
     """validate_search_payload is pure — cheaper to pin directly."""
@@ -572,6 +603,47 @@ class FrontendIsolationTest(unittest.TestCase):
                     if host in text:
                         offenders.append("%s -> %s" % (path.name, host))
         self.assertEqual(offenders, [])
+
+
+class ClientIdentityTest(unittest.TestCase):
+    """Who the rate limiter counts — the one place a proxy changes the answer."""
+
+    def test_behind_a_proxy_the_forwarded_hop_is_the_visitor(self):
+        self.assertEqual(client_identity("127.0.0.1", "203.0.113.7", True),
+                         "203.0.113.7")
+
+    def test_the_last_hop_is_the_one_our_proxy_appended(self):
+        # A client that invents the header cannot pick its own bucket: its
+        # proxy appends the address it actually saw, last.
+        self.assertEqual(
+            client_identity("127.0.0.1", "1.2.3.4, 203.0.113.7", True),
+            "203.0.113.7")
+
+    def test_without_a_proxy_the_socket_address_wins(self):
+        # Otherwise a directly-exposed process would hand a fresh bucket to any
+        # client that sends the header.
+        self.assertEqual(client_identity("203.0.113.9", "1.2.3.4", False),
+                         "203.0.113.9")
+
+    def test_a_missing_or_empty_header_falls_back_to_the_peer(self):
+        for forwarded in (None, "", "   ", ",", " , "):
+            self.assertEqual(client_identity("127.0.0.1", forwarded, True),
+                             "127.0.0.1", repr(forwarded))
+
+    def test_workspace_and_injected_port_both_mean_a_proxy(self):
+        for peer in ("127.0.0.1", "::1", "10.0.0.5", "192.168.1.20", "172.16.4.4"):
+            self.assertTrue(peer_is_a_proxy(peer, {}), peer)
+        self.assertTrue(peer_is_a_proxy("127.0.0.1", {"PORT": "8000"}))
+        # A sandbox peer that is not itself a workspace address still counts,
+        # because the injected PORT is the signal that something proxies us.
+        self.assertTrue(peer_is_a_proxy("8.8.8.8", {"PORT": "8000"}))
+
+    def test_a_direct_public_peer_is_not_treated_as_a_proxy(self):
+        # NB: the documentation ranges (192.0.2.0/24, 198.51.100.0/24,
+        # 203.0.113.0/24) report is_private=True in Python, so they are useless
+        # as stand-ins for "a stranger on the internet" here.
+        for peer in ("8.8.8.8", "93.184.216.34", "not-an-ip", ""):
+            self.assertFalse(peer_is_a_proxy(peer, {}), repr(peer))
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@
 #   stages[]        the loading stages (no fake percentages anywhere)
 
 import argparse
+import ipaddress
 import json
 import os
 import re
@@ -474,6 +475,46 @@ class RateLimiter(object):
 RATE_LIMITER = RateLimiter()
 
 
+def peer_is_a_proxy(peer, env=None):
+    """Are we deployed behind something that terminates the public connection?
+
+    Two signals, both already meaningful elsewhere in this file: a workspace
+    address (cloudflared connects from loopback, a local sidecar from a private
+    one), and an injected `PORT` — a hosting sandbox only sets it because it is
+    proxying for us.
+    """
+    env = os.environ if env is None else env
+    if str(env.get("PORT") or "").strip():
+        return True
+    try:
+        addr = ipaddress.ip_address((peer or "").strip())
+    except ValueError:
+        return False
+    return addr.is_loopback or addr.is_private
+
+
+def client_identity(peer, forwarded_for, behind_proxy):
+    """Work out WHO to rate-limit, given the socket peer and X-Forwarded-For.
+
+    Both supported deployments put something in front of this process, so the
+    socket peer is the proxy rather than the visitor. Keying on the peer
+    collapses every visitor into one bucket, and then the 31st search in a
+    minute 429s everybody — on a link you hand to a group, that is not a rate
+    limit, it is an outage.
+
+    When we know we are behind a proxy, the LAST `X-Forwarded-For` hop wins:
+    that is the one our own proxy appended, so a client cannot displace it by
+    inventing the header. When we are NOT behind a proxy the socket address
+    wins instead, so the header cannot be used to mint a fresh bucket per
+    request.
+    """
+    peer = (peer or "").strip() or "unknown"
+    if not behind_proxy:
+        return peer
+    hops = [h.strip() for h in (forwarded_for or "").split(",") if h.strip()]
+    return hops[-1] if hops else peer
+
+
 class GorgonRequestHandler(SimpleHTTPRequestHandler):
     """Static file server (allowlisted) + the search API (read-only)."""
 
@@ -514,8 +555,13 @@ class GorgonRequestHandler(SimpleHTTPRequestHandler):
         payload.update(extra)
         self._send_json(payload, status=status)
 
-    def _client_key(self):
+    def _peer_address(self):
         return self.client_address[0] if self.client_address else "unknown"
+
+    def _client_key(self):
+        peer = self._peer_address()
+        return client_identity(peer, self.headers.get("X-Forwarded-For"),
+                               peer_is_a_proxy(peer))
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length") or 0)
