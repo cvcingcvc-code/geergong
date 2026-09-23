@@ -155,7 +155,8 @@ class InsertTest(unittest.TestCase):
                 for i in range(1, 6)
             ]
             counters = repo.upsert_many(evs, now="2026-09-22T12:00:00")
-            self.assertEqual({"inserted": 5, "updated": 0}, counters)
+            self.assertEqual({"inserted": 5, "updated": 0, "unchanged": 0},
+                             counters)
             self.assertEqual(5, repo.count())
 
 
@@ -212,7 +213,10 @@ class DuplicateSourceUrlUpsertTest(unittest.TestCase):
 
 class IncrementalUpdateTest(unittest.TestCase):
     def test_second_batch_is_all_updates(self):
-        """Spec: first crawl inserted=N, second crawl inserted=0 updated=N."""
+        """Spec: first crawl inserted=N, second crawl inserted=0 and no
+        new rows. PHASE 5 refines the counter contract: an identical
+        re-sight is `unchanged` (only last_seen_at moved), `updated`
+        counts real content changes."""
         with EventRepository(":memory:") as repo:
             evs = [event(source_url="https://x.com/event/%d/" % i)
                    for i in range(1, 11)]
@@ -223,7 +227,8 @@ class IncrementalUpdateTest(unittest.TestCase):
             # Identical batch, same source URLs, only the timestamp moved.
             second = repo.upsert_many(evs, now="2026-09-22T13:00:00")
             self.assertEqual(0, second["inserted"])
-            self.assertEqual(10, second["updated"])
+            self.assertEqual(0, second["updated"])
+            self.assertEqual(10, second["unchanged"])
             self.assertEqual(10, repo.count(),
                              "second crawl must NOT add new rows")
 
@@ -351,7 +356,10 @@ class SearchTest(unittest.TestCase):
     def test_keyword_matches_address(self):
         with EventRepository(":memory:") as repo:
             self._seed(repo)
-            rows = repo.search(keyword="世纪大道")
+            # include_past: this seed row's date is fixed in the past
+            # relative to the real clock; the filter mechanics are what
+            # is under test here, not freshness (PHASE 5).
+            rows = repo.search(keyword="世纪大道", include_past=True)
             self.assertEqual(1, len(rows))
             self.assertEqual("设计展览", rows[0]["title"])
 
@@ -412,7 +420,7 @@ class SearchTest(unittest.TestCase):
             self.assertNotIn("设计展览", titles)
             self.assertNotIn("咖啡讲座", titles)
 
-            rows = repo.search(dateEnd="2026-09-30")
+            rows = repo.search(dateEnd="2026-09-30", include_past=True)
             titles = [r["title"] for r in rows]
             self.assertNotIn("AI 艺术展", titles)
             self.assertIn("设计展览", titles)
@@ -430,13 +438,14 @@ class SearchTest(unittest.TestCase):
     def test_city_filter(self):
         with EventRepository(":memory:") as repo:
             self._seed(repo)
-            self.assertEqual(4, len(repo.search(city="上海")))
+            self.assertEqual(4, len(repo.search(city="上海",
+                                                include_past=True)))
             self.assertEqual(0, len(repo.search(city="北京")))
 
     def test_category_filter(self):
         with EventRepository(":memory:") as repo:
             self._seed(repo)
-            rows = repo.search(category="展览")
+            rows = repo.search(category="展览", include_past=True)
             titles = [r["title"] for r in rows]
             self.assertIn("AI 艺术展", titles)
             self.assertIn("设计展览", titles)

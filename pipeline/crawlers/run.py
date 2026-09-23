@@ -57,6 +57,10 @@ def parse_args(argv=None):
                         help="SQLite path (default: pipeline/data/gorgon.db)")
     parser.add_argument("--limit-details", type=int, default=None,
                         help="stop after N activity pages (default: all)")
+    parser.add_argument("--politeness-delay", type=float, default=None,
+                        help="seconds between requests to the same host "
+                             "(default: fetcher's 0.4s; raise for sources "
+                             "that rate-limit long detail runs)")
     parser.add_argument("--no-details", action="store_true",
                         help="listing rows only: no activity pages fetched")
     parser.add_argument("--no-store", action="store_true",
@@ -101,7 +105,8 @@ def main(argv=None):
         crawler = build_crawler(args.source, city=args.city,
                                 max_pages=args.max_pages, settings=settings,
                                 fetch_details=not args.no_details,
-                                limit_details=args.limit_details)
+                                limit_details=args.limit_details,
+                                politeness_delay=args.politeness_delay)
     except KeyError:
         print("unknown source: %s (known: douban)" % args.source, file=sys.stderr)
         return 2
@@ -112,11 +117,35 @@ def main(argv=None):
     # because they are the canonical record of what THIS run observed,
     # independent of what the database already contained. The DB has
     # historical state across runs; the JSON does not.
-    counters = {"inserted": 0, "updated": 0}
+    counters = {"inserted": 0, "updated": 0, "unchanged": 0}
+    lifecycle = None
+    freshness = None
     db_path_used = None
     if not args.no_store:
+        from pipeline.crawlers.base import (
+            STOP_BLOCKED, STOP_SOURCE_UNAVAILABLE, canonical_url)
+        from datetime import date as _date
         with EventRepository(db_path) as repo:
             counters = _persist(repo, events)
+            # PHASE 5: lifecycle without deletion. Anything this crawl saw
+            # is evidence the row is still listed; everything else of this
+            # source goes missing_from_source, everything already gone by
+            # date goes past. Matching uses crawler.sourceName — that is
+            # the value stored in events.source_name (crawler.name is the
+            # code-level key, e.g. "douban", NOT the stored label).
+            #
+            # missing-marking is SKIPPED when discovery itself was cut
+            # short (blocked / source unavailable): an interrupted crawl
+            # is NOT evidence that unseen rows vanished from the source.
+            # Otherwise a temporary anti-bot wall would "disappear" the
+            # whole database.
+            discovery_completed = report.stopReason not in (
+                STOP_BLOCKED, STOP_SOURCE_UNAVAILABLE)
+            lifecycle = repo.apply_lifecycle(
+                today=_date.today().isoformat(),
+                seen_source_urls=[canonical_url(e.sourceUrl) for e in events],
+                source_name=crawler.sourceName if discovery_completed else None)
+            freshness = repo.freshness_stats()
         db_path_used = db_path
 
     if not args.no_json:
@@ -142,9 +171,19 @@ def main(argv=None):
               % (report.missingDate, report.missingVenue, report.missingAddress))
         print("stopReason=%s" % report.stopReason)
         if not args.no_store:
-            print("store=sqlite db=%s inserted=%d updated=%d"
-                  % (db_path_used, counters["inserted"],
-                     counters["updated"]))
+            print("store=sqlite db=%s inserted=%d updated=%d unchanged=%d"
+                  % (db_path_used, counters["inserted"], counters["updated"],
+                     counters.get("unchanged", 0)))
+            if lifecycle:
+                print("lifecycle pastMarked=%d missingMarked=%d"
+                      % (lifecycle["pastMarked"], lifecycle["missingMarked"]))
+            if freshness:
+                print("freshness totalActive=%d past=%d missingFromSource=%d "
+                      "next7Days=%d next30Days=%d coordinateCoverage=%s%%"
+                      % (freshness["totalActive"], freshness["past"],
+                         freshness["missingFromSource"], freshness["next7Days"],
+                         freshness["next30Days"],
+                         freshness["coordinateCoverage"]))
         if not args.no_json:
             print("wrote %s" % events_path)
             print("wrote %s" % report_path)

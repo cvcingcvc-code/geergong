@@ -75,11 +75,19 @@ class BaseCrawler(object):
     sourceName = None
 
     def __init__(self, city="上海", max_pages=10, settings=None, fetcher=None,
-                 fetch_details=True, limit_details=None):
+                 fetch_details=True, limit_details=None, politeness_delay=None):
         self.city = city
         self.settings = settings or SearchSettings(online=True)
         # PageFetcher is the project's existing fetcher: reuse, do not rewrite.
-        self.fetcher = fetcher or PageFetcher(self.settings)
+        # PHASE 5: an explicit politeness_delay slows per-host pacing for
+        # sources that rate-limit long detail runs (douban tripped at 0.4s).
+        if fetcher is not None:
+            self.fetcher = fetcher
+        elif politeness_delay is not None:
+            self.fetcher = PageFetcher(self.settings,
+                                       politeness_delay=politeness_delay)
+        else:
+            self.fetcher = PageFetcher(self.settings)
         self.maxPages = max(1, int(max_pages or 1))
         self.fetchDetails = bool(fetch_details)
         self.limitDetails = limit_details

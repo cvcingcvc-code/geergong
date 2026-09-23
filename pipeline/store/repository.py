@@ -30,6 +30,7 @@
 import os
 import sqlite3
 import time
+from datetime import datetime, timedelta
 
 from pipeline.crawlers.base import canonical_url
 from pipeline.crawlers.models import RawEvent
@@ -50,6 +51,16 @@ def _now():
     two rows disagreeing about what "now" was a millisecond apart.
     """
     return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _today_str(today=None):
+    """-> ISO date string. ``today`` accepts a date or an ISO string;
+    None means the real today (callers may pin it in tests)."""
+    if today is None:
+        return time.strftime("%Y-%m-%d")
+    if hasattr(today, "isoformat"):
+        return today.isoformat()
+    return str(today)[:10]
 
 
 class EventRepository(object):
@@ -154,13 +165,16 @@ class EventRepository(object):
     def upsert_many(self, events, *, now=None):
         """Batch wrapper. Commits once at the end.
 
-        Returns {"inserted": N, "updated": M}. ``now`` is shared across
-        every row in the batch so first_seen_at / last_seen_at land on
-        the same instant when the caller wants them to.
+        Returns {"inserted": N, "updated": M, "unchanged": K}. PHASE 5:
+        ``updated`` counts rows whose CONTENT changed; ``unchanged`` counts
+        re-seen rows that only got a fresh last_seen_at. ``now`` is shared
+        across every row in the batch so first_seen_at / last_seen_at land
+        on the same instant when the caller wants them to.
         """
         ts = now or _now()
         inserted = 0
         updated = 0
+        unchanged = 0
         try:
             for event in events:
                 if not isinstance(event, RawEvent):
@@ -181,14 +195,18 @@ class EventRepository(object):
                     self._insert_row(row, commit=False)
                     inserted += 1
                 else:
-                    self._update_row(existing["id"], existing, row,
-                                     commit=False)
-                    updated += 1
+                    content_changed = self._update_row(
+                        existing["id"], existing, row, commit=False)
+                    if content_changed:
+                        updated += 1
+                    else:
+                        unchanged += 1
             self.conn.commit()
         except sqlite3.Error:
             self.conn.rollback()
             raise
-        return {"inserted": inserted, "updated": updated}
+        return {"inserted": inserted, "updated": updated,
+                "unchanged": unchanged}
 
     # --- lookups --------------------------------------------------------
 
@@ -239,8 +257,18 @@ class EventRepository(object):
         return cur.lastrowid
 
     def _update_row(self, row_id, existing_row, new_row, *, commit=True):
-        """SET-only update: only the columns that actually changed."""
+        """SET-only update: only the columns that actually changed.
+
+        Returns True when CONTENT (anything beyond the bookkeeping
+        timestamps last_seen_at / fetched_at) changed — that is the
+        PHASE 5 "updated vs unchanged" distinction: a re-crawl that saw
+        the same activity again bumps last_seen but is NOT an update.
+        """
         changed = _normalize.merge_for_update(existing_row, new_row)
+        # Bookkeeping keys the upsert refreshes on EVERY re-sight (see
+        # merge_for_update): they describe the crawl, not the activity.
+        _BOOKKEEPING = ("last_seen_at", "fetched_at", "raw_json", "updated_at")
+        content_changed = bool([k for k in changed if k not in _BOOKKEEPING])
         if not changed:
             # Nothing in the activity record changed, but the contract
             # still requires us to bump last_seen_at / fetched_at. merge
@@ -251,27 +279,37 @@ class EventRepository(object):
             # cheap and lets the API report a fresh "as of" time.
             pass
         if not changed:
-            return
+            return False
         sets = ", ".join("%s = ?" % key for key in changed.keys())
         values = list(changed.values()) + [row_id]
         self.conn.execute(
             "UPDATE events SET %s WHERE id = ?" % sets, values)
         if commit:
             self.conn.commit()
+        return content_changed
 
     # --- search ---------------------------------------------------------
 
     def search(self, *, city=None, district=None, keyword=None,
-               dateStart=None, dateEnd=None, category=None, limit=100):
+               dateStart=None, dateEnd=None, category=None, limit=100,
+               include_past=False, today=None):
         """Read-side query.
 
         ``keyword`` matches title / venue_name / address / organizer via
         case-insensitive LIKE. Date range is applied to start_time with a
         lexical comparison (ISO timestamps sort lexicographically; this is
         also what lets the index on start_time do its job).
+
+        PHASE 5: by default a row whose start_time is before ``today`` is
+        NOT returned — yesterday's event is not a recommendation. Callers
+        that explicitly want history pass ``include_past=True``. Rows with
+        no start_time stay visible (unknown is not "past").
         """
         clauses = []
         params = []
+        if not include_past:
+            clauses.append("(start_time IS NULL OR substr(start_time, 1, 10) >= ?)")
+            params.append(_today_str(today))
         if city:
             clauses.append("city = ?")
             params.append(city)
@@ -315,13 +353,17 @@ class EventRepository(object):
 
     def search_nearby(self, *, latitude, longitude, radius_km,
                       date_start=None, date_end=None, keyword=None,
-                      limit=50):
+                      limit=50, include_past=False, today=None):
         """Real radius search over geocoded rows.
 
         distance_km (Haversine) <= radius_km is the ONLY admission rule —
         no district, no city, no "close enough". Rows without coordinates
         are invisible here BY DESIGN: an event whose position we do not
         know is not "somewhere nearby", it is unknown.
+
+        PHASE 5: past events are excluded by default (``include_past``),
+        so "静安寺附近有什么活动" never recommends something that already
+        ended. An explicit date range still applies on top.
 
         Returns rows (newest-column dicts) each carrying `distance_km`,
         ordered by distance asc, then start_time, then id — deterministic.
@@ -334,6 +376,9 @@ class EventRepository(object):
 
         clauses = ["latitude IS NOT NULL", "longitude IS NOT NULL"]
         params = []
+        if not include_past:
+            clauses.append("(start_time IS NULL OR substr(start_time, 1, 10) >= ?)")
+            params.append(_today_str(today))
         if date_start:
             clauses.append(_DATE_GTE)
             params.append(date_start)
@@ -440,6 +485,120 @@ class EventRepository(object):
                                     if total else 0.0,
             "geocodableMissing": int(row["geocodable_missing"] or 0),
             "bySource": by_source,
+        }
+
+    # --- lifecycle (PHASE 5) ---------------------------------------------
+
+    def apply_lifecycle(self, *, today=None, seen_source_urls=None,
+                        source_name=None, now=None):
+        """Mark the data lifecycle WITHOUT ever deleting a row.
+
+        Two rules, applied in this order:
+
+        1. ``past`` — an active row whose start_time is before ``today``.
+           The event happened; the row stays as history.
+        2. ``missing_from_source`` — a non-past, still-active row of
+           ``source_name`` whose canonical URL was NOT among this crawl's
+           discovered URLs. The source stopped listing it (or the source
+           hiccuped) — we keep the row and say so instead of vanishing it.
+
+        Returns {"pastMarked": N, "missingMarked": M}.
+        """
+        ts = now or _now()
+        today = _today_str(today)
+        cur = self.conn.execute(
+            "UPDATE events SET status = 'past', updated_at = ? "
+            "WHERE status = 'active' AND start_time IS NOT NULL "
+            "AND substr(start_time, 1, 10) < ?",
+            (ts, today))
+        past_marked = cur.rowcount
+
+        missing_marked = 0
+        if source_name is not None:
+            seen = {canonical_url(u) for u in (seen_source_urls or [])
+                    if canonical_url(u)}
+            rows = self.conn.execute(
+                "SELECT id, source_url FROM events "
+                "WHERE status = 'active' AND source_name = ?",
+                (source_name,)).fetchall()
+            stale_ids = [r["id"] for r in rows
+                         if canonical_url(r["source_url"]) not in seen]
+            for row_id in stale_ids:
+                self.conn.execute(
+                    "UPDATE events SET status = 'missing_from_source', "
+                    "updated_at = ? WHERE id = ?", (ts, row_id))
+            missing_marked = len(stale_ids)
+        self.conn.commit()
+        return {"pastMarked": past_marked, "missingMarked": missing_marked}
+
+    def freshness_stats(self, *, today=None, now=None):
+        """PHASE 5 freshness dashboard — answers "is this store stale?".
+
+        All counts are over the whole store; activity-day counts are over
+        ACTIVE (not past / missing) rows only.
+        """
+        from datetime import date as _date
+        today = _today_str(today)
+        now = now or _now()
+        try:
+            now_dt = datetime.strptime(now[:19], "%Y-%m-%dT%H:%M:%S")
+        except ValueError:
+            now_dt = datetime.now()
+
+        by_status = {r[0]: int(r[1]) for r in self.conn.execute(
+            "SELECT status, COUNT(*) FROM events GROUP BY status")}
+        total = sum(by_status.values())
+
+        def _fetched_since(hours):
+            cutoff = (now_dt - timedelta(hours=hours)).strftime(
+                "%Y-%m-%dT%H:%M:%S")
+            row = self.conn.execute(
+                "SELECT COUNT(*) FROM events WHERE fetched_at >= ?",
+                (cutoff,)).fetchone()
+            return int(row[0])
+
+        def _active_between(start_day, end_day):
+            row = self.conn.execute(
+                "SELECT COUNT(*) FROM events WHERE status = 'active' "
+                "AND start_time IS NOT NULL AND substr(start_time, 1, 10) >= ? "
+                "AND substr(start_time, 1, 10) <= ?",
+                (start_day, end_day)).fetchone()
+            return int(row[0])
+
+        end7 = (_date.fromisoformat(today) + timedelta(days=7)).isoformat()
+        end30 = (_date.fromisoformat(today) + timedelta(days=30)).isoformat()
+
+        coord = self.coordinate_stats()
+        oldest = self.conn.execute(
+            "SELECT MIN(fetched_at) FROM events").fetchone()[0]
+        oldest_age_hours = None
+        if oldest:
+            try:
+                oldest_dt = datetime.strptime(str(oldest)[:19],
+                                              "%Y-%m-%dT%H:%M:%S")
+                oldest_age_hours = round(
+                    (now_dt - oldest_dt).total_seconds() / 3600.0, 1)
+            except ValueError:
+                pass
+
+        sources = [
+            {"source": r[0] or "unknown", "count": int(r[1])}
+            for r in self.conn.execute(
+                "SELECT source_name, COUNT(*) FROM events "
+                "GROUP BY source_name ORDER BY 2 DESC")
+        ]
+        return {
+            "totalEvents": total,
+            "totalActive": by_status.get("active", 0),
+            "past": by_status.get("past", 0),
+            "missingFromSource": by_status.get("missing_from_source", 0),
+            "fetchedLast24h": _fetched_since(24),
+            "fetchedLast48h": _fetched_since(48),
+            "next7Days": _active_between(today, end7),
+            "next30Days": _active_between(today, end30),
+            "coordinateCoverage": coord["coordinatePercentage"],
+            "sourceCoverage": sources,
+            "oldestFetchAgeHours": oldest_age_hours,
         }
 
     # --- aggregates -----------------------------------------------------

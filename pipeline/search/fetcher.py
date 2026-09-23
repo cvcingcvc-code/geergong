@@ -147,8 +147,13 @@ class PageFetcher(object):
 
     name = "page-fetcher"
 
-    def __init__(self, settings=None, opener=None, sleeper=None, clock=None):
+    def __init__(self, settings=None, opener=None, sleeper=None, clock=None,
+                 politeness_delay=0.4):
         self.settings = settings or SearchSettings()
+        # PHASE 5: per-host pacing is configurable — the crawler run against
+        # douban's detail pages at 0.4s/request tripped the source's rate
+        # limiter (~130 requests); a slower pace finishes the same crawl.
+        self.politenessDelay = max(0.0, float(politeness_delay))
         self._opener = opener
         self._sleep = sleeper or time.sleep
         self._clock = clock or time.monotonic
@@ -178,7 +183,9 @@ class PageFetcher(object):
 
     # -- politeness ---------------------------------------------------------
 
-    def _throttle(self, host, delay=0.4):
+    def _throttle(self, host, delay=None):
+        if delay is None:
+            delay = self.politenessDelay
         last = self._last_hit.get(host)
         now = self._clock()
         if last is not None:
