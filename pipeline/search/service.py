@@ -197,6 +197,16 @@ def _has_constraints(req):
                 or req.longitude is not None or req.radiusKm is not None)
 
 
+def _radius_is_the_only_constraint(req):
+    """True when radiusKm is the caller's ONLY structured field — the prose
+    query should still be parsed for a place (PHASE 4 HTTP smoke rule)."""
+    return bool(req.radiusKm is not None and req.place is None
+                and req.latitude is None and req.longitude is None
+                and not (req.city or req.topics or req.dateRange
+                         or req.timePreference or req.locationPreference
+                         or req.pricePreference or req.district))
+
+
 def _is_nearby_request(req):
     """A place or explicit coordinates make this a PHASE 3 nearby search."""
     return bool(req.place) or (
@@ -668,6 +678,15 @@ def search_events(request, provider=None, providers=None, today=None, debug=Fals
             # but a query (else _has_constraints is True), so req.place etc.
             # are all None — copying them would erase the place the parser
             # just extracted from the prose.
+            req = parsed
+        elif req.query and _radius_is_the_only_constraint(req):
+            # PHASE 4: a client-supplied radiusKm must NOT suppress prose
+            # place parsing. POST {"query": "静安寺附近…", "radiusKm": 3} is
+            # ONE nearby request — "静安寺附近" in the prose names the place,
+            # the caller's explicit radius caps it. Skipping the parse here
+            # silently demoted nearby queries to web-first keyword search.
+            parsed = parse_request(req.query)
+            parsed.radiusKm = req.radiusKm   # caller's explicit value wins
             req = parsed
 
     # PHASE 3: a place (or explicit coordinates) routes to the LOCAL INDEX +
