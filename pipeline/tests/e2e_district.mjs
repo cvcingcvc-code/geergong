@@ -328,11 +328,14 @@ async function main() {
   await s.shot(path.join(OUT, "desktop-district-6-map-empty.png"));
 
   // ── the smart screen (real retrieval) ────────────────────────────────────
-  // The district filter is applied to the ALREADY-RETRIEVED results, so it must
-  // work on whatever the live sources returned — without touching the provider,
-  // and without being switched off when a source is degraded. The target
-  // district is taken from the data itself, so this step is not tied to a
-  // particular set of live results.
+  // The district now travels IN the request and the pipeline applies it before
+  // dedupe / trust / ranking / maxResults, so the screen re-asks the server
+  // when the selection changes. The list can therefore come back LARGER than
+  // the slice of the previous answer that belonged to this district — that
+  // extra is the point (those are the hits the old client-side filter lost).
+  // It must still work on whatever the live sources returned, without being
+  // switched off when a source is degraded. The target district is taken from
+  // the data itself, so this step is not tied to a particular set of results.
   await goTab(s, "smart");
   await sleep(400);
   // Start wide: the previous step deliberately left the app on an empty region.
@@ -353,22 +356,31 @@ async function main() {
 
     if (target) {
       await chooseDistrict(s, target);
+      // The selection is re-sent to the server, so wait for that answer
+      // before measuring instead of reading the previous one.
+      await s.waitFor(
+        `(() => { const c = [...document.querySelectorAll('article.gg-result')];
+          return c.length > 0 && c.every(x => x.dataset.ggCardDistrict === ${JSON.stringify(target)}); })()`,
+        { timeout: 240000, interval: 1000 });
       await sleep(700);
       const smart = await s.eval(SMART_STATE);
       check("S3. the smart screen keeps only the selected district",
-        smart.cards === smartAll.byDistrict[target] &&
-        smart.cardDistricts.length === 1 && smart.cardDistricts[0] === target,
-        JSON.stringify({ want: smartAll.byDistrict[target], got: smart.cards, districts: smart.cardDistricts }));
+        smart.cardDistricts.length === 1 && smart.cardDistricts[0] === target &&
+        smart.cards >= smartAll.byDistrict[target],
+        JSON.stringify({ atLeast: smartAll.byDistrict[target], got: smart.cards, districts: smart.cardDistricts }));
       check("S4. the stated count still equals the cards drawn",
         smart.stated === smart.cards, JSON.stringify({ cards: smart.cards, stated: smart.stated }));
-      check("S5. hidden results are disclosed, not silently dropped",
-        smart.cards === smartAll.cards || smart.mentionsHidden,
-        JSON.stringify({ cards: smart.cards, all: smartAll.cards, said: smart.mentionsHidden }));
+      check("S5. no other district's activity is used to pad the list",
+        smart.cardDistricts.length <= 1 && smart.cards <= smartAll.cards,
+        JSON.stringify({ cards: smart.cards, all: smartAll.cards, districts: smart.cardDistricts }));
       check("S6. a degraded source does not cancel the district filter",
         !smartAll.degraded || (smart.cardDistricts.length <= 1 && smart.cards <= smartAll.cards),
         JSON.stringify({ degraded: smartAll.degraded }));
       await s.shot(path.join(OUT, "desktop-district-7-smart-filtered.png"));
       await chooseDistrict(s, "全上海");
+      await s.waitFor(
+        `document.querySelectorAll('article.gg-result').length === ${smartAll.cards}`,
+        { timeout: 240000, interval: 1000 });
       await sleep(600);
       const back = await s.eval(SMART_STATE);
       check("S7. 全上海 restores the smart screen's full result list",

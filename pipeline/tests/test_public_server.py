@@ -308,12 +308,34 @@ class PublicServerTestCase(unittest.TestCase):
                 self.assertEqual(body["error"], "invalid_district")
                 self.assertIn("allowed", body)
 
-    def test_district_is_echoed_but_not_smuggled_into_the_planner(self):
+    def test_district_reaches_the_search_request(self):
+        """The district must be a server-side constraint, not just an echo.
+
+        It used to be validated here and then dropped, which pushed the
+        scoping onto the browser — and a browser can only filter the top N
+        the server already chose. That is the bug this phase removes.
+        """
         status, body = self.search(query="AI 活动", district="静安")
         self.assertEqual(status, 200)
-        # The planner sees the query only; district scoping stays client-side.
         self.assertEqual(body["district"], "静安")
-        self.assertNotEqual(body["request"].get("locationPreference"), "静安")
+        self.assertEqual(body["request"].get("district"), "静安")
+        # It also steers recall and ranking through the existing soft field,
+        # so the providers are actually asked about that district.
+        self.assertEqual(body["request"].get("locationPreference"), "静安")
+        # And it is applied, not merely recorded: nothing outside it leaks.
+        for item in body["results"]:
+            district = (item.get("activity") or {}).get("district")
+            self.assertIn(district, (None, "静安"))
+
+    def test_all_shanghai_is_not_a_district_filter(self):
+        """'全上海' must mean "no constraint", never "district named 全上海"."""
+        status, body = self.search(query="AI 活动", district="全上海")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["district"], "全上海")
+        self.assertEqual(body["request"].get("district"), "全上海")
+        # Unfiltered: more than one district is present in the results.
+        districts = {(r.get("activity") or {}).get("district") for r in body["results"]}
+        self.assertGreater(len(districts), 1, "全上海 collapsed into a district filter")
 
     def test_max_results_bounds(self):
         for bad in (0, -1, MAX_RESULTS_CAP + 1, "abc", 1.5):

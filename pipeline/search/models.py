@@ -36,6 +36,16 @@ def _get(d, *names):
     return None
 
 
+def _to_float(value):
+    """Lenient float coercion for request fields ("" and None -> None)."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 # --- SearchRequest ----------------------------------------------------------
 
 @dataclass
@@ -50,10 +60,33 @@ class SearchRequest:
     topics: list = field(default_factory=list)
     dateRange: dict = None            # {"type":"relative","value":"this_weekend"}
     timePreference: str = None        # morning | afternoon | evening
-    locationPreference: str = None    # district, e.g. "徐汇"
+    locationPreference: str = None    # SOFT district preference, e.g. "徐汇"
+    district: str = None              # HARD district constraint, e.g. "徐汇"
     pricePreference: str = None       # see PRICE_PREFERENCES
     maxResults: int = 20
+    # PHASE 3 — PLACE-BASED nearby search. A place is NOT a district: "五角
+    # 场" must never degrade to "整个杨浦". place is resolved to real
+    # coordinates by the geocoding layer; radiusKm then filters by REAL
+    # Haversine distance. Callers may instead pass explicit coordinates,
+    # which skip resolution entirely (but still record where they came from).
+    place: str = None                 # e.g. "五角场" (never mapped to a district)
+    latitude: float = None            # explicit target coordinate (caller-supplied)
+    longitude: float = None
+    radiusKm: float = None            # nearby radius; default applied in the service
 
+    # `locationPreference` and `district` are NOT the same thing, and keeping
+    # them apart is what makes the district filter correct:
+    #
+    #   locationPreference   parsed out of natural language ("徐汇附近").
+    #                        It feeds RECALL (an extra plan query) and the
+    #                        ranking's location_fit — a preference, never a
+    #                        cut. "附近" means nearby; hard-filtering on it
+    #                        would drop events the user asked to see.
+    #   district             an explicit constraint from the caller (the UI's
+    #                        district picker). It is a HARD eligibility rule
+    #                        applied server-side, before dedupe / trust /
+    #                        ranking / maxResults — never to a list that has
+    #                        already been truncated to the city-wide top N.
     def to_dict(self):
         return {
             "query": self.query,
@@ -62,8 +95,13 @@ class SearchRequest:
             "dateRange": dict(self.dateRange) if self.dateRange else None,
             "timePreference": self.timePreference,
             "locationPreference": self.locationPreference,
+            "district": self.district,
             "pricePreference": self.pricePreference,
             "maxResults": self.maxResults,
+            "place": self.place,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "radiusKm": self.radiusKm,
         }
 
     @classmethod
@@ -81,6 +119,9 @@ class SearchRequest:
         if isinstance(dr, str):
             dr = {"type": "relative", "value": dr}
         max_results = _get(d, "maxResults", "max_results")
+        latitude = _get(d, "latitude")
+        longitude = _get(d, "longitude")
+        radius = _get(d, "radiusKm", "radius_km")
         return cls(
             query=_get(d, "query", "q") or "",
             city=_get(d, "city"),
@@ -88,8 +129,13 @@ class SearchRequest:
             dateRange=dict(dr) if isinstance(dr, dict) else None,
             timePreference=_get(d, "timePreference", "time_preference"),
             locationPreference=_get(d, "locationPreference", "location_preference"),
+            district=_get(d, "district"),
             pricePreference=_get(d, "pricePreference", "price_preference"),
             maxResults=int(max_results) if max_results else 20,
+            place=_get(d, "place"),
+            latitude=_to_float(latitude),
+            longitude=_to_float(longitude),
+            radiusKm=_to_float(radius),
         )
 
 

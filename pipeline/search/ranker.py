@@ -185,8 +185,42 @@ def _period_cn(period):
     return {"morning": "上午", "afternoon": "下午", "evening": "晚上"}.get(period, period)
 
 
+# distance -> location_fit curve for place-based nearby searches. Every band
+# exists so a 2.9km event and a 0.4km event cannot share one score.
+NEARBY_DISTANCE_BANDS = (
+    (0.5, 100),
+    (1.0, 92),
+    (2.0, 85),
+    (3.0, 72),
+    (5.0, 55),
+    (10.0, 35),
+)
+NEARBY_DISTANCE_FLOOR_SCORE = 20
+
+
+def _distance_fit_score(distance_km, place):
+    for limit, score in NEARBY_DISTANCE_BANDS:
+        if distance_km <= limit:
+            return score, ["距%s约%.1f公里" % (place, distance_km)]
+    return NEARBY_DISTANCE_FLOOR_SCORE, ["距%s约%.1f公里" % (place, distance_km)]
+
+
 def score_location_fit(activity, request):
     pref = request.locationPreference
+    # PHASE 3: a place-based nearby search scores location fit from the REAL
+    # Haversine distance the repository computed — never from the district a
+    # place happens to sit in. Closer is better, and the reason string says
+    # the actual distance ("约", because GCJ-02 datum + address-level geocoding
+    # both carry uncertainty we do not hide).
+    nearby = ((activity.get("_extra") or {}).get("nearby") or {})
+    distance = nearby.get("distanceKm")
+    if request.place and distance is not None:
+        try:
+            distance = float(distance)
+        except (TypeError, ValueError):
+            distance = None
+        if distance is not None:
+            return _distance_fit_score(distance, request.place)
     if not pref:
         return NEUTRAL_LOCATION_SCORE, []
     district = activity.get("district")

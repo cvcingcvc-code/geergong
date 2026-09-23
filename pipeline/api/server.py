@@ -50,7 +50,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from pipeline.normalize.location import DISTRICTS  # noqa: E402
+from pipeline.normalize.location import (  # noqa: E402
+    ALL_DISTRICTS_LABEL as ALL_DISTRICTS, DISTRICTS,
+)
 from pipeline.search.service import (  # noqa: E402
     STAGES, build_providers_for_mode, search_events,
 )
@@ -81,9 +83,8 @@ SEARCH_DEADLINE_SECONDS = 40.0
 RATE_LIMIT_PER_MINUTE = 30
 
 # The label the UI ships for "no district scoping", plus the canonical Shanghai
-# districts. Taken from the pipeline module rather than retyped, so the API can
-# never drift from the normaliser the rest of the product uses.
-ALL_DISTRICTS = "全上海"
+# districts — both taken from the pipeline module rather than retyped, so the
+# API can never drift from the normaliser the rest of the product uses.
 DISTRICT_WHITELIST = (ALL_DISTRICTS,) + tuple(DISTRICTS)
 
 # --- public static surface --------------------------------------------------
@@ -231,6 +232,10 @@ def public_result(ranked, debug=False):
         "sources": sources,
         "dataOrigin": (provenance[0].get("dataOrigin") if provenance else None) or "demo",
         "queries": list(ranked.get("queries") or []),
+        # PHASE 3: real Haversine distance to the resolved place, in km.
+        # None for non-nearby searches — the field is only ever present when
+        # the local index actually computed it.
+        "distanceKm": ranked.get("distanceKm"),
         "activity": public_activity(activity, debug=debug),
     }
     if debug:
@@ -268,6 +273,13 @@ def build_response(payload, debug=False, today=None, settings=None, mode=None):
         "summary": result["summary"],
         "results": [public_result(r, debug=inner_debug) for r in result["results"]],
     }
+    # PHASE 3: nearby searches echo the place resolution so the client can
+    # show WHAT coordinate the search was anchored on (or why there are no
+    # coordinates: not_configured / not_found / error).
+    if result.get("placeResolution") is not None:
+        response["placeResolution"] = result["placeResolution"]
+    if result.get("radiusKm") is not None:
+        response["radiusKm"] = result["radiusKm"]
     if inner_debug:
         response["debug"] = result.get("debug", {})
         response["settings"] = result.get("settings", {})
@@ -308,6 +320,27 @@ def _too_long(value, limit):
     return isinstance(value, str) and len(value) > limit
 
 
+def _snake(name):
+    """radiusKm -> radius_km (query-string alias support)."""
+    out = []
+    for char in name:
+        if char.isupper():
+            out.append("_")
+            out.append(char.lower())
+        else:
+            out.append(char)
+    return "".join(out)
+
+
+def _is_decimal(text):
+    text = text.strip()
+    try:
+        float(text)
+        return True
+    except ValueError:
+        return False
+
+
 def validate_search_payload(payload, allow_debug=False):
     """Untrusted payload -> (clean_payload, error).
 
@@ -315,10 +348,12 @@ def validate_search_payload(payload, allow_debug=False):
     keys `search_events` already understands, so this cannot change retrieval
     behaviour — it only refuses requests, it never rewrites them.
 
-    `district` is validated against the whitelist and echoed back to the
-    caller, but deliberately NOT forwarded: the district scoping happens in the
-    client over the returned result set (PHASE 5.1), and re-planning a request
-    server-side would change ranking.
+    `district` is validated against the whitelist and FORWARDED into the
+    SearchRequest. It used to be validated and then dropped (PHASE 5.1),
+    which pushed the scoping onto the client — and a client can only filter
+    the top N the server already chose, so a 徐汇 event ranking just below
+    the city-wide cut was reported as "徐汇暂无符合条件的活动" even though
+    retrieval had found it.
     """
     if not isinstance(payload, dict):
         return None, {"error": "invalid_request",
@@ -410,6 +445,39 @@ def validate_search_payload(payload, allow_debug=False):
                           "message": "%s 不得超过 %d 个字符。"
                                      % (key, MAX_PREFERENCE_CHARS)}
         clean[key] = value.strip()
+
+    # --- PHASE 3: place-based nearby search ---------------------------------
+    # `place` is resolved by the geocoding layer; it is deliberately NOT
+    # validated against the district whitelist — a place is not a district.
+    place = payload.get("place")
+    if place not in (None, ""):
+        if not isinstance(place, str):
+            return None, {"error": "invalid_place",
+                          "message": "place 必须是字符串。"}
+        place = place.strip()
+        if _too_long(place, MAX_PREFERENCE_CHARS):
+            return None, {"error": "invalid_place",
+                          "message": "place 不得超过 %d 个字符。"
+                                     % MAX_PREFERENCE_CHARS}
+        clean["place"] = place
+
+    numbers = {"latitude": (-90.0, 90.0), "longitude": (-180.0, 180.0),
+               "radiusKm": (0.1, 50.0)}
+    for key, (lo, hi) in numbers.items():
+        raw = payload.get(key, payload.get(_snake(key)))
+        if raw in (None, ""):
+            continue
+        numeric = (isinstance(raw, (int, float))
+                   and not isinstance(raw, bool)) or (
+            isinstance(raw, str) and _is_decimal(raw))
+        if not numeric:
+            return None, {"error": "invalid_%s" % _snake(key),
+                          "message": "%s 必须是数字。" % key}
+        value = float(raw)
+        if value < lo or value > hi:
+            return None, {"error": "invalid_%s" % _snake(key),
+                          "message": "%s 需在 %g 到 %g 之间。" % (key, lo, hi)}
+        clean[key] = value
 
     # `mode` and `debug` are accepted only when the operator explicitly opted
     # into a local debug server; a public deployment ignores both outright.
@@ -661,9 +729,10 @@ class GorgonRequestHandler(SimpleHTTPRequestHandler):
             return
 
         ignored = clean.pop("__ignored", None)
-        # `district` is validated above but never forwarded: scoping happens in
-        # the client, and re-planning server-side would change ranking.
-        district = clean.pop("district", None)
+        # `district` stays IN the payload: it becomes SearchRequest.district,
+        # and the retrieval pipeline applies it as an eligibility rule before
+        # dedupe / trust / ranking / maxResults.
+        district = clean.get("district")
         req_mode = clean.pop("mode", None)
         clean.pop("debug", None)
         # The debug payload is an operator opt-in (--debug), never a client one.
@@ -687,7 +756,7 @@ class GorgonRequestHandler(SimpleHTTPRequestHandler):
         response = redact_response(response) if not debug_payload else response
         if district:
             # Echoed so the client (and the E2E) can prove the value was
-            # accepted; the scoping itself stays client-side.
+            # accepted AND applied — the results are already district-scoped.
             response["district"] = district
         if ignored:
             response["ignoredParameters"] = ignored
@@ -751,7 +820,10 @@ class GorgonRequestHandler(SimpleHTTPRequestHandler):
             if params.get("maxResults"):
                 payload["maxResults"] = params["maxResults"][0]
             for key in ("city", "timePreference", "locationPreference",
-                        "pricePreference"):
+                        "pricePreference", "place"):
+                if params.get(key):
+                    payload[key] = params[key][0]
+            for key in ("latitude", "longitude", "radiusKm"):
                 if params.get(key):
                     payload[key] = params[key][0]
             if params.get("topics"):

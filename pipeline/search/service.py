@@ -1,4 +1,4 @@
-# Search Service (PHASE 6, extended in PHASE 5) — the single entry point.
+# Search Service (PHASE 6, extended in PHASE 5; PHASE 3 adds nearby search).
 #
 #   search_events(request) ->
 #     parse request -> plan queries -> provider search (demo | real | hybrid)
@@ -6,6 +6,18 @@
 #     -> ENRICH: PageFetcher -> EventExtractor   (PHASE 5, real pages only)
 #     -> EXISTING normalize -> clean -> dedupe -> trust -> route
 #     -> ranking -> result
+#
+#   PHASE 3 — place-based nearby search ("五角场附近 3km"):
+#     parse request -> PLACE RESOLVER (real geocoder; not_configured stays
+#     honest, no guessed coordinates) -> EVENT REPOSITORY (Local Index,
+#     primary pool) -> SPATIAL FILTER (real Haversine <= radius)
+#     -> optional live web search (supplementary recall only; results
+#     without coordinates can never claim to be nearby) -> merge -> dedupe
+#     -> trust -> ranking (distance feeds location_fit) -> results.
+#
+#     "五角场附近" is NEVER "整个杨浦": a place is resolved to a real
+#     coordinate and filtered by real distance, or the answer is an honest
+#     zero with the reason attached.
 #
 # The existing pipeline modules are imported and called as-is. This module
 # owns orchestration only: no cleaning rule, no trust rule, no dedupe rule.
@@ -16,28 +28,40 @@
 #   * when mode=real and no real provider is usable, the payload says
 #     status="unavailable" — it does NOT quietly fall back to fixtures;
 #   * thin records (no date AND no place) are excluded from the presented
-#     list with an explicit, counted reason, never hidden silently.
+#     list with an explicit, counted reason, never hidden silently;
+#   * nearby results without a real distance are excluded with a counted
+#     reason — "probably nearby" is not a thing this system claims.
 #
 # Human Review rule: a record sitting in the review queue is NEVER presented
 # as a confirmed recommendation. It is returned in the `needs_review` /
 # `duplicate_candidate` buckets, and callers must render it as 待核验.
 
+import os
 from datetime import date
 
 from pipeline.clean.cleaner import clean_all
 from pipeline.dedupe.deduplicator import dedupe_all
+from pipeline.location.geocoder import PlaceResolver, get_geocoder
+from pipeline.location.models import PlaceResolution
 from pipeline.normalize.activity import normalize_all
+from pipeline.normalize.location import district_matches, resolve_district
 from pipeline.review.queue import route
 from pipeline.schema import fill_defaults, validate
 from pipeline.search.adapter import extract_info_of, provenance_of, to_raw_activities
 from pipeline.search.enrich import Enricher
 from pipeline.search.fetcher import PageFetcher
-from pipeline.search.models import SearchCandidate, SearchRequest, bucket_for
-from pipeline.search.planner import parse_request, plan_search
+from pipeline.search.models import (SearchCandidate, SearchRequest,
+                                    RawSearchResult, bucket_for,
+                                    new_raw_result)
+from pipeline.search.planner import parse_request, plan_search, resolve_date_range
 from pipeline.search.provider import FixtureSearchProvider, default_provider
 from pipeline.search.ranker import rank_candidates
 from pipeline.search.settings import SearchSettings, with_mode
 from pipeline.search.webproviders import build_real_providers
+# NOTE: pipeline.store.repository is imported LAZILY inside the nearby path —
+# a top-level import creates a cycle (crawlers.base -> search.fetcher ->
+# search.__init__ -> service -> repository -> crawlers.base) whenever the
+# crawler is the first module Python loads.
 from pipeline.trust.scorer import score_all
 
 # Which bucket a record belongs to is decided in models.bucket_for().
@@ -57,6 +81,28 @@ STAGES = (
 
 # A record with neither a date nor a place is not usable as a recommendation.
 THIN_EXCLUSION_REASON = "缺少可确认的时间与地点"
+
+# --- nearby-search configuration (PHASE 3) -----------------------------------
+#
+# The radius default is the spec's own example (3km). It is applied ONLY when
+# the user expressed no radius; an explicit radius is never widened, and an
+# empty result is reported as exactly what it is.
+NEARBY_DEFAULT_RADIUS_KM = 3.0
+NEARBY_MAX_RADIUS_KM = 50.0
+NEARBY_CANDIDATE_LIMIT = 200
+LOCAL_INDEX_PROVIDER = "local_index"
+
+
+def default_event_db():
+    """SQLite path the nearby search reads. GORGON_DB overrides; the default
+    is the crawler's own store (PHASE 2), so nearby search and the crawler
+    can never drift onto two different databases."""
+    env_path = os.environ.get("GORGON_DB")
+    if env_path:
+        return env_path
+    repo_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    return os.path.join(repo_root, "pipeline", "data", "gorgon.db")
 
 
 class SearchServiceResult(dict):
@@ -146,7 +192,15 @@ def _build_candidates(activities, queries_by_result):
 def _has_constraints(req):
     """True when the caller supplied more than a bare query string."""
     return bool(req.city or req.topics or req.dateRange or req.timePreference
-                or req.locationPreference or req.pricePreference)
+                or req.locationPreference or req.pricePreference
+                or req.place or req.latitude is not None
+                or req.longitude is not None or req.radiusKm is not None)
+
+
+def _is_nearby_request(req):
+    """A place or explicit coordinates make this a PHASE 3 nearby search."""
+    return bool(req.place) or (
+        req.latitude is not None and req.longitude is not None)
 
 
 def resolve_providers(settings, fetcher=None):
@@ -194,11 +248,403 @@ def _is_thin(activity):
     return not has_time and not has_place
 
 
+# --- PHASE 3: place-based nearby search --------------------------------------
+
+def _resolve_nearby_target(req, resolver=None):
+    """-> (PlaceResolution, notice_or_None).
+
+    An injected `resolver` (tests, alternative providers) wins outright.
+    Otherwise: explicit caller coordinates skip resolution entirely (the
+    caller owns their provenance); a place text goes through the geocoding
+    layer; a missing configuration is reported, never worked around.
+    """
+    if req.latitude is not None and req.longitude is not None:
+        return PlaceResolution(
+            place=req.place or "指定坐标", status="resolved",
+            latitude=float(req.latitude), longitude=float(req.longitude),
+            provider="caller", displayName=req.place), None
+
+    if resolver is not None:
+        resolution = resolver.resolve(req.place, city=req.city or "上海")
+        if resolution.status == "not_found":
+            return resolution, {
+                "level": "warning", "code": "place_not_found",
+                "message": "没有找到「%s」的真实坐标，无法进行附近搜索。"
+                           % req.place,
+            }
+        if resolution.status == "error":
+            return resolution, {
+                "level": "warning", "code": "geocoder_error",
+                "message": "Geocoding 服务暂不可用：%s"
+                           % (resolution.detail or ""),
+            }
+        return resolution, None
+
+    try:
+        geocoder = get_geocoder()
+    except ValueError as exc:
+        return PlaceResolution(place=req.place, status="error",
+                               detail=str(exc)), {
+            "level": "warning", "code": "geocoder_misconfigured",
+            "message": "Geocoding 配置有误：%s" % exc,
+        }
+    if geocoder is None:
+        return PlaceResolution(
+            place=req.place, status="not_configured",
+            detail="未配置 Geocoding 数据源：设置 AMAP_KEY 或 BAIDU_MAP_AK "
+                   "后启用真实坐标解析"), {
+            "level": "warning", "code": "geocoder_not_configured",
+            "message": "附近搜索需要真实地图坐标：尚未配置 Geocoding 服务"
+                       "（设置 AMAP_KEY 或 BAIDU_MAP_AK）。系统不会猜测坐标，"
+                       "也不会把地点降级为区级搜索。",
+        }
+    resolver = resolver or PlaceResolver(geocoder)
+    resolution = resolver.resolve(req.place, city=req.city or "上海")
+    if resolution.status == "not_found":
+        return resolution, {
+            "level": "warning", "code": "place_not_found",
+            "message": "没有找到「%s」的真实坐标，无法进行附近搜索。"
+                       % req.place,
+        }
+    if resolution.status == "error":
+        return resolution, {
+            "level": "warning", "code": "geocoder_error",
+            "message": "Geocoding 服务暂不可用：%s" % (resolution.detail or ""),
+        }
+    return resolution, None
+
+
+def _nearby_row_to_result(row, today):
+    """One event-store row -> a RawSearchResult the EXISTING pipeline eats.
+
+    dataOrigin="real": these rows came from the real crawler (PHASE 1/2) —
+    the local index is a real source, not a fixture.
+    """
+    start = row.get("start_time")
+    end = row.get("end_time")
+    return new_raw_result(
+        resultId="db_%s" % row.get("id"),
+        provider=LOCAL_INDEX_PROVIDER,
+        source=row.get("source_name") or "本地活动索引",
+        sourceType="web",
+        sourceTrust="medium",
+        dataOrigin="real",
+        title=row.get("title"),
+        url=row.get("source_url"),
+        rawDate=(start[:10] if start else None),
+        rawTime=(start[11:16] if start and len(start) >= 16 else None),
+        rawEndTime=(end[11:16] if end and len(end) >= 16 else None),
+        rawVenue=row.get("venue_name"),
+        address=row.get("address"),
+        city=row.get("city"),
+        district=row.get("district"),
+        rawPrice=row.get("price"),
+        organizer=row.get("organizer"),
+        retrievedAt="%sT00:00:00" % today.isoformat(),
+    )
+
+
+def _nearby_sort_key(ranked):
+    """distance asc, then finalScore, then trust, then id — deterministic.
+
+    For a nearby search distance IS the user's question ("多近？"), so it
+    leads; relevance/time/trust (already folded into finalScore) break ties.
+    """
+    nearby = ((ranked.candidate.activity.get("_extra") or {}).get("nearby") or {})
+    distance = nearby.get("distanceKm")
+    return (
+        float(distance) if distance is not None else float("inf"),
+        -ranked.finalScore,
+        -ranked.trustScore,
+        ranked.candidate.activity.get("id") or "",
+    )
+
+
+def _nearby_result_distance(ranked):
+    return ((ranked.candidate.activity.get("_extra") or {}).get("nearby") or {}).get("distanceKm")
+
+
+def nearby_search_payload(request, *, today=None, settings=None,
+                          repository=None, db_path=None, resolver=None,
+                          providers=None, debug=False):
+    """The PHASE 3 chain: place -> coordinates -> Local Index -> spatial
+    filter -> (optional web supplement) -> existing pipeline -> ranking.
+
+    Injection points mirror search_events so tests can run fully offline:
+    `repository` (in-memory EventRepository), `resolver` (stub place
+    resolver), `providers` (explicit supplement set).
+    """
+    today = today or date.today()
+    settings = settings or SearchSettings()
+    req = SearchRequest.from_dict(request)
+
+    # Radius: the caller's explicit value is never widened (spec rule). Only
+    # a missing value falls back to the default, and a nonsense value is
+    # clamped into the documented range with a visible notice.
+    notices = []
+    radius = req.radiusKm
+    if radius is None:
+        radius = NEARBY_DEFAULT_RADIUS_KM
+    radius = float(radius)
+    if radius <= 0 or radius > NEARBY_MAX_RADIUS_KM:
+        notices.append({
+            "level": "warning", "code": "radius_clamped",
+            "message": "radiusKm 需在 (0, %g] 之间，已按 %g 公里处理。"
+                       % (NEARBY_MAX_RADIUS_KM,
+                          min(max(radius, 0.1), NEARBY_MAX_RADIUS_KM)),
+        })
+        radius = min(max(radius, 0.1), NEARBY_MAX_RADIUS_KM)
+
+    plan = plan_search(req, today=today)
+    resolution, resolve_notice = _resolve_nearby_target(req, resolver=resolver)
+    if resolve_notice:
+        notices.append(resolve_notice)
+
+    if not resolution.ok:
+        status = ("empty" if resolution.status == "not_found"
+                  else "unavailable")
+        return {
+            "status": status,
+            "providerMode": settings.mode,
+            "request": req.to_dict(),
+            "plan": plan.to_dict(),
+            "notices": notices,
+            "providerErrors": [],
+            "providers": [],
+            "summary": _empty_summary(),
+            "results": [],
+            "stages": [{"key": k, "label": v} for k, v in STAGES],
+            "settings": settings.describe(),
+            "placeResolution": resolution.to_dict(),
+            "radiusKm": radius,
+        }
+
+    # --- Local Event Index: the primary candidate pool ----------------------
+    date_range = resolve_date_range(req, today=today)
+    repo = repository
+    own_repo = False
+    if repo is None:
+        from pipeline.store.repository import EventRepository  # lazy: cycle
+        repo = EventRepository(db_path or default_event_db())
+        repo.open()
+        own_repo = True
+    try:
+        rows = repo.search_nearby(
+            latitude=resolution.latitude,
+            longitude=resolution.longitude,
+            radius_km=radius,
+            date_start=(date_range["start"] if date_range else None),
+            date_end=(date_range["end"] if date_range else None),
+            limit=NEARBY_CANDIDATE_LIMIT,
+        )
+    finally:
+        if own_repo:
+            repo.close()
+
+    query_text = plan.query_texts()[0] if plan.queries else req.query
+    raw_results = []
+    queries_by_result = {}
+    distances = {}
+    for row in rows:
+        result = _nearby_row_to_result(row, today)
+        if not result.providerQuery:
+            result.providerQuery = query_text
+        raw_results.append(result)
+        distances[result.resultId] = row["distance_km"]
+        if query_text not in queries_by_result.setdefault(result.resultId, []):
+            queries_by_result[result.resultId].append(query_text)
+
+    # --- optional live web supplement (NEVER the primary pool) --------------
+    # A web hit carries no verified coordinate, so it cannot honestly claim
+    # to be within the radius — it is fetched, merged, and then dropped at
+    # the spatial-eligibility stage with a counted reason.
+    provider_errors = []
+    supplement = providers
+    provider_mode = "real"
+    if supplement is None:
+        if settings.mode == "demo":
+            supplement = []
+            provider_mode = "demo"
+        else:
+            supplement, _, provider_mode = resolve_providers(settings)
+            # Fixtures are demo data: they can never pass a real spatial
+            # check, so they are not even fetched here.
+            supplement = [p for p in supplement
+                          if not isinstance(p, FixtureSearchProvider)]
+    for query in plan.queries:
+        for prov in supplement:
+            for result in prov.search(query):
+                if not result.providerQuery:
+                    result.providerQuery = query.text
+                if not result.provider:
+                    result.provider = prov.name
+                raw_results.append(result)
+                if query.text not in queries_by_result.setdefault(
+                        result.resultId, []):
+                    queries_by_result[result.resultId].append(query.text)
+    for prov in supplement:
+        err = getattr(prov, "lastError", None)
+        status = getattr(prov, "status", None)
+        if status is not None and not status.available:
+            provider_errors.append({
+                "provider": getattr(prov, "name", "provider"),
+                "reason": getattr(status, "reason", None),
+                "detail": getattr(status, "detail", None),
+            })
+        elif err is not None:
+            provider_errors.append({
+                "provider": getattr(prov, "name", "provider"),
+                "reason": getattr(err, "reason", None),
+                "detail": getattr(err, "detail", None),
+            })
+
+    # --- merge -> adapter -> EXISTING pipeline ------------------------------
+    merged, merge_stats = merge_raw_results(raw_results)
+    collected_at = "%sT00:00:00" % today.isoformat()
+    raw_activities = to_raw_activities(merged, collected_at=collected_at)
+    normalized = normalize_all(raw_activities)
+    for act in normalized:
+        fill_defaults(act)
+
+    # Spatial eligibility: a candidate is nearby IFF the local index assigned
+    # it a real distance within the radius (already enforced by SQL-side
+    # filter + Haversine). Everything else — including web hits — is
+    # excluded with a counted reason, never silently.
+    eligible = []
+    excluded_no_distance = 0
+    for act in normalized:
+        result_id = ((act.get("_extra") or {}).get("search") or {}).get("resultId")
+        distance = distances.get(result_id)
+        if distance is None:
+            excluded_no_distance += 1
+            continue
+        act.setdefault("_extra", {})["nearby"] = {
+            "distanceKm": round(float(distance), 3),
+            "targetPlace": resolution.displayName or req.place,
+            "targetLatitude": resolution.latitude,
+            "targetLongitude": resolution.longitude,
+        }
+        eligible.append(act)
+
+    cleaned = clean_all(eligible)
+    deduped, dedupe_stats = dedupe_all(cleaned)
+    scored = score_all(deduped)
+    routed, review_summary = route(scored)
+
+    candidates = _build_candidates(routed, queries_by_result)
+    ranked = rank_candidates(candidates, req, today=today)
+    ranked = [r for r in ranked if r.candidate.bucket != "rejected"]
+    thin = [r for r in ranked
+            if _is_thin(r.candidate.activity) and r.candidate.bucket != "approved"]
+    presentable = [r for r in ranked if r not in thin]
+    presentable.sort(key=_nearby_sort_key)
+
+    max_results = req.maxResults or 20
+    shown = presentable[:max_results]
+
+    results = []
+    for r in shown:
+        payload_row = r.to_dict()
+        distance = _nearby_result_distance(r)
+        if distance is not None:
+            payload_row["distanceKm"] = distance
+        results.append(payload_row)
+
+    if shown:
+        status = "ok"
+    else:
+        status = "empty"
+        if radius < 5.0:
+            suggestion = 5.0
+        else:
+            suggestion = radius + 5.0
+        notices.append({
+            "level": "info", "code": "no_results_within_radius",
+            "message": "%.1f 公里内暂无活动。可以试试扩大半径（例如 %.0f "
+                       "公里）——需要你确认，系统不会自动扩大搜索范围。"
+                       % (radius, suggestion),
+        })
+
+    buckets = {"approved": 0, "needs_review": 0, "duplicate_candidate": 0,
+               "rejected": 0}
+    for act in routed:
+        buckets[bucket_for(act)] += 1
+
+    origins = ["real" if (r.get("provenance") or [{}])[0].get("dataOrigin") == "real"
+               else "demo" for r in results]
+    real_count = sum(1 for o in origins if o == "real")
+
+    summary = {
+        "rawResults": len(raw_results),
+        "mergedRawResults": merge_stats["out"],
+        "mergedDuplicates": merge_stats["byResultId"] + merge_stats["byUrl"],
+        "normalized": len(normalized),
+        "duplicates": dedupe_stats["duplicates_exact"] + dedupe_stats["duplicates_near"],
+        "duplicatesExact": dedupe_stats["duplicates_exact"],
+        "duplicatesNear": dedupe_stats["duplicates_near"],
+        "canonical": dedupe_stats["canonical"],
+        "approved": buckets["approved"],
+        "needsReview": buckets["needs_review"],
+        "duplicateCandidates": buckets["duplicate_candidate"],
+        "rejected": buckets["rejected"],
+        "ranked": len(ranked),
+        "returned": len(shown),
+        "excludedThin": len(thin),
+        "excludedThinReason": THIN_EXCLUSION_REASON,
+        "realResults": real_count,
+        "demoResults": len(results) - real_count,
+        "withImage": 0,
+        "placeholderImage": 0,
+        "reviewQueue": review_summary,
+        "nearby": {
+            "place": req.place,
+            "placeStatus": resolution.status,
+            "radiusKm": radius,
+            "localCandidates": len(rows),
+            "excludedNoDistance": excluded_no_distance,
+            "primaryPool": LOCAL_INDEX_PROVIDER,
+        },
+    }
+
+    payload = {
+        "status": status,
+        # The local index is a REAL source (crawled from real sites), so a
+        # populated nearby result list is never badged DEMO DATA.
+        "providerMode": "real" if rows else provider_mode,
+        "request": req.to_dict(),
+        "plan": plan.to_dict(),
+        "notices": notices,
+        "providerErrors": provider_errors,
+        "providers": [_provider_status(p) for p in supplement] if supplement else [],
+        "summary": summary,
+        "results": results,
+        "stages": [{"key": k, "label": v} for k, v in STAGES],
+        "settings": settings.describe(),
+        "placeResolution": resolution.to_dict(),
+        "radiusKm": radius,
+    }
+    if debug:
+        payload["debug"] = {
+            "nearby": {
+                "distances": {k: round(v, 4) for k, v in distances.items()},
+                "localRows": len(rows),
+                "excludedNoDistance": excluded_no_distance,
+                "merge": merge_stats,
+                "dedupe": dedupe_stats,
+            },
+        }
+    return payload
+
+
 def search_events(request, provider=None, providers=None, today=None, debug=False,
                   settings=None, fetcher=None, enricher=None, mode=None,
-                  enrich=True):
+                  enrich=True, repository=None, db_path=None, resolver=None):
     """Run the whole retrieval chain. `request` may be a SearchRequest, a
-    dict, or a plain natural-language string."""
+    dict, or a plain natural-language string.
+
+    PHASE 3 injection points: `repository` / `db_path` swap the Local Event
+    Index (tests use an in-memory store); `resolver` swaps the place
+    resolver (tests inject a stub geocoder)."""
     today = today or date.today()
     settings = settings or (SearchSettings(mode=mode) if mode else SearchSettings())
     settings = with_mode(settings, mode)
@@ -213,7 +659,37 @@ def search_events(request, provider=None, providers=None, today=None, debug=Fals
         if req.query and not _has_constraints(req):
             parsed = parse_request(req.query)
             parsed.maxResults = req.maxResults or parsed.maxResults
+            # A hard district constraint is the one thing the prose parser
+            # must NOT be trusted to reproduce — it would silently drop it
+            # and the caller's scoping would vanish without a word.
+            parsed.district = req.district
+            # NOTE: the nearby fields must NOT be copied back over the parse
+            # result. This branch only runs when the caller supplied NOTHING
+            # but a query (else _has_constraints is True), so req.place etc.
+            # are all None — copying them would erase the place the parser
+            # just extracted from the prose.
             req = parsed
+
+    # PHASE 3: a place (or explicit coordinates) routes to the LOCAL INDEX +
+    # real spatial filter instead of the web-first chain.
+    if _is_nearby_request(req):
+        return SearchServiceResult(nearby_search_payload(
+            req, today=today, settings=settings, repository=repository,
+            db_path=db_path, resolver=resolver, debug=debug))
+
+    # The district constraint, resolved once. `None` means every candidate
+    # stays eligible; "全上海" resolves to it, so the city-wide choice can
+    # never become a filter.
+    district = resolve_district(req.district)
+
+    # A hard district ALSO steers recall and ranking, and it overwrites the
+    # soft preference when the two disagree: an explicit "静安" from the
+    # picker beats a "徐汇附近" the prose happened to mention, otherwise the
+    # ranking would optimise for a district the filter is about to delete.
+    # Without this the planner would only ask for city-wide results anyway,
+    # and the eligibility filter would have almost nothing left to keep.
+    if district:
+        req.locationPreference = district
 
     # 1. plan
     plan = plan_search(req, today=today)
@@ -315,7 +791,27 @@ def search_events(request, provider=None, providers=None, today=None, debug=Fals
     schema_problems = ["%s: %s" % (a.get("id"), p)
                        for a in normalized for p in validate(a)]
 
-    cleaned = clean_all(normalized)
+    # 6b. DISTRICT ELIGIBILITY — before dedupe / trust / ranking / maxResults.
+    #
+    # THIS ORDER IS THE FIX. District scoping used to happen in the browser,
+    # over a list the server had already ranked and cut to the city-wide top
+    # N. A 徐汇 event that ranked 21st was therefore reported as "徐汇暂无
+    # 符合条件的活动" even though retrieval had found it. Eligibility is a
+    # property of a candidate, not of a position, so it is decided here —
+    # while every candidate is still present — and the survivors are what
+    # dedupe, trust, ranking and maxResults then work on.
+    eligible = normalized
+    district_stats = None
+    if district:
+        eligible = [a for a in normalized if district_matches(a, district)]
+        district_stats = {
+            "district": district,
+            "candidates": len(normalized),
+            "eligible": len(eligible),
+            "excluded": len(normalized) - len(eligible),
+        }
+
+    cleaned = clean_all(eligible)
     deduped, dedupe_stats = dedupe_all(cleaned)
     scored = score_all(deduped)
     routed, review_summary = route(scored)
@@ -406,6 +902,7 @@ def search_events(request, provider=None, providers=None, today=None, debug=Fals
             "enrich": enrich_stats,
             "bucketCounts": buckets,
             "schemaProblems": schema_problems,
+            "districtFilter": district_stats,
             "truncated": len(presentable) - len(shown),
             "origins": {"real": real_count, "demo": demo_count},
             "stages": {
@@ -413,6 +910,7 @@ def search_events(request, provider=None, providers=None, today=None, debug=Fals
                 "merged": merge_stats["out"],
                 "enriched": (enrich_stats or {}).get("fetched"),
                 "normalized": len(normalized),
+                "districtEligible": len(eligible),
                 "cleaned": len(cleaned),
                 "deduped": len(deduped),
                 "scored": len(scored),

@@ -68,6 +68,88 @@ MAX_QUERIES = 8
 MIN_QUERIES = 3
 MAX_TOPIC_QUERIES = 3
 
+# --- place extraction (PHASE 3) ---------------------------------------------
+#
+# "X附近" is a PLACE, not a district. The spec is explicit: 五角场 / 静安寺 /
+# 人民广场 / 上海交通大学 / 新天地 must reach the geocoding layer as place
+# text — mapping 五角场 to 杨浦 and returning the whole district is exactly
+# the behaviour PHASE 3 removes.
+#
+# A district-name place ("徐汇附近") keeps the legacy SOFT-preference
+# behaviour: it is an existing, tested contract, and a district preference is
+# a recall hint, never the fake radius filter PHASE 3 forbids.
+
+PLACE_SUFFIXES = ("附近", "周边", "周围")
+PLACE_RE = re.compile(r"([\u4e00-\u9fa5A-Za-z0-9]{1,16})(附近|周边|周围)")
+
+# Radius: "3公里" / "5km" / "2.5千米" -> float km.
+RADIUS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:公里|千米|km)", re.IGNORECASE)
+
+DEFAULT_PLACE_RADIUS_KM = 3.0
+
+# Characters that can END a place token when scanning right-to-left through
+# the run the regex captured. Without this, "想去五角场附近" would extract
+# the whole prefix run "想去五角场" as the place.
+#
+# Deliberately SMALL and verb/particle-only: chars like 天 (新天地)、上 (上海
+# 交通大学)、周 (周浦)、会 (会堂) DO occur inside real place names, so they
+# must never terminate a token. The tradeoff: "今天静安寺附近" keeps "今天"
+# in the place text — a real geocoder's fuzzy matching absorbs that, and a
+# false break would silently destroy the place entirely.
+_PLACE_BREAK_CHARS = set(
+    "的了在想去看找有是和与及我你他她你们要来到去从就都还把让被"
+    "这那吗呢吧啊么什"
+)
+
+# A place token that IS a district keeps the legacy district-preference path.
+_DISTRICT_TOKENS = set(DISTRICTS) | {d + "区" for d in DISTRICTS} | {"浦东新区"}
+
+
+def _trim_place_run(run):
+    """Right-to-left scan: keep the place-looking tail of the captured run.
+
+    "五角场" -> "五角场";  "想去五角场" -> "五角场";
+    "上海交通大学" -> "上海交通大学" (no break chars inside).
+    """
+    end = len(run)
+    start = end
+    while start > 0:
+        char = run[start - 1]
+        if char in _PLACE_BREAK_CHARS:
+            break
+        start -= 1
+    return run[start:end]
+
+
+def extract_place(text):
+    """-> (place or None, radius_km or None, span_to_blank or None).
+
+    `span_to_blank` is the (start, end) of "place+suffix" in the ORIGINAL
+    text, used by parse_request to blank the match before district detection
+    so "静安寺附近" can never leak "静安" into locationPreference.
+    """
+    raw = (text or "").strip()
+    match = PLACE_RE.search(raw)
+    place = None
+    span = None
+    if match:
+        token = _trim_place_run(match.group(1))
+        if token and len(token) >= 2:
+            place = token
+            # span covers the trimmed token through the suffix — the part of
+            # the sentence that must not leak into district detection.
+            span = (match.end(1) - len(token), match.end(2))
+    radius = None
+    radius_match = RADIUS_RE.search(raw)
+    if radius_match:
+        try:
+            radius = float(radius_match.group(1))
+            if radius <= 0:
+                radius = None
+        except ValueError:
+            radius = None
+    return place, radius, span
+
 
 # --- 1. natural language -> SearchRequest -----------------------------------
 
@@ -85,6 +167,26 @@ def parse_request(text, city_hint=None, today=None):
     """
     raw = (text or "").strip()
     low = raw.casefold()
+
+    # -- place (PHASE 3) — BEFORE district detection ------------------------
+    #
+    # "静安寺附近" contains the district string "静安". The place token is
+    # therefore extracted first and its span blanked out of the text the
+    # district loop sees: a place search must not silently become a district
+    # preference (五角场 -> 杨浦 is the exact failure PHASE 3 removes).
+    place, radius_km, place_span = extract_place(raw)
+    district_text = raw
+    place_is_district = False
+    if place:
+        if place in _DISTRICT_TOKENS:
+            # "徐汇附近" keeps the legacy soft district preference.
+            place_is_district = True
+            place = None
+            radius_km = None
+        else:
+            if place_span:
+                district_text = (raw[:place_span[0]] + " "
+                                 + raw[place_span[1]:])
 
     # -- topics, ordered by where the user mentioned them -------------------
     found = []
@@ -136,10 +238,10 @@ def parse_request(text, city_hint=None, today=None):
             price_pref = value
             break
 
-    # -- location preference (district) ------------------------------------
+    # -- location preference (district) — runs on the place-blanked text ----
     location_pref = None
     for district in DISTRICTS:
-        if district in raw:
+        if district in district_text:
             location_pref = district
             break
 
@@ -151,6 +253,8 @@ def parse_request(text, city_hint=None, today=None):
         timePreference=time_pref,
         locationPreference=location_pref,
         pricePreference=price_pref,
+        place=None if place_is_district else place,
+        radiusKm=radius_km if (place and not place_is_district) else None,
     )
 
 
@@ -300,6 +404,12 @@ def plan_search(request, today=None):
     if req.locationPreference and primary:
         add("%s %s 活动 %s" % (city, primary, req.locationPreference),
             primary, "location")
+
+    # (c2) PHASE 3: a place (五角场/静安寺/…) steers web-supplement recall as
+    # its own query — the LOCAL index is filtered by real distance in the
+    # service; this query only shapes the optional live web search.
+    if req.place and primary:
+        add("%s %s 活动 %s" % (city, primary, req.place), primary, "location")
 
     # (d) pad only if the plan is too thin (never pad beyond MIN_QUERIES)
     if len(queries) < MIN_QUERIES:
