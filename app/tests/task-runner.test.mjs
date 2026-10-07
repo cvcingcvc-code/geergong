@@ -254,3 +254,22 @@ test("runner: manual selection is clipped to MAX_SKILLS_PER_TASK", async () => {
   const t = repo.getTask(id);
   assert.equal(t.steps.length, MAX_SKILLS_PER_TASK, "manual selection clipped to the cap (§48)");
 });
+
+/* ── Ready task with no skills selected: clean error, no run (错误处理) ───── */
+
+test("runner: ready task with no skillIds returns NO_SKILLS_SPECIFIED (no hang, no crash)", async () => {
+  // Mirrors the UI case: a task is `ready` (e.g. after unknown intent) and the
+  // user clicks "运行任务" without picking a skill. Must fail cleanly, leaving
+  // the task in `ready` and surfacing a message rather than hanging.
+  const repo = new MockRepository();
+  let task = M.createTask("今天心情不错");
+  task = M.transitionTaskState(task, "ready");
+  repo.seed(task);
+  const id = repo.listTasks()[0].id;
+  const res = await runTask(id, { repository: repo, registry: Registry, now: () => TS });
+  assert.equal(res.ok, false);
+  assert.equal(res.code, "NO_SKILLS_SPECIFIED");
+  assert.equal(res.message, "请选择要执行的工具");
+  const t = repo.getTask(id);
+  assert.equal(t.status, "ready", "task must stay ready, never silently run");
+});

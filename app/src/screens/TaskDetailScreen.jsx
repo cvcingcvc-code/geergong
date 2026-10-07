@@ -110,8 +110,13 @@ export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpda
   const [running, setRunning] = React.useState(false);
   const [runError, setRunError] = React.useState(null);
 
-  const isRunnable = (task.status === TASK_STATUS.CREATED || task.status === TASK_STATUS.READY) && !running;
   const router = task.metadata && task.metadata.router;
+  const routerHasSkills = !!(router && Array.isArray(router.skillIds) && router.skillIds.length > 0);
+  // The Run button drives the engine: from `created` it routes + executes; from
+  // `ready` it only runs when the router already resolved ≥1 skill. A `ready`
+  // task with no skills (unknown intent) must use manual selection instead, so
+  // we disable Run there rather than producing a no-op error click (§8/§27).
+  const isRunnable = (task.status === TASK_STATUS.CREATED || (task.status === TASK_STATUS.READY && routerHasSkills)) && !running;
 
   const handleRun = async (skillIds) => {
     if (!onRun || running) return;
