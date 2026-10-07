@@ -40,9 +40,18 @@ export const STEP_STATUS = {
 };
 
 // ── §9 timeline event types (stable vocabulary) ───────────────────────
+// Phase-2 vocabulary (immutable — never rename these):
 export const TIMELINE_EVENT_TYPES = [
   "task_created", "status_changed", "step_added", "step_updated",
   "source_added", "result_saved", "task_failed",
+];
+
+// Phase-3 execution-event vocabulary (§23). Appended by the Task Runner in
+// addition to the Phase-2 set; old types are preserved untouched.
+export const EXECUTION_EVENT_TYPES = [
+  "routing_started", "routing_completed",
+  "skill_started", "skill_completed", "skill_failed",
+  "task_execution_completed",
 ];
 
 // ── §5 legal transition table ─────────────────────────────────────────
@@ -178,6 +187,8 @@ export function makeStep(title, opts = {}) {
     status: STEP_STATUS.PENDING,
     createdAt: ts,
     updatedAt: ts,
+    // Phase 3: links a step to the Skill that produces it (§20). Optional.
+    metadata: opts.metadata && typeof opts.metadata === "object" ? Object.assign({}, opts.metadata) : {},
     result: null,
   };
 }
@@ -202,7 +213,8 @@ export function makeSource(input, opts = {}) {
 // ── §13 result ────────────────────────────────────────────────────────
 export function makeResult(input) {
   if (!input || typeof input !== "object") return null;
-  const TYPES = ["text", "json", "search_results", "plan"];
+  // "workflow_result" is the Phase-3 multi-skill aggregation envelope (§22).
+  const TYPES = ["text", "json", "search_results", "plan", "workflow_result"];
   if (TYPES.indexOf(input.type) < 0) return null;
   if (input.content == null) return null;
   return {
@@ -292,6 +304,7 @@ function normalizeStep(s) {
     status: Object.values(STEP_STATUS).indexOf(s.status) >= 0 ? s.status : STEP_STATUS.PENDING,
     createdAt: typeof s.createdAt === "string" ? s.createdAt : nowIso(),
     updatedAt: typeof s.updatedAt === "string" ? s.updatedAt : nowIso(),
+    metadata: s.metadata && typeof s.metadata === "object" ? s.metadata : {},
     result: s.result == null ? null : s.result,
   };
 }
