@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "node --test \"tests/*.test.mjs\"",
     "test:build": "node tests/build-smoke.mjs",
-    "test:e2e": "node tests/e2e_v1_frontend.mjs"
+    "test:e2e": "node tests/e2e_v1_frontend.mjs",
+    "test:e2e:workbench": "node tests/e2e_workbench_shell.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.544.0",

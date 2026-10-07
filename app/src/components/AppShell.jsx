@@ -133,17 +133,43 @@ function NotifyButton({ hasDot }) {
  *  user's static profile campus: once the district is a real, changeable
  *  filter, a chrome chip that never moves would be a second, contradicting
  *  location display on the same screen. Changing it happens in the content
- *  (the picker), so this stays a label. */
-export function DesktopHeader({ district }) {
+ *  (the picker), so this stays a label.
+ *
+ *  PHASE 1 (WORKBENCH_SHELL): when `onWorkbenchHome` is passed, the brand
+ *  block becomes the Workbench home entry (data-workbench-nav="home") and
+ *  the tagline reflects the Workbench product. Without it, the legacy
+ *  rendering is untouched — legacy callers and the E2E contract keep
+ *  working unchanged. */
+export function DesktopHeader({ district, onWorkbenchHome }) {
   const { user } = GORGON_DATA;
   const text = D.label(district);
+  const brand = onWorkbenchHome ? (
+    <button
+      data-workbench-nav="home"
+      onClick={onWorkbenchHome}
+      title="回到工作台"
+      style={{
+        display: "flex", alignItems: "center", gap: 11, minWidth: 0,
+        border: "none", background: "transparent", padding: 0, cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      <BrandTile size={30} />
+      <span className="gg-wordmark">GORGON</span>
+      <span className="gg-wordmark-sub">智能工作台</span>
+    </button>
+  ) : (
+    <>
+      <BrandTile size={30} />
+      <span className="gg-wordmark">GORGON</span>
+      <span className="gg-wordmark-sub">发现你的周末</span>
+    </>
+  );
   return (
     <header className="gg-header" data-gg-region="header">
       <div className="gg-header-inner">
         <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
-          <BrandTile size={30} />
-          <span className="gg-wordmark">GORGON</span>
-          <span className="gg-wordmark-sub">发现你的周末</span>
+          {brand}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }} />

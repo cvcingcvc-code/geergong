@@ -14,16 +14,22 @@
 
 import React from "react";
 import {
-  ArrowLeft, BadgeCheck, BatteryFull, Bell, Calendar, CalendarHeart, Check,
+  ArrowLeft, ArrowRight, BadgeCheck, BatteryFull, Bell, Calendar, CalendarHeart, Check,
   Clock, Compass, ExternalLink, FlaskConical, GitMerge, Globe, Heart,
-  HeartOff, Hexagon, ImageOff, Info, LocateFixed, Map, MapPin, MapPinOff,
-  Navigation, Plus, PlugZap, Search, SearchX, Settings, Share2, ShieldAlert,
-  Signal, SlidersHorizontal, Sparkles, Ticket, TrendingUp, TriangleAlert,
-  Users, Wifi,
+  HeartOff, Hexagon, History, ImageOff, Info, LayoutDashboard, ListTodo,
+  LocateFixed, Map, MapPin, MapPinOff, Menu, Navigation, Plus, PlugZap, Search,
+  SearchX, Settings, Share2, ShieldAlert, ShieldCheck, Signal, SlidersHorizontal,
+  Sparkles, Ticket, TrendingUp, TriangleAlert, Users, Wifi,
 } from "lucide-react";
 
 const ICONS = {
   "arrow-left": ArrowLeft,
+  "arrow-right": ArrowRight,
+  "history": History,
+  "layout-dashboard": LayoutDashboard,
+  "list-todo": ListTodo,
+  "menu": Menu,
+  "shield-check": ShieldCheck,
   "badge-check": BadgeCheck,
   "battery-full": BatteryFull,
   "bell": Bell,
