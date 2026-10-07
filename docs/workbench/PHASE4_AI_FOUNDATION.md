@@ -88,14 +88,22 @@ client.usage();  // { mode, calls, maxCalls, inputTokens, outputTokens, cacheSiz
 
 `app/tests/ai.test.mjs` — 15 tests, all passing. Covers provider contract, MockProvider (every purpose + error paths), budget ceiling, cache hit/miss, config downgrade, and the AIClient budget/cache/usage behavior.
 
+Two follow-up hardening tests were added alongside 4A (see commits `448be4a`, `598d79c`):
+`runner: ready task with no skillIds returns NO_SKILLS_SPECIFIED` (error handling) and
+`runner: search executes exactly once in search+plan workflow` (guards Scenario B "禁止重复搜索").
+
 ```text
-UNIT_TESTS=  125/125  (110 prior + 15 AI)
+UNIT_TESTS=  127/127 (110 prior + 15 AI + 2 runner hardening)
 TEST_BUILD=  18/18
-VITE_BUILD=  PASS (ai/ not bundled → 404.78 kB, unchanged)
-WORKBENCH_E2E= 69/69 (no regression; §40/§41/§42 intact)
+VITE_BUILD=  PASS (ai/ not bundled → ~404.8 kB; ai/ adds 0 bytes)
+WORKBENCH_E2E= 69/69 (re-verified after TaskDetail run-UX change; §40/§41/§42 intact)
 LEGACY_E2E= 58/58 (no regression)
 NEW_REGRESSIONS= 0
 ```
+
+> Note: the `TaskDetailScreen` run button is now disabled when a task is `ready` but the
+> router resolved no skills (unknown intent) — manual tool buttons remain available, so
+> the user gets guidance instead of a no-op error click.
 
 ---
 
