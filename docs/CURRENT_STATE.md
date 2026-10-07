@@ -5,7 +5,7 @@
 
 ```yaml
 BRANCH: feature/v1-frontend-build
-HEAD_COMMIT: f69e2bd        # docs(frontend): document v1 frontend workflow + known issues
+HEAD_COMMIT: 2594d2c        # feat(pwa): make frontend installable on mobile (manifest + service worker + icons)
 PHASE: Phase 1 — Frontend Engineering · DONE（验收通过）
 ```
 
@@ -101,5 +101,5 @@ Real Activity Store / SQLite（`docs/ROADMAP.md` Phase 2，**未获指令前不�
 
 - `test(frontend): add production build smoke + browser E2E` —— `app/tests/` 全部测试与 `.gitignore`、`.e2e-logs/` 忽略。
 - `docs(frontend): document v1 frontend workflow + known issues` —— `docs/V1_FRONTEND_BUILD.md`、`docs/V1_FRONTEND_KNOWN_ISSUES.md`、更新 `docs/CURRENT_STATE.md`。
-- **（待提交）`feat(pwa): make frontend installable on mobile (manifest + service worker + icons)`** —— `app/public/manifest.webmanifest`、`app/public/sw.js`、`app/public/icons/`、`app/index.html`、`app/src/main.jsx`、`app/tests/pwa_install_check.mjs`、`app/tests/pwa_offline_check.mjs`、`docs/V1_FRONTEND_BUILD.md` §8、`docs/CURRENT_STATE.md`。
+- `feat(pwa): make frontend installable on mobile (manifest + service worker + icons)` —— **已推送** `origin/feature/v1-frontend-build`（`2594d2c`）；`app/public/manifest.webmanifest`、`app/public/sw.js`、`app/public/icons/`、`app/index.html`、`app/src/main.jsx`、`app/tests/pwa_install_check.mjs`、`app/tests/pwa_offline_check.mjs`、`docs/V1_FRONTEND_BUILD.md` §8、`docs/CURRENT_STATE.md`。PR 未建、master 未 merge。
 - **未 merge `master`、未开始 Phase 2。**
