@@ -5,7 +5,7 @@
 
 ```yaml
 BRANCH: feature/v1-frontend-build
-HEAD_COMMIT: <见本文件末尾「提交」节，Phase 1 收尾已提交>
+HEAD_COMMIT: f69e2bd        # docs(frontend): document v1 frontend workflow + known issues
 PHASE: Phase 1 — Frontend Engineering · DONE（验收通过）
 ```
 
