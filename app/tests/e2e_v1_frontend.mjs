@@ -13,6 +13,13 @@
 // Favorites, Map, mobile bottom nav, desktop chrome, and zero console
 // errors — at 390 / 768 / 1440 / 1920 widths.
 //
+// PHASE 2 MIGRATION (§17/§18/§27): the product's default boot screen is now
+// the Workbench home. The five legacy capabilities are still fully verified
+// by booting every entry into LEGACY MODE via /?legacy=1 — the exact boot
+// contract Phase 1 tested. NO test, assertion, or capability was removed;
+// only the entry URL changed. Legacy mode renders the same DiscoverScreen
+// boot, the same data-gg-nav keys, and the same .gg-disc-card flow.
+//
 // Run:  node tests/e2e_v1_frontend.mjs        (from app/)
 //       GORGON_PYTHON=python3 node tests/e2e_v1_frontend.mjs
 
@@ -105,7 +112,7 @@ async function desktopChain(width, height, tag) {
   await s.connect();
   await setViewport(s, width, height);
   try {
-    await s.goto(BASE + "/");
+    await s.goto(BASE + "/?legacy=1");
     const shell = await s.waitFor(`!!document.querySelector('[data-gg-shell]')`);
     check(`${tag}: app boots`, shell);
 
@@ -178,7 +185,7 @@ async function desktopChain(width, height, tag) {
     await sleep(400);
 
     // 12-13. reload -> My Weekend persists (localStorage)
-    await s.goto(BASE + "/");
+    await s.goto(BASE + "/?legacy=1");
     await s.waitFor(`document.querySelectorAll('.gg-disc-card').length > 0`);
     await s.click(`document.querySelector('[data-gg-nav="weekend"]')`);
     await s.waitFor(`!!document.querySelector('[data-gg-screen="weekend"]')`);
@@ -196,7 +203,7 @@ async function desktopChain(width, height, tag) {
       return el ? el.getAttribute('data-gg-card-id') : null;`);
     await s.eval(`
       localStorage.setItem('gorgon_favorites', JSON.stringify([${JSON.stringify(favId)}]));`);
-    await s.goto(BASE + "/");
+    await s.goto(BASE + "/?legacy=1");
     await s.waitFor(`document.querySelectorAll('.gg-disc-card').length > 0`);
     await s.click(`document.querySelector('[data-gg-nav="weekend"]')`);
     await s.waitFor(`!!document.querySelector('[data-gg-screen="weekend"]')`);
@@ -235,7 +242,7 @@ async function mobileChain() {
   await s.connect();
   await setViewport(s, 390, 844);
   try {
-    await s.goto(BASE + "/");
+    await s.goto(BASE + "/?legacy=1");
     const boot = await s.waitFor(`!!document.querySelector('[data-gg-shell="mobile"]')`);
     check("mobile 390: mobile shell", boot);
     const cards = await s.waitFor(`document.querySelectorAll('.gg-disc-card').length > 0`);

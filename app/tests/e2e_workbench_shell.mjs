@@ -86,8 +86,11 @@ function appErrors(session) {
     !/favicon|fonts\.googleapis|fonts\.gstatic|net::ERR_INTERNET_DISCONNECTED/i.test(e));
 }
 
-/** Clear the workbench-local storage so runs are deterministic. */
+/** Clear the workbench-local storage so runs are deterministic (§31:
+    the Phase-1 v1 key is ALSO cleared here — test isolation only; the
+    product code itself never deletes it). */
 const RESET_WB = `
+  localStorage.removeItem('gorgon_workbench_tasks_v2');
   localStorage.removeItem('gorgon_workbench_tasks');
   localStorage.removeItem('gorgon_workbench_review');
   localStorage.removeItem('gorgon_workbench_log');
@@ -123,11 +126,20 @@ async function desktopChain() {
   await s.connect();
   await setViewport(s, 1440, 900);
   try {
-    // ── legacy contract first: boot tab is still discover ──────────
+    // ── Phase 2: workbench is the DEFAULT boot screen ──────────────
     await s.goto(BASE + "/");
     await s.waitFor(`!!document.querySelector('[data-gg-shell]')`);
+    const bootHome = await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-home"]')`);
+    check("Phase 2: workbench home is the DEFAULT boot screen", bootHome);
+    const noFakeCards = await s.eval(`
+      return document.querySelectorAll('.gg-disc-card').length === 0;`);
+    check("Phase 2: no fake legacy cards on the workbench boot", noFakeCards);
+
+    // legacy contract: /?legacy=1 still boots discover (§17/§18)
+    await s.goto(BASE + "/?legacy=1");
+    await s.waitFor(`!!document.querySelector('[data-gg-shell]')`);
     const legacyCards = await s.waitFor(`document.querySelectorAll('.gg-disc-card').length > 0`);
-    check("boot tab still renders legacy Discover cards (contract)", legacyCards);
+    check("legacy=1 boots the real Discover cards (contract)", legacyCards);
     const navs = await s.eval(`
       return ['discover','search','smart','weekend','map'].every(k =>
         !!document.querySelector('[data-gg-nav="' + k + '"]'));`);
@@ -145,48 +157,179 @@ async function desktopChain() {
       return !!el && el.innerText.includes('Not connected');`);
     check("status strip truthfully shows AI Engine: Not connected", statusOk);
 
-    // task creation from the home input
+    // task creation from the home input -> REAL task + detail navigation
     await s.eval(TYPE_IN('[data-gg-screen="workbench-home"] textarea', "帮我寻找本周值得参加的 AI 活动"));
     await s.click(`[...document.querySelectorAll('[data-gg-screen="workbench-home"] button')].find(b => b.innerText.includes('开始任务'))`);
-    const notice = await s.waitFor(`!!document.querySelector('[data-testid="workbench-task-notice"]')`);
-    check("home input creates a local task and shows an honest notice", notice);
-    const inRecent = await s.waitFor(`
-      (() => {
-        const box = document.querySelector('[data-testid="workbench-recent"]');
-        return !!box && box.innerText.includes('帮我寻找本周值得参加的 AI 活动');
-      })()`);
-    check("recent tasks list shows the created task", inRecent);
-    const honestLocal = await s.eval(`
-      const box = document.querySelector('[data-testid="workbench-recent"]');
-      return !!box && box.innerText.includes('本地任务数据');`);
-    check("recent tasks are labelled as local data", honestLocal);
+    // Phase 2: creating a task navigates to its Task Detail
+    const detailUp = await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-task-detail"]')`, { timeout: 8000 });
+    check("Phase 2: home input creates a REAL task and opens Task Detail", detailUp);
+    const honestWait = await s.eval(`
+      const el = document.querySelector('[data-gg-screen="workbench-task-detail"]');
+      return !!el && el.innerText.includes('等待任务引擎');`);
+    check("Phase 2: Task Detail honestly says 等待任务引擎", honestWait);
+    const createdEvent = await s.waitFor(`
+      !!document.querySelector('[data-testid="workbench-detail-timeline-list"]')`);
+    check("Phase 2: timeline section renders", createdEvent);
+    const taskCreatedEv = await s.eval(`
+      const box = document.querySelector('[data-testid="workbench-detail-timeline-list"]');
+      return !!box && box.innerText.includes('创建任务');`);
+    check("Phase 2: timeline records task_created", taskCreatedEv);
 
-    // ── tasks screen: add + status transition ──────────────────────
-    await s.click(`document.querySelector('[data-workbench-nav="tasks"]')`);
+    // v2 schema persisted in localStorage
+    const envOk = await s.eval(`
+      const raw = localStorage.getItem('gorgon_workbench_tasks_v2');
+      if (!raw) return false;
+      const env = JSON.parse(raw);
+      return env.schemaVersion === 2 && env.tasks.length === 1
+        && env.tasks[0].goal === '帮我寻找本周值得参加的 AI 活动'
+        && env.tasks[0].status === 'created';`);
+    check("Phase 2: task persisted in gorgon_workbench_tasks_v2 envelope", envOk);
+
+    // back to the tasks list — the created task must be listed
+    await s.click(`document.querySelector('[data-testid="workbench-detail-back"]')`);
     await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-tasks"]')`);
-    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-task-new-input"]', "整理比赛资料"));
-    await s.click(`[...document.querySelectorAll('[data-gg-screen="workbench-tasks"] button')].find(b => b.innerText.includes('添加'))`);
     const listed = await s.waitFor(`
       [...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+        .some(it => it.innerText.includes('帮我寻找本周值得参加的 AI 活动'))`);
+    check("Phase 2: created task appears in TasksScreen", listed);
+
+    // ── Task Detail: legal transitions drive the REAL state machine ─
+    const openFirst = await s.eval(`
+      const item = [...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+        .find(it => it.innerText.includes('帮我寻找本周值得参加的 AI 活动'));
+      if (!item) return false;
+      item.querySelector('[data-testid="workbench-task-open"]').click();
+      return true;`);
+    check("Phase 2: task row opens detail via 详情 button", openFirst);
+    await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-task-detail"]')`);
+
+    // created -> ready (legal shortcut)
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-ready"]')`);
+    const readyOk = await s.waitFor(`
+      document.querySelector('[data-testid="workbench-detail-status"]').innerText.includes('等待执行')`);
+    check("Phase 2: legal transition created -> ready works", readyOk);
+
+    // created/ready -> completed is ILLEGAL: the button must not exist
+    const illegalGone = await s.eval(`
+      return !document.querySelector('[data-testid="workbench-detail-sim-completed"]');`);
+    check("Phase 2: illegal ready -> completed button is NOT rendered", illegalGone);
+
+    // ready -> running -> completed (legal chain)
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-running"]')`);
+    await s.waitFor(`document.querySelector('[data-testid="workbench-detail-status"]').innerText.includes('执行中')`);
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-completed"]')`);
+    const doneOk = await s.waitFor(`
+      document.querySelector('[data-testid="workbench-detail-status"]').innerText.includes('已完成')`);
+    check("Phase 2: legal chain ready -> running -> completed works", doneOk);
+
+    // terminal state: no more transition buttons at all
+    const terminal = await s.eval(`
+      return ['planning','ready','running','review','completed','failed']
+        .every(k => !document.querySelector('[data-testid="workbench-detail-sim-' + k + '"]'));`);
+    check("Phase 2: terminal task exposes no transition buttons", terminal);
+
+    // timeline recorded the whole chain
+    const tl = await s.eval(`
+      const box = document.querySelector('[data-testid="workbench-detail-timeline-list"]');
+      if (!box) return false;
+      const n = (box.innerText.match(/状态变更/g) || []).length;
+      return n >= 3;`);
+    check("Phase 2: timeline recorded every status_changed", tl);
+
+    // steps + sources + result on the detail page
+    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-detail-step-input"]', "收集本周活动列表"));
+    await s.click(`[...document.querySelectorAll('button')].find(b => b.innerText.trim() === '添加步骤')`);
+    const stepUp = await s.waitFor(`
+      [...document.querySelectorAll('[data-testid="workbench-detail-step"]')]
+        .some(it => it.innerText.includes('收集本周活动列表'))`);
+    check("Phase 2: step can be added from Task Detail", stepUp);
+
+    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-detail-source-input"]', "活动官网"));
+    await s.click(`[...document.querySelectorAll('button')].find(b => b.innerText.trim() === '添加来源')`);
+    const srcUp = await s.waitFor(`
+      [...document.querySelectorAll('[data-testid="workbench-detail-source"]')]
+        .some(it => it.innerText.includes('活动官网'))`);
+    check("Phase 2: source can be added from Task Detail", srcUp);
+
+    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-detail-result-input"]', "已确认 2 场目标活动"));
+    await s.click(`[...document.querySelectorAll('button')].find(b => b.innerText.trim() === '保存结果')`);
+    const resUp = await s.waitFor(`
+      !!document.querySelector('[data-testid="workbench-detail-result-view"]')`);
+    check("Phase 2: result can be saved from Task Detail", resUp);
+
+    // ── refresh persistence: the task survives a full reload ───────
+    await s.goto(BASE + "/");
+    await s.waitFor(`!!document.querySelector('[data-gg-shell]')`);
+    await s.click(`document.querySelector('[data-workbench-nav="tasks"]')`);
+    await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-tasks"]')`);
+    const survived = await s.waitFor(`
+      [...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+        .some(it => it.innerText.includes('帮我寻找本周值得参加的 AI 活动')
+          && it.innerText.includes('已完成'))`);
+    check("Phase 2: task + status survive a full page reload", survived);
+
+    // ── tasks screen: add + status transition ──────────────────────
+    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-task-new-input"]', "整理比赛资料"));
+    await s.click(`[...document.querySelectorAll('[data-gg-screen="workbench-tasks"] button')].find(b => b.innerText.includes('添加'))`);
+    const listed2 = await s.waitFor(`
+      [...document.querySelectorAll('[data-testid="workbench-task-item"]')]
         .some(it => it.innerText.includes('整理比赛资料'))`);
-    check("tasks screen lists a locally added task", listed);
+    check("tasks screen lists a locally added task", listed2);
     await s.click(`[...document.querySelectorAll('[data-testid="workbench-task-item"]')]
       .find(it => it.innerText.includes('整理比赛资料'))
       .querySelector('[data-testid="workbench-task-next"]')`);
     const statusChanged = await s.waitFor(`
       [...document.querySelectorAll('[data-testid="workbench-task-item"]')]
         .some(it => it.innerText.includes('整理比赛资料') && it.querySelector('[data-testid="workbench-task-status"]').innerText.includes('等待执行'))`);
-    check("task status transitions draft -> ready", statusChanged);
-    // filter excludes non-matching tasks — poll, React re-renders async
+    check("task status transitions created -> ready (state machine)", statusChanged);
+    // filter excludes non-matching tasks — poll, React re-renders async.
+    // At this point the first task is completed and 整理比赛资料 is ready
+    // (= 进行中), so the 进行中 filter must show ONLY the latter.
     const filterWorks = await s.waitFor(`
       (() => {
-        const btn = document.querySelector('[data-testid="workbench-task-filter-draft"]');
+        const btn = document.querySelector('[data-testid="workbench-task-filter-active"]');
         if (btn && !btn.dataset.wbClicked) { btn.dataset.wbClicked = "1"; btn.click(); }
         const items = [...document.querySelectorAll('[data-testid="workbench-task-item"]')];
-        return items.length > 0 && items.every(it => it.innerText.includes('帮我寻找本周值得参加的 AI 活动'));
+        return items.length > 0 && items.every(it => it.innerText.includes('整理比赛资料'))
+          && items.every(it => !it.innerText.includes('已完成'));
       })()`);
-    check("status filter excludes tasks not matching", filterWorks);
+    check("status filter (进行中) excludes tasks not matching", filterWorks);
+    // failed filter shows the failed bucket exists as a first-class filter
+    const failedFilter = await s.eval(`
+      return !!document.querySelector('[data-testid="workbench-task-filter-failed"]')
+          && !!document.querySelector('[data-testid="workbench-task-filter-review"]');`);
+    check("Phase 2: 待审核/失败 filters exist", failedFilter);
     await s.click(`document.querySelector('[data-testid="workbench-task-filter-all"]')`);
+
+    // ── review center: drive a task into review_required first ─────
+    // create a second task and walk it to review_required via detail
+    await s.eval(TYPE_IN_INPUT('[data-testid="workbench-task-new-input"]', "需要审核的任务"));
+    await s.click(`[...document.querySelectorAll('[data-gg-screen="workbench-tasks"] button')].find(b => b.innerText.includes('添加'))`);
+    await s.waitFor(`[...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+      .some(it => it.innerText.includes('需要审核的任务'))`);
+    await s.click(`[...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+      .find(it => it.innerText.includes('需要审核的任务'))
+      .querySelector('[data-testid="workbench-task-open"]')`);
+    await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-task-detail"]')`);
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-ready"]')`);
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-running"]')`);
+    await s.click(`document.querySelector('[data-testid="workbench-detail-sim-review"]')`);
+    const reviewStatus = await s.waitFor(`
+      document.querySelector('[data-testid="workbench-detail-status"]').innerText.includes('待审核')`);
+    check("Phase 2: running -> review_required works", reviewStatus);
+    // review_required -> completed is illegal: no button
+    const noCompleteInReview = await s.eval(`
+      return !document.querySelector('[data-testid="workbench-detail-sim-completed"]');`);
+    check("Phase 2: illegal review_required -> completed is blocked", noCompleteInReview);
+
+    await s.click(`document.querySelector('[data-workbench-nav="review"]')`);
+    await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-review"]')`);
+    const reviewTaskUp = await s.waitFor(`!!document.querySelector('[data-testid="workbench-review-task"]')`);
+    check("Phase 2: review center reads REAL review_required tasks", reviewTaskUp);
+    await s.click(`document.querySelector('[data-testid="workbench-review-resume"]')`);
+    const resumed = await s.waitFor(`
+      !document.querySelector('[data-testid="workbench-review-task"]')`);
+    check("Phase 2: 继续任务 transitions review_required -> running", resumed);
 
     // ── smart search reaches the REAL natural search ───────────────
     await s.click(`document.querySelector('[data-workbench-nav="search"]')`);
@@ -198,30 +341,32 @@ async function desktopChain() {
       { timeout: 60000 });
     check("natural search still returns real results from workbench nav", gotResults);
 
-    // ── review center ──────────────────────────────────────────────
+    // ── review center demo card (Phase-1 behaviour preserved) ──────
     await s.click(`document.querySelector('[data-workbench-nav="review"]')`);
     await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-review"]')`);
     const cardUp = await s.waitFor(`!!document.querySelector('[data-testid="workbench-review-card"]')`);
-    check("review center shows a pending demo card", cardUp);
-    const marked = await s.eval(`
-      const el = document.querySelector('[data-gg-screen="workbench-review"]');
-      return !!el && el.innerText.includes('DEMO / PREVIEW');`);
-    check("review card is clearly marked DEMO / PREVIEW", marked);
+    check("review center still shows the pending demo card", cardUp);
     await s.click(`document.querySelector('[data-testid="workbench-review-approve"]')`);
     const decided = await s.waitFor(`!!document.querySelector('[data-testid="workbench-review-decided"]')`);
-    check("approve flips the card to decided (local state)", decided);
+    check("approve flips the demo card to decided (local state)", decided);
 
-    // ── history reflects what happened ─────────────────────────────
+    // ── history reflects REAL task timelines ───────────────────────
     await s.click(`document.querySelector('[data-workbench-nav="history"]')`);
     await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-history"]')`);
+    const recentHeader = await s.waitFor(`!!document.querySelector('[data-testid="workbench-history-recent"]')`);
+    check("Phase 2: history shows 最近活动 (aggregated timelines)", recentHeader);
     const hasCreate = await s.waitFor(`
       [...document.querySelectorAll('[data-testid="workbench-history-item"]')]
         .some(it => it.innerText.includes('创建任务'))`);
-    check("history records task creation", hasCreate);
-    const hasApprove = await s.waitFor(`
+    check("history records task creation from task timelines", hasCreate);
+    const hasStatus = await s.waitFor(`
       [...document.querySelectorAll('[data-testid="workbench-history-item"]')]
+        .some(it => it.innerText.includes('状态变更'))`);
+    check("Phase 2: history records status_changed events", hasStatus);
+    const hasApprove = await s.waitFor(`
+      [...document.querySelectorAll('[data-testid="workbench-history-item"], [data-testid="workbench-history-log"] [style]')]
         .some(it => it.innerText.includes('用户批准'))`);
-    check("history records the approval", hasApprove);
+    check("history records the demo approval", hasApprove);
 
     // ── settings ───────────────────────────────────────────────────
     await s.click(`document.querySelector('[data-workbench-nav="settings"]')`);
@@ -235,6 +380,11 @@ async function desktopChain() {
       const screen = document.querySelector('[data-gg-screen="workbench-settings"]');
       return !!screen && screen.innerText.includes('Not configured');`);
     check("settings truthfully shows AI Provider: Not configured", notConfigured);
+    const engineInfo = await s.eval(`
+      const screen = document.querySelector('[data-gg-screen="workbench-settings"]');
+      return !!screen && screen.innerText.includes('Local / Ready')
+        && screen.innerText.includes('2');`);
+    check("Phase 2: settings shows Task Engine + schema v2", engineInfo);
 
     // ── legacy deep paths still work after all the shell work ──────
     await s.click(`document.querySelector('[data-gg-nav="discover"]')`);

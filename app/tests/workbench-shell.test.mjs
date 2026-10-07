@@ -1,9 +1,12 @@
-// Gorgon Workbench — Phase 1 shell tests.
+// Gorgon Workbench — Phase 2 shell tests (store facade + navigation).
 //
-// Behaviour-first: asserts what the store and the navigation mapping DO,
-// not that files or strings exist. The React screens are covered by the
-// E2E shell (tests/e2e_workbench_shell.mjs); this file covers the local
-// state layer and the nav contract in plain Node.
+// UPDATED FOR PHASE 2 (TASK_ENGINE_FOUNDATION): the store facade now
+// persists the formal v2 Task schema through task-repository.js and the
+// status vocabulary is the formal state machine's (created/.../failed).
+// The Phase-1 test intents are preserved 1:1 — same behaviours asserted,
+// only the expected vocabulary and field names changed where Phase 2
+// formally redefined them. Deeper engine coverage lives in
+// tests/task-engine.test.mjs.
 //
 // Run: node --test tests/workbench-shell.test.mjs   (from app/)
 
@@ -28,14 +31,16 @@ const Nav = await import("../src/workbench/navigation.js");
 
 beforeEach(() => { localStorage.clear(); });
 
-/* ── workbench store: tasks ─────────────────────────────────────────── */
+/* ── store facade: tasks (formal engine) ─────────────────────────────── */
 
-test("addTask persists a draft task and logs the creation", () => {
+test("addTask creates a formal v2 task and logs the creation", () => {
   const list = WB.addTask("帮我寻找本周值得参加的 AI 活动");
   assert.equal(list.length, 1);
   assert.equal(list[0].title, "帮我寻找本周值得参加的 AI 活动");
-  assert.equal(list[0].status, "draft");
-  assert.equal(list[0].source, "手动输入");
+  assert.equal(list[0].goal, "帮我寻找本周值得参加的 AI 活动");
+  assert.equal(list[0].status, "created"); // formal vocabulary (was Phase-1 "draft")
+  assert.equal(list[0].version, 2);
+  assert.ok(list[0].timeline.some((e) => e.type === "task_created"));
   // creation is recorded in the activity log
   const log = WB.getLog();
   assert.ok(log.length >= 1);
@@ -46,25 +51,29 @@ test("newest task comes first; whitespace-only titles are rejected", () => {
   WB.addTask("first");
   WB.addTask("second");
   const list = WB.getTasks();
-  assert.equal(list[0].title, "second");
+  assert.equal(list[0].goal, "second");
   assert.equal(list.length, 2);
   const before = WB.getTasks().length;
   const after = WB.addTask("   ").length;
   assert.equal(after, before, "blank title must not create a task");
 });
 
-test("setTaskStatus transitions draft -> ready -> completed", () => {
+test("setTaskStatus transitions through the state machine only", () => {
   const [t] = WB.addTask("整理资料");
-  WB.setTaskStatus(t.id, WB.TASK_STATUS.READY);
+  // legal: created -> ready -> running -> completed
+  WB.setTaskStatus(t.id, "ready");
   assert.equal(WB.getTasks()[0].status, "ready");
-  WB.setTaskStatus(t.id, WB.TASK_STATUS.COMPLETED);
+  WB.setTaskStatus(t.id, "running");
+  WB.setTaskStatus(t.id, "completed");
   assert.equal(WB.getTasks()[0].status, "completed");
 });
 
-test("setTaskStatus ignores unknown status values", () => {
+test("setTaskStatus ignores unknown AND illegal status values", () => {
   const [t] = WB.addTask("stable task");
-  WB.setTaskStatus(t.id, "exploded");
-  assert.equal(WB.getTasks()[0].status, "draft");
+  WB.setTaskStatus(t.id, "exploded"); // unknown -> no-op
+  assert.equal(WB.getTasks()[0].status, "created");
+  WB.setTaskStatus(t.id, "completed"); // illegal (created->completed) -> no-op
+  assert.equal(WB.getTasks()[0].status, "created");
 });
 
 test("corrupt storage degrades to empty lists, never throws", () => {
@@ -77,13 +86,29 @@ test("corrupt storage degrades to empty lists, never throws", () => {
 });
 
 test("tasks survive a store round-trip (persistence)", () => {
-  WB.addTask("round trip task", { source: "任务页输入" });
-  // a fresh read from storage must see it
-  assert.equal(WB.getTasks()[0].title, "round trip task");
-  assert.equal(WB.getTasks()[0].source, "任务页输入");
+  WB.addTask("round trip task");
+  // a fresh read from storage must see it with full v2 fields
+  const t = WB.getTasks()[0];
+  assert.equal(t.goal, "round trip task");
+  assert.equal(t.version, 2);
+  assert.ok(t.id);
 });
 
-/* ── workbench store: review cards ──────────────────────────────────── */
+test("Phase-1 v1 data is migrated on first read, not lost", () => {
+  localStorage.setItem(WB.KEYS.tasksV1, JSON.stringify([
+    { id: "old-9", title: "Phase 1 遗留任务", status: "ready",
+      createdAt: "2026-10-01T08:00:00.000Z", updatedAt: "2026-10-01T08:10:00.000Z" },
+  ]));
+  const tasks = WB.getTasks();
+  assert.equal(tasks.length, 1);
+  assert.equal(tasks[0].id, "old-9");
+  assert.equal(tasks[0].status, "ready");
+  assert.equal(tasks[0].version, 2);
+  // original v1 key untouched (never silently destroyed)
+  assert.ok(localStorage.getItem(WB.KEYS.tasksV1));
+});
+
+/* ── store facade: review cards ──────────────────────────────────────── */
 
 test("ensureReviewSeed seeds exactly one clearly-marked demo card once", () => {
   const first = WB.ensureReviewSeed();
@@ -123,7 +148,7 @@ test("workbench nav maps 智能搜索 onto the legacy smart screen", () => {
   assert.equal(Nav.WORKBENCH_TO_LEGACY.search, "smart");
 });
 
-test("workbench tabs cover the Phase-1 shell surfaces", () => {
+test("workbench tabs cover the shell surfaces", () => {
   const keys = Nav.WORKBENCH_TABS.map((t) => t.key);
   assert.deepEqual(keys, ["home", "tasks", "search", "review", "history"]);
   assert.equal(Nav.WORKBENCH_SETTINGS.key, "settings");

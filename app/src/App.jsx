@@ -5,13 +5,17 @@
 // active tab, detail overlay, map focus, district selection and the toast
 // all live here and are shared by both chromes (phone frame / app shell).
 //
-// PHASE 1 (WORKBENCH_SHELL): a Workbench navigation layer sits ON TOP of
-// the legacy tabs. The legacy keys (data-gg-nav="discover|search|smart|
-// weekend|map") and the boot tab ("discover") are a tested compatibility
-// contract — they are untouched. Workbench entries use their own
-// data-workbench-nav attribute and map onto either the new shell screens
-// (home/tasks/review/history/settings) or the existing legacy capability
-// screens (智能搜索 -> "smart"). No legacy screen is deleted.
+// PHASE 2 (TASK_ENGINE_FOUNDATION): the Workbench is now the DEFAULT boot
+// screen (desktop + mobile). The legacy contract is preserved through an
+// explicit legacy entry: loading /?legacy=1 boots into the legacy
+// "discover" tab exactly as Phase 1 did, so e2e_v1_frontend.mjs keeps
+// verifying the five legacy capabilities (discover/search/smart/weekend/
+// map) with zero coverage loss. data-gg-nav keys, .gg-disc-card and the
+// mobile 搜索 tab label are untouched.
+//
+// Task state now flows through the formal Task Engine: workbench-store.js
+// (facade) -> task-repository.js (persistence) -> task-model.js (pure
+// state machine). Screens never write localStorage directly.
 
 import React from "react";
 import { StatusBar, PhoneFrame, DesktopHeader } from "./components/AppShell.jsx";
@@ -23,6 +27,7 @@ import { MyWeekendScreen } from "./screens/MyWeekendScreen.jsx";
 import { MapScreen } from "./screens/MapScreen.jsx";
 import { WorkbenchHome } from "./screens/WorkbenchHome.jsx";
 import { TasksScreen } from "./screens/TasksScreen.jsx";
+import { TaskDetailScreen } from "./screens/TaskDetailScreen.jsx";
 import { ReviewCenterScreen } from "./screens/ReviewCenterScreen.jsx";
 import { HistoryScreen } from "./screens/HistoryScreen.jsx";
 import { SettingsScreen } from "./screens/SettingsScreen.jsx";
@@ -36,6 +41,19 @@ import {
   WORKBENCH_TABS, WORKBENCH_SETTINGS, LEGACY_TABS, LEGACY_SIDEBAR_KEYS,
   WORKBENCH_TO_LEGACY, MOBILE_TABS, MOBILE_MORE_TABS,
 } from "./workbench/navigation.js";
+
+/* ── legacy-mode detection (§17/§18) ────────────────────────────────── */
+// /?legacy=1 boots into the Phase-1 default (discover). Anything else
+// boots into the Workbench home. The flag is read ONCE at startup.
+function isLegacyBoot() {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("legacy") === "1";
+  } catch (e) {
+    return false;
+  }
+}
+const LEGACY_MODE = typeof window !== "undefined" ? isLegacyBoot() : false;
 
 /* ── Workbench chrome (desktop sidebar + mobile tabbar/drawer) ─────── */
 
@@ -207,11 +225,15 @@ function asView(x) {
 }
 
 export default function App() {
-  const [tab, setTab] = React.useState("discover");
+  // §17: default boot = Workbench home; /?legacy=1 preserves the Phase-1
+  // boot (discover) for legacy tests and explicit legacy entry.
+  const [tab, setTab] = React.useState(LEGACY_MODE ? "discover" : null);
   // Workbench layer: tracks which Workbench entry is highlighted. The
   // effective screen is resolved from (tab, wbTab) — see the registry below.
-  const [wbTab, setWbTab] = React.useState(null);
+  const [wbTab, setWbTab] = React.useState(LEGACY_MODE ? null : "home");
   const [moreOpen, setMoreOpen] = React.useState(false);
+  // Task Detail overlay key: the id of the task being inspected (null = none).
+  const [detailTaskId, setDetailTaskId] = React.useState(null);
   // My Weekend persists FULL snapshots (id -> view), so a saved search result
   // survives a refresh even when the search session is gone.
   const [weekend, setWeekend] = React.useState(() => Store.getWeekendItems());
@@ -224,8 +246,8 @@ export default function App() {
   const [toast, setToast] = React.useState("");
   const toastTimer = React.useRef(null);
 
-  // Phase 1 local Workbench state (tasks / review / log). Minimal on
-  // purpose — the formal task model is Phase 2.
+  // Phase 2 Workbench state. Tasks live in the formal engine (v2 schema);
+  // reading via the facade auto-migrates Phase-1 data on first call.
   const [wbTasks, setWbTasks] = React.useState(() => WBStore.getTasks());
   const [wbReview, setWbReview] = React.useState(() => WBStore.ensureReviewSeed());
   const [wbLog, setWbLog] = React.useState(() => WBStore.getLog());
@@ -241,18 +263,51 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(""), 1800);
   };
 
+  /** Create a REAL task (§16): goal = full text, title auto-derived. */
+  const createTaskFromGoal = (goal) => {
+    const text = String(goal || "").trim();
+    if (!text) return null;
+    setWbTasks(WBStore.addTask(text));
+    setWbLog(WBStore.getLog());
+    const created = WBStore.getTasks()[0] || null;
+    return created;
+  };
+
   const addTaskLocal = (title, opts) => {
     setWbTasks(WBStore.addTask(title, opts));
     setWbLog(WBStore.getLog());
   };
+
+  /** Status changes go through the State Machine only; illegal = no-op. */
   const changeTaskStatus = (id, status) => {
     setWbTasks(WBStore.setTaskStatus(id, status));
-    const t = WBStore.getTasks().find((x) => x.id === id);
-    if (t) setWbLog(WBStore.logEvent("task_status", `「${t.title}」→ ${status}`));
+    setWbLog(WBStore.getLog());
   };
+
+  /** Throwing variant for detail controls (they pre-check legality). */
+  const transitionTask = (id, status) => {
+    try {
+      setWbTasks(WBStore.transitionTask(id, status));
+      setWbLog(WBStore.getLog());
+    } catch (e) {
+      flash("非法状态流转，已阻止");
+    }
+  };
+
+  const openTaskDetail = (id) => {
+    setDetail(null);
+    setWbTab("tasks");
+    setDetailTaskId(id);
+  };
+
   const decideReview = (id, decision) => {
     setWbReview(WBStore.decideReviewCard(id, decision));
     setWbLog(WBStore.getLog());
+  };
+
+  const resumeReviewTask = (id) => {
+    transitionTask(id, "running");
+    flash("任务已恢复执行");
   };
 
   // --- My Weekend (persisted, snapshot-carrying) ---
@@ -277,8 +332,8 @@ export default function App() {
   };
 
   const openDetail = (x) => { const v = asView(x); if (v) setDetail(v); };
-  const showOnMap = (v) => { setMapFocus(v.id); setDetail(null); setTab("map"); setWbTab(null); };
-  const changeTab = (t) => { setDetail(null); setTab(t); setWbTab(null); setMoreOpen(false); };
+  const showOnMap = (v) => { setMapFocus(v.id); setDetail(null); setDetailTaskId(null); setTab("map"); setWbTab(null); };
+  const changeTab = (t) => { setDetail(null); setDetailTaskId(null); setTab(t); setWbTab(null); setMoreOpen(false); };
   const changeWbTab = (t) => {
     setDetail(null); setMoreOpen(false);
     const legacy = WORKBENCH_TO_LEGACY[t];
@@ -296,19 +351,39 @@ export default function App() {
 
   // ── Screen registry ──────────────────────────────────────────────
   // Legacy tabs keep rendering exactly what they always did (the E2E
-  // contract). Workbench tabs render the Phase-1 shell screens; 智能搜索
+  // contract). Workbench tabs render the Phase-2 shell screens; 智能搜索
   // maps onto the existing NaturalSearchScreen with a Workbench heading.
+  const detailTask = detailTaskId ? wbTasks.find((t) => t.id === detailTaskId) : null;
+
   const workbenchScreens = {
     home: (
-      <WorkbenchHome tasks={wbTasks} onAddTask={addTaskLocal}
-        onGoSearch={() => changeWbTab("search")} onGoTasks={() => changeWbTab("tasks")} />
+      <WorkbenchHome tasks={wbTasks}
+        onCreateTask={createTaskFromGoal}
+        onGoSearch={() => changeWbTab("search")} onGoTasks={() => changeWbTab("tasks")}
+        onOpenTask={openTaskDetail} />
     ),
     tasks: (
-      <TasksScreen tasks={wbTasks} onStatusChange={changeTaskStatus}
-        onAddTask={(t) => addTaskLocal(t, { source: "任务页输入" })} />
+      detailTask ? (
+        <TaskDetailScreen task={detailTask}
+          onTransition={(to) => transitionTask(detailTask.id, to)}
+          onBack={() => setDetailTaskId(null)}
+          onAddStep={(title) => { setWbTasks(WBStore.addTaskStep(detailTask.id, { title })); }}
+          onUpdateStep={(stepId, patch) => { setWbTasks(WBStore.updateTaskStep(detailTask.id, stepId, patch)); }}
+          onSetResult={(r) => { setWbTasks(WBStore.setTaskResult(detailTask.id, r)); }}
+          onAddSource={(s) => { setWbTasks(WBStore.addTaskSource(detailTask.id, s)); }} />
+      ) : (
+        <TasksScreen tasks={wbTasks} onStatusChange={changeTaskStatus}
+          onAddTask={(t) => addTaskLocal(t, { source: "任务页输入" })}
+          onOpenTask={openTaskDetail} />
+      )
     ),
-    review: <ReviewCenterScreen cards={wbReview} onDecide={decideReview} />,
-    history: <HistoryScreen log={wbLog} />,
+    review: (
+      <ReviewCenterScreen cards={wbReview} onDecide={decideReview}
+        reviewTasks={wbTasks} onResumeTask={resumeReviewTask} />
+    ),
+    history: (
+      <HistoryScreen tasks={wbTasks} log={wbLog} onOpenTask={openTaskDetail} />
+    ),
     settings: <SettingsScreen />,
   };
 

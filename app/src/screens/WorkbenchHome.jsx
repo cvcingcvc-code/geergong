@@ -1,22 +1,16 @@
-// Gorgon Workbench — WorkbenchHome (Phase 1 shell screen).
+// Gorgon Workbench — WorkbenchHome (Phase 2: creates REAL tasks).
 //
-// The new desktop-first visual home of the product. Phase 1 scope:
-//   * hero + main task input: creating a task stores it LOCALLY (no LLM,
-//     no task engine) and the UI says so honestly.
-//   * up to 4 quick actions, all REAL: three prefill the input, 智能搜索
-//     jumps to the existing natural-language search.
-//   * recent tasks read from the local workbench store, clearly labelled
-//     as local data — never presented as backend-executed.
-//   * a truthful system status strip: the search engine is the real one,
-//     the AI engine is NOT connected in Phase 1.
-//
-// The legacy Discover screen stays the boot tab for the E2E contract; this
-// screen is reached through the Workbench navigation.
+// The main task input now calls the formal createTask() engine path (§16):
+//   * goal = the full user text
+//   * title = auto-truncated from the goal
+//   * status = created (formal state machine vocabulary)
+//   * then the app navigates to the Task Detail screen, which honestly
+//     shows 等待任务引擎 — nothing pretends the AI understood the task.
 
 import React from "react";
 import { Button } from "../lib/ds.js";
 import { useResponsive } from "../lib/useResponsive.js";
-import * as WB from "../store/workbench-store.js";
+import { STATUS_LABELS as SHARED_LABELS } from "../workbench/task-status-labels.js";
 import { Icon } from "../components/Icon.jsx";
 
 const QUICK_ACTIONS = [
@@ -41,9 +35,7 @@ function fmtTime(iso) {
   } catch (e) { return ""; }
 }
 
-const STATUS_LABEL = { draft: "草稿", ready: "等待执行", completed: "已完成" };
-
-export function WorkbenchHome({ tasks, onAddTask, onGoSearch, onGoTasks }) {
+export function WorkbenchHome({ tasks, onCreateTask, onGoSearch, onGoTasks, onOpenTask }) {
   const { isMobile } = useResponsive();
   const [value, setValue] = React.useState("");
   const [notice, setNotice] = React.useState("");
@@ -54,9 +46,15 @@ export function WorkbenchHome({ tasks, onAddTask, onGoSearch, onGoTasks }) {
   const submit = () => {
     const t = value.trim();
     if (!t) return;
-    onAddTask(t);
+    const task = onCreateTask(t); // returns the created task (or null)
     setValue("");
-    setNotice("任务已保存到本地。任务引擎将在下一阶段接入，当前不会自动执行。");
+    if (task && onOpenTask) {
+      onOpenTask(task.id); // §16: navigate straight to the Task Detail
+      return;
+    }
+    setNotice(task
+      ? "任务已创建并保存到本地。任务引擎尚未执行它——这是如实状态，不是 AI 理解结果。"
+      : "任务创建失败，请检查输入内容。");
   };
 
   const quick = (a) => {
@@ -144,7 +142,7 @@ export function WorkbenchHome({ tasks, onAddTask, onGoSearch, onGoTasks }) {
           </div>
         </div>
 
-        {/* D. Recent tasks — local data, honestly labelled */}
+        {/* D. Recent tasks — real engine data */}
         <div style={{ marginTop: 26 }} data-testid="workbench-recent">
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 9 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)" }}>最近任务</div>
@@ -159,24 +157,27 @@ export function WorkbenchHome({ tasks, onAddTask, onGoSearch, onGoTasks }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {recent.map((t) => (
-                <div key={t.id} style={{
-                  display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
-                  background: "var(--surface-card)", border: "1px solid var(--border-subtle)",
-                  borderRadius: "var(--radius-md)", minWidth: 0,
-                }}>
+                <div key={t.id} onClick={() => onOpenTask && onOpenTask(t.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
+                    background: "var(--surface-card)", border: "1px solid var(--border-subtle)",
+                    borderRadius: "var(--radius-md)", minWidth: 0,
+                    cursor: onOpenTask ? "pointer" : "default",
+                  }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {t.title}
                     </div>
                     <div style={{ fontSize: 11.5, color: "var(--text-faint)", marginTop: 2 }}>
-                      {fmtTime(t.createdAt)} · 来源：{t.source} · 本地任务数据
+                      {fmtTime(t.createdAt)} · 本地任务数据
                     </div>
                   </div>
                   <span style={{
                     flex: "none", fontSize: 11.5, fontWeight: 700,
-                    color: t.status === "completed" ? "var(--accent-strong, #047857)" : t.status === "ready" ? "var(--brand)" : "var(--text-muted)",
+                    color: t.status === "completed" ? "var(--accent-strong, #047857)"
+                      : t.status === "failed" ? "var(--danger)" : "var(--text-muted)",
                   }}>
-                    {STATUS_LABEL[t.status] || t.status}
+                    {SHARED_LABELS[t.status] || t.status}
                   </span>
                 </div>
               ))}

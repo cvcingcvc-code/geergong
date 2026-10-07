@@ -1,28 +1,31 @@
-// Gorgon Workbench — Phase 1 local store.
+// Gorgon Workbench — store facade (PHASE 2: unified Task Engine).
 //
-// PHASE 1 SCOPE (WORKBENCH_SHELL):
-//   * local, browser-only persistence for the Workbench shell surfaces
-//     (tasks, review cards, activity log). NO backend, NO task engine,
-//     NO AI. The formal Task Model / State Machine is Phase 2 work.
-//   * Deliberately SEPARATE from the legacy GorgonStore (store.js): the
-//     weekend/favorites/district keys and their semantics are a tested
-//     compatibility contract and must not be touched. This module owns its
-//     own "gorgon_workbench_*" key namespace and its own reset.
-//
-// Every write is best-effort like store.js: private mode / quota errors
-// degrade to in-memory for the session, never throw.
+// PHASE 2 UPGRADE (TASK_ENGINE_FOUNDATION):
+//   * Task persistence + mutation now lives in task-repository.js on the
+//     versioned v2 schema ("gorgon_workbench_tasks_v2", envelope with
+//     schemaVersion: 2). The Phase-1 flat demo store is GONE as a write
+//     target; Phase-1 data under "gorgon_workbench_tasks" is migrated once
+//     via migrateV1TasksToV2() and the original key is never destroyed.
+//   * Status changes MUST go through the formal State Machine
+//     (task-model.js TRANSITIONS) — arbitrary status writes are rejected.
+//   * Review cards + the flat activity log remain local UI surfaces, as in
+//     Phase 1. History now merges Task timelines with this log.
+//   * Still NO backend, NO AI, NO LLM. Deliberately separate from the
+//     legacy GorgonStore (store.js) contract.
 
-const K_TASKS = "gorgon_workbench_tasks";
+import * as Repo from "./task-repository.js";
+import { TASK_STATUS, canTransition, InvalidTransitionError } from "../workbench/task-model.js";
+
+const K_TASKS_V2 = Repo.SCHEMA_VERSION ? "gorgon_workbench_tasks_v2" : "gorgon_workbench_tasks_v2";
+const K_V1_TASKS = "gorgon_workbench_tasks";
 const K_REVIEW = "gorgon_workbench_review";
 const K_LOG = "gorgon_workbench_log";
 
-export const KEYS = { tasks: K_TASKS, review: K_REVIEW, log: K_LOG };
+export const KEYS = { tasks: K_TASKS_V2, tasksV1: K_V1_TASKS, review: K_REVIEW, log: K_LOG };
 
-// ---- Task status (Phase 1 UI vocabulary — NOT the final state machine) --
-// draft    : captured from an input, never started
-// ready    : explicitly staged for the (future) engine
-// completed: user marked it done by hand
-export const TASK_STATUS = { DRAFT: "draft", READY: "ready", COMPLETED: "completed" };
+// Formal Phase-2 vocabulary. NOTE: the Phase-1 "draft" label is retired —
+// migrated tasks surface as "created" (see migrateV1TasksToV2).
+export { TASK_STATUS, canTransition, InvalidTransitionError };
 
 function read(key, fallback) {
   try {
@@ -45,52 +48,80 @@ function write(key, value) {
 
 const nowIso = () => new Date().toISOString();
 
-// ---- Tasks -----------------------------------------------------------
+// ---- Tasks (formal engine via repository) ----------------------------
 
-function sanitizeTask(t) {
-  if (!t || typeof t !== "object") return null;
-  const title = typeof t.title === "string" ? t.title.trim() : "";
-  if (!title) return null;
-  const status = Object.values(TASK_STATUS).includes(t.status) ? t.status : TASK_STATUS.DRAFT;
-  return {
-    id: typeof t.id === "string" && t.id ? t.id : "wb-" + Math.random().toString(36).slice(2, 10),
-    title,
-    status,
-    source: typeof t.source === "string" && t.source ? t.source : "手动输入",
-    createdAt: typeof t.createdAt === "string" ? t.createdAt : nowIso(),
-    updatedAt: typeof t.updatedAt === "string" ? t.updatedAt : nowIso(),
-  };
-}
-
+/** All tasks, v2 schema. First read auto-migrates Phase-1 data (§30). */
 export function getTasks() {
-  const v = read(K_TASKS, []);
-  if (!Array.isArray(v)) return [];
-  return v.map(sanitizeTask).filter(Boolean);
+  return Repo.listTasks();
 }
 
-export function setTasks(list) {
-  if (!Array.isArray(list)) return;
-  write(K_TASKS, list.map(sanitizeTask).filter(Boolean));
+export function getTask(id) {
+  return Repo.getTask(id);
 }
 
-/** Create a task from the home input. Returns the stored list. */
-export function addTask(title, { source = "手动输入", status = TASK_STATUS.DRAFT } = {}) {
-  const t = sanitizeTask({ title, status, source });
-  if (!t) return getTasks();
-  const next = [t].concat(getTasks());
-  setTasks(next);
-  logEvent("task_create", `创建任务「${t.title}」`);
+/**
+ * Create a task. The user text is the GOAL; the title is auto-derived from
+ * it (§16). Kept for Phase-1 call sites — returns the stored list.
+ */
+export function addTask(goal, { source = "手动输入" } = {}) {
+  const text = String(goal || "").trim();
+  if (!text) return Repo.listTasks();
+  const next = Repo.createTaskEntry(text, { source });
+  logEvent("task_create", `创建任务「${next[0] ? next[0].title : text}」`);
   return next;
 }
 
-/** Update one task's status. Returns the stored list. */
+/**
+ * Status changes through the State Machine ONLY. Illegal / unknown target
+ * statuses are a safe no-op (returns current list unchanged).
+ */
 export function setTaskStatus(id, status) {
-  if (!Object.values(TASK_STATUS).includes(status)) return getTasks();
-  const next = getTasks().map((t) =>
-    t.id === id ? Object.assign({}, t, { status, updatedAt: nowIso() }) : t
-  );
-  setTasks(next);
+  const before = Repo.getTask(id);
+  const next = Repo.tryTransitionTask(id, status);
+  if (!next) return Repo.listTasks(); // illegal or missing — no-op
+  const t = Repo.getTask(id);
+  logEvent("task_status", `「${t ? t.title : id}」→ ${status}`);
+  void before;
   return next;
+}
+
+export function transitionTask(id, status, opts = {}) {
+  const next = Repo.transitionTask(id, status, opts); // throws on illegal
+  const t = Repo.getTask(id);
+  logEvent("task_status", `「${t ? t.title : id}」→ ${status}`);
+  return next;
+}
+
+export function tryTransitionTask(id, status, opts = {}) {
+  return Repo.tryTransitionTask(id, status, opts);
+}
+
+export function deleteTask(id) {
+  return Repo.deleteTask(id);
+}
+
+export function addTaskStep(id, stepInput) {
+  return Repo.addTaskStep(id, stepInput);
+}
+
+export function updateTaskStep(taskId, stepId, patch) {
+  return Repo.updateTaskStep(taskId, stepId, patch);
+}
+
+export function setTaskResult(id, result) {
+  return Repo.setTaskResult(id, result);
+}
+
+export function addTaskSource(id, source) {
+  return Repo.addTaskSource(id, source);
+}
+
+export function getStorageHealth() {
+  return Repo.getStorageHealth();
+}
+
+export function getSchemaVersion() {
+  return Repo.SCHEMA_VERSION;
 }
 
 // ---- Review cards (DEMO / PREVIEW — local UI state only) --------------
@@ -146,7 +177,7 @@ export function decideReviewCard(id, decision) {
   return next;
 }
 
-// ---- Activity log (flat list, NO event sourcing) -----------------------
+// ---- Activity log (flat list, kept for cross-surface events) ----------
 
 export function getLog() {
   const v = read(K_LOG, []);
@@ -164,8 +195,10 @@ export function logEvent(type, text) {
 
 export function reset() {
   try {
-    localStorage.removeItem(K_TASKS);
+    localStorage.removeItem(K_TASKS_V2);
     localStorage.removeItem(K_REVIEW);
     localStorage.removeItem(K_LOG);
+    // NOTE: the Phase-1 v1 key ("gorgon_workbench_tasks") is intentionally
+    // NOT removed here — §31: never silently destroy old data.
   } catch (e) { /* ignore */ }
 }

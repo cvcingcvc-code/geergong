@@ -1,13 +1,15 @@
-// Gorgon Workbench — ReviewCenterScreen (Phase 1: UI Shell ONLY).
+// Gorgon Workbench — ReviewCenterScreen (Phase 2 upgrade).
 //
-// Shows, with a clearly-marked DEMO / PREVIEW card, how future AI or
-// automated actions will queue here for human confirmation BEFORE they
-// really run. Approve / edit / reject buttons toggle LOCAL UI STATE ONLY —
-// the real Python Human Review protocol migrates in Phase 6. Nothing here
-// calls a backend or executes anything.
+// TWO card sources now:
+//   1. REAL tasks with status === "review_required" (§20) — shown first,
+//      with a local 继续任务 action (review_required -> running through the
+//      State Machine). This is NOT the formal Human Review protocol
+//      (AI_PROPOSED / USER_APPROVED models arrive in Phase 6).
+//   2. The Phase-1 DEMO / PREVIEW card flow, unchanged.
 
 import React from "react";
 import * as WB from "../store/workbench-store.js";
+import { canTransition } from "../workbench/task-model.js";
 import { Icon } from "../components/Icon.jsx";
 
 const DECISION_LABEL = {
@@ -25,9 +27,10 @@ function fmtTime(iso) {
   } catch (e) { return ""; }
 }
 
-export function ReviewCenterScreen({ cards, onDecide }) {
+export function ReviewCenterScreen({ cards, onDecide, reviewTasks, onResumeTask }) {
   const pending = cards.filter((c) => c.decision === "pending");
   const decided = cards.filter((c) => c.decision !== "pending");
+  const waiting = (reviewTasks || []).filter((t) => t.status === "review_required");
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }} data-gg-screen="workbench-review">
@@ -36,18 +39,61 @@ export function ReviewCenterScreen({ cards, onDecide }) {
           审核中心
         </h1>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.7, margin: "10px 0 0", maxWidth: 640 }}>
-          未来 AI 或自动化操作在真正执行之前，会先进入这里等待你的确认。
-          当前为 Phase 1 界面外壳：卡片与按钮只切换本地状态，不连接任何后端审核协议。
+          等待用户确认的任务（review_required 状态）会出现在这里。「继续任务」通过任务状态机
+          review_required → running 恢复执行。正式 Human Review 协议将在 Phase 6 接入。
         </p>
 
-        {/* pending cards */}
-        <div style={{ marginTop: 20 }} data-testid="workbench-review-pending">
+        {/* A. real review_required tasks */}
+        <div style={{ marginTop: 20 }} data-testid="workbench-review-tasks">
           <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10 }}>
-            待确认 ({pending.length})
+            待确认任务 ({waiting.length})
+          </div>
+          {waiting.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: "var(--text-faint)", padding: "14px 0" }}>
+              暂无等待确认的任务。
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {waiting.map((t) => (
+                <div key={t.id} data-testid="workbench-review-task" style={{
+                  background: "var(--surface-card)", border: "1px solid var(--brand)",
+                  borderRadius: "var(--radius-lg)", padding: "16px 18px", minWidth: 0,
+                }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: "var(--text-strong)", lineHeight: 1.5 }}>
+                    {t.title}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginTop: 7 }}>
+                    {t.goal}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 8 }}>
+                    当前等待用户确认 · 创建于 {fmtTime(t.createdAt)}
+                  </div>
+                  {canTransition(t.status, "running") && onResumeTask && (
+                    <div style={{ marginTop: 14 }}>
+                      <button data-testid="workbench-review-resume" onClick={() => onResumeTask(t.id)}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 6, border: "none", cursor: "pointer",
+                          background: "var(--brand)", color: "#fff", fontWeight: 700, fontSize: 13,
+                          padding: "9px 16px", borderRadius: "var(--radius-sm)", fontFamily: "var(--font-sans)",
+                        }}>
+                        <Icon name="play" style={{ width: 14, height: 14 }} />继续任务
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* pending demo cards */}
+        <div style={{ marginTop: 24 }} data-testid="workbench-review-pending">
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10 }}>
+            待确认演示卡片 ({pending.length})
           </div>
           {pending.length === 0 ? (
-            <div style={{ fontSize: 13.5, color: "var(--text-faint)", padding: "16px 0" }}>
-              暂无待确认的操作。
+            <div style={{ fontSize: 13.5, color: "var(--text-faint)", padding: "14px 0" }}>
+              暂无待确认的演示操作。
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -105,7 +151,7 @@ export function ReviewCenterScreen({ cards, onDecide }) {
           )}
         </div>
 
-        {/* decided history */}
+        {/* decided demo history */}
         {decided.length > 0 && (
           <div style={{ marginTop: 24 }} data-testid="workbench-review-decided">
             <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10 }}>
