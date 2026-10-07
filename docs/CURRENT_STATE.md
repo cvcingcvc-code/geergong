@@ -27,6 +27,7 @@ PHASE: Phase 1 — Frontend Engineering · DONE（验收通过）
 | Planning | NOT STARTED | 只有 `planning/models.py` 契约，无求解器 |
 | Desktop App | NOT STARTED | 无 Tauri/Electron |
 | Deployment | DONE | 公网只读部署：<https://shanghai-activity-search.app.workbuddy.host/>（托管平台，见 `docs/PUBLIC_DEPLOYMENT.md`） |
+| Mobile App (PWA) | DONE | 可安装到手机主屏 + 离线外壳：`app/public/manifest.webmanifest` + 手写 `sw.js` + `icons/`（§8）；校验 `INSTALLABLE` + `OFFLINE SHELL LOADS` 均 PASS |
 | Tests | DONE | 新前端：纯函数 27 + 构建冒烟 18 + 浏览器 E2E 58 全绿（2026-10-07）；管线 Python 268 / JS view-model 125 / JS district 131（2026-10-02 基线） |
 
 ## 本轮（Phase 1）已完成
@@ -39,6 +40,7 @@ PHASE: Phase 1 — Frontend Engineering · DONE（验收通过）
 - 占位图复制到 `app/public/assets/placeholders/`，dist 自包含。
 - **测试收尾：** `app/tests/` 纯函数单测 27（district / activity-view / store，与 Python 共享语料对齐）；构建冒烟 `build-smoke.mjs` 18；浏览器 E2E `e2e_v1_frontend.mjs` 58（Edge CDP，四档 viewport 390/768/1440/1920 + console errors=0），全部 PASS。
 - **文档：** `docs/V1_FRONTEND_BUILD.md`（工程化说明、环境变量、目录、迁移对照、Tauri 接入）、`docs/V1_FRONTEND_KNOWN_ISSUES.md`（5 条与迁移无关的既有问题）。
+- **手机端应用（PWA）：** 用户要求「做成一个可供用户下载的应用」，在桌面/原生构建均不可行的环境下，以 PWA 落地——`app/index.html` 注入 manifest/apple-touch-icon/theme-color + iOS 元信息；`app/src/main.jsx` 生产构建下注册 `/sw.js`；`app/public/` 新增 `manifest.webmanifest`、`sw.js`（手写、零依赖：预缓存外壳+图标、`clients.claim`、同源静态缓存优先、导航/API 网络优先兜底）、`icons/icon-256.png` 与 `icon-512.png`（ImageGen 生成品牌徽标，含 maskable）。新增 `app/tests/pwa_install_check.mjs`（可安装性）+ `app/tests/pwa_offline_check.mjs`（离线冒烟），均 PASS。详见 `docs/V1_FRONTEND_BUILD.md` §8。
 - **验收：** FRONTEND_V1_PHASE1 验收清单逐项 PASS（见下「Phase 1 验收」）。
 
 ## 未完成（Phase 1 收尾项）
@@ -61,6 +63,7 @@ PHASE: Phase 1 — Frontend Engineering · DONE（验收通过）
 | 10 | 迁移关键纯函数测试 + build smoke + dist 可经 HTTP 打开 + 浏览器 smoke | PASS（27+18+58） |
 | 11 | 安全：build 无 SEARCH_API_KEY / 无真实 Secret / 不暴露 debug / API URL 可配置 | PASS（构建冒烟验证） |
 | 12 | 文档：`V1_FRONTEND_BUILD.md` + `V1_FRONTEND_KNOWN_ISSUES.md` | PASS |
+| 13 | 手机端可安装（PWA）：manifest 合法 + Service Worker 激活并接管 + 图标 ≥192px + display:standalone；断网 reload 外壳仍加载 | PASS（`pwa_install_check` / `pwa_offline_check`） |
 
 ## 当前问题（已确认）
 
@@ -98,4 +101,5 @@ Real Activity Store / SQLite（`docs/ROADMAP.md` Phase 2，**未获指令前不�
 
 - `test(frontend): add production build smoke + browser E2E` —— `app/tests/` 全部测试与 `.gitignore`、`.e2e-logs/` 忽略。
 - `docs(frontend): document v1 frontend workflow + known issues` —— `docs/V1_FRONTEND_BUILD.md`、`docs/V1_FRONTEND_KNOWN_ISSUES.md`、更新 `docs/CURRENT_STATE.md`。
+- **（待提交）`feat(pwa): make frontend installable on mobile (manifest + service worker + icons)`** —— `app/public/manifest.webmanifest`、`app/public/sw.js`、`app/public/icons/`、`app/index.html`、`app/src/main.jsx`、`app/tests/pwa_install_check.mjs`、`app/tests/pwa_offline_check.mjs`、`docs/V1_FRONTEND_BUILD.md` §8、`docs/CURRENT_STATE.md`。
 - **未 merge `master`、未开始 Phase 2。**

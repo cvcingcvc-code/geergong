@@ -24,4 +24,13 @@ applyCategoryExtensions();
 // The ?demo=1 reset chip (same behaviour as the legacy demo-reset.js).
 initDemoReset();
 
+// Register the PWA service worker in production builds only (skip the Vite
+// dev server so it never caches dev assets). localhost is a secure context,
+// so installability also works under `vite preview` and any HTTPS deploy.
+if (import.meta.env.PROD && "serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+
 createRoot(document.getElementById("root")).render(<App />);
