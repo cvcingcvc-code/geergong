@@ -69,7 +69,7 @@ function dateSpan(list) {
 function DiscoverCard({ v, synced, onSync, onOpen }) {
   const isSynced = !!synced[v.id];
   return (
-    <article className="gg-disc-card" data-gg-card-district={v.district || ""} onClick={() => onOpen(v)}>
+    <article className="gg-disc-card" data-gg-card-id={v.id} data-gg-card-district={v.district || ""} onClick={() => onOpen(v)}>
       <div style={{ padding: 10, paddingBottom: 0 }}>
         <C.ActivityImage image={v.image} alt={v.title} ratio="16 / 10" radius="var(--radius-md)">
           <C.PlaceholderNote image={v.image} />

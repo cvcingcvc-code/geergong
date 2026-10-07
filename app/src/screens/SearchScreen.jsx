@@ -152,7 +152,7 @@ export function SearchScreen({ synced, onSync, onOpen, district, onDistrictChang
         {/* 1 column on mobile, 2 from tablet up */}
         <div className="gg-card-grid--two">
           {results.map((a) => (
-            <div key={a.id} onClick={() => onOpen(a)} style={{ cursor: "pointer" }} data-gg-card-district={D.districtOf(a) || ""}>
+            <div key={a.id} onClick={() => onOpen(a)} style={{ cursor: "pointer" }} data-gg-card-id={a.id} data-gg-card-district={D.districtOf(a) || ""}>
               <ActivityCard compact title={a.title} category={a.category} date={a.date} time={a.time} location={a.location} distance={a.distance} image={a.image} synced={!!synced[a.id]} onSync={() => onSync(a.id)} />
             </div>
           ))}

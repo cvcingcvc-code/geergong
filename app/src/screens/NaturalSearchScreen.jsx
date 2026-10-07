@@ -158,7 +158,7 @@ function ResultCard({ item, rank, isDesktop, isMobile, synced, onSync, onOpen })
   const isSynced = !!synced[view.id];
 
   return (
-    <article className="gg-result" data-gg-card-district={view.district || ""} style={{
+    <article className="gg-result" data-gg-card-id={view.id} data-gg-card-district={view.district || ""} style={{
       border: pending ? "1px dashed var(--border-strong, var(--border-subtle))" : "1px solid var(--border-subtle)",
     }}>
       <div className="gg-result-media">
