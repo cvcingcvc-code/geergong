@@ -273,3 +273,44 @@ test("runner: ready task with no skillIds returns NO_SKILLS_SPECIFIED (no hang, 
   const t = repo.getTask(id);
   assert.equal(t.status, "ready", "task must stay ready, never silently run");
 });
+
+/* ── Scenario B guard: no duplicate search (§41 / 比赛 Demo 稳定性) ──────── */
+
+test("runner: search executes exactly once in search+plan workflow (禁止重复搜索)", async () => {
+  // Scenario B requires: Router → search → plan, where plan reuses the search
+  // output rather than searching again. Guard the runner against ever running
+  // the same skill twice for one execution.
+  const repo = seedCreated("帮我找上海的 AI 活动并制定参加计划");
+  const id = repo.listTasks()[0].id;
+  const calls = {};
+  const spyRegistry = {
+    getSkill: (sid) => {
+      const real = Registry.getSkill(sid);
+      if (!real) return null;
+      return {
+        ...real,
+        execute: async (ctx, deps) => {
+          calls[sid] = (calls[sid] || 0) + 1;
+          return real.execute(ctx, deps);
+        },
+      };
+    },
+  };
+  const mockSearch = async () => ({
+    kind: "ok",
+    data: { results: [{ activity: { title: "A", sourceUrl: "https://a.com" } }, { activity: { title: "B", sourceUrl: "https://b.com" } }] },
+  });
+
+  const res = await runTask(id, {
+    repository: repo, registry: spyRegistry, search: mockSearch, now: () => TS,
+  });
+
+  assert.equal(res.ok, true);
+  assert.equal(calls.search, 1, "search must execute exactly once — no duplicate search");
+  assert.equal(calls.plan, 1);
+  const t = repo.getTask(id);
+  assert.equal(t.steps.length, 2);
+  assert.equal(t.sources.length, 2, "sources written exactly once, never duplicated");
+  assert.equal(t.result.type, "workflow_result");
+  assert.equal(t.result.content.length, 2);
+});
