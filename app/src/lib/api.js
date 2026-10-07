@@ -18,7 +18,11 @@
 // provider key belong to the Python server and are never shipped to the
 // browser. This module only knows a base URL — public information by design.
 
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || "").trim();
+// `import.meta.env` is injected by Vite at build time. Guard the access so
+// this module is also safe to import in plain Node (unit tests, SSR, etc.)
+// where `import.meta.env` is undefined.
+const ENV = (typeof import.meta !== "undefined" && import.meta.env) || {};
+const RAW_BASE = (ENV.VITE_API_BASE_URL || "").trim();
 export const API_BASE_URL = RAW_BASE.replace(/\/+$/, "");
 
 /** Absolute URL for an API path ("/api/search" -> "<base>/api/search"). */

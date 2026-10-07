@@ -15,11 +15,11 @@
 import React from "react";
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BatteryFull, Bell, Calendar, CalendarHeart, Check,
-  Clock, Compass, ExternalLink, FlaskConical, GitMerge, Globe, Heart,
-  HeartOff, Hexagon, History, ImageOff, Info, LayoutDashboard, ListTodo,
-  LocateFixed, Map, MapPin, MapPinOff, Menu, Navigation, Plus, PlugZap, Search,
-  SearchX, Settings, Share2, ShieldAlert, ShieldCheck, Signal, SlidersHorizontal,
-  Sparkles, Ticket, TrendingUp, TriangleAlert, Users, Wifi,
+  ChevronRight, Clock, Compass, ExternalLink, FileCheck, Flag, FlaskConical, GitBranch,
+  GitMerge, Globe, Heart, HeartOff, Hexagon, History, ImageOff, Info, LayoutDashboard,
+  Link, ListPlus, ListTodo, LocateFixed, Map, MapPin, MapPinOff, Menu, Navigation, Play,
+  Plus, PlugZap, Search, SearchX, Settings, Share2, ShieldAlert, ShieldCheck, Signal,
+  SlidersHorizontal, Sparkles, Ticket, TrendingUp, TriangleAlert, Users, Wifi,
 } from "lucide-react";
 
 const ICONS = {
@@ -41,6 +41,7 @@ const ICONS = {
   "external-link": ExternalLink,
   "flask-conical": FlaskConical,
   "git-merge": GitMerge,
+  "git-branch": GitBranch,
   "globe": Globe,
   "heart": Heart,
   "heart-off": HeartOff,
@@ -65,6 +66,14 @@ const ICONS = {
   "ticket": Ticket,
   "trending-up": TrendingUp,
   "triangle-alert": TriangleAlert,
+  "alert-triangle": TriangleAlert,
+  "check-circle": BadgeCheck,
+  "chevron-right": ChevronRight,
+  "file-check": FileCheck,
+  "flag": Flag,
+  "link": Link,
+  "list-plus": ListPlus,
+  "play": Play,
   "users": Users,
   "wifi": Wifi,
 };

@@ -37,7 +37,7 @@ function detectDemo(data) {
 
 async function loadDefaultSearch() {
   try {
-    const m = await import("../lib/api.js");
+    const m = await import("../../lib/api.js");
     return m && typeof m.searchActivities === "function" ? m.searchActivities : null;
   } catch {
     return null;
@@ -67,7 +67,12 @@ const searchSkill = {
       return createSkillError("search", "SEARCH_EMPTY_GOAL", "未提供搜索目标");
     }
 
-    const search = deps.search || (await loadDefaultSearch());
+    // Browser always injects a real `deps.search` (the Runnger passes
+    // searchActivities). If it is explicitly null/empty the backend is NOT
+    // configured — report that honestly (§12). Only when it is truly
+    // `undefined` do we lazily resolve the real api client (standalone use).
+    let search = deps.search;
+    if (search === undefined) search = await loadDefaultSearch();
     if (typeof search !== "function") {
       return createSkillError("search", "SEARCH_NOT_CONFIGURED", "搜索后端未配置");
     }
@@ -91,6 +96,7 @@ const searchSkill = {
     const results = Array.isArray(data.results) ? data.results : [];
     const sources = results.map(normalizeSource).filter(Boolean);
     const isDemo = detectDemo(data);
+    if (isDemo) sources.forEach((s) => { s.demo = true; });
     const count = results.length;
 
     const summary = isDemo

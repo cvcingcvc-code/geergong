@@ -294,6 +294,14 @@ export default function App() {
     }
   };
 
+  /** Phase 3: run a task through the deterministic Router + Skills engine. */
+  const runTaskEngine = async (id, opts) => {
+    const out = await WBStore.runTask(id, opts || {});
+    setWbTasks(WBStore.getTasks());
+    setWbLog(WBStore.getLog());
+    return out;
+  };
+
   const openTaskDetail = (id) => {
     setDetail(null);
     setWbTab("tasks");
@@ -370,7 +378,8 @@ export default function App() {
           onAddStep={(title) => { setWbTasks(WBStore.addTaskStep(detailTask.id, { title })); }}
           onUpdateStep={(stepId, patch) => { setWbTasks(WBStore.updateTaskStep(detailTask.id, stepId, patch)); }}
           onSetResult={(r) => { setWbTasks(WBStore.setTaskResult(detailTask.id, r)); }}
-          onAddSource={(s) => { setWbTasks(WBStore.addTaskSource(detailTask.id, s)); }} />
+          onAddSource={(s) => { setWbTasks(WBStore.addTaskSource(detailTask.id, s)); }}
+          onRun={runTaskEngine} />
       ) : (
         <TasksScreen tasks={wbTasks} onStatusChange={changeTaskStatus}
           onAddTask={(t) => addTaskLocal(t, { source: "任务页输入" })}

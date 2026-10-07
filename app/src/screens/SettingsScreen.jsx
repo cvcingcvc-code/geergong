@@ -31,12 +31,14 @@ export function SettingsScreen() {
   const health = React.useMemo(() => WB.getStorageHealth(), []);
   const rows = [
     { k: "应用", v: "Gorgon Workbench（戈尔贡智能工作台）" },
-    { k: "版本", v: "Phase 2 · Task Engine Foundation" },
-    { k: "任务引擎", v: "Local / Ready（本地状态机，已在 Phase 2 建立）" },
+    { k: "版本", v: "Phase 3 · Task Router + Skills" },
+    { k: "任务引擎", v: "Local / Ready（本地状态机 + 执行引擎）" },
+    { k: "任务路由", v: "Deterministic（关键词规则，零模型）" },
+    { k: "技能", v: "5 个（搜索 / 摘要 / 提取 / 规划 / 模板写作）" },
     { k: "持久化", v: "LocalStorage（gorgon_workbench_tasks_v2）" },
     { k: "Schema Version", v: "2" },
     { k: "存储状态", v: HEALTH_LABEL[health.state] || health.state },
-    { k: "后端 API 地址", v: backendLabel() },
+    { k: "搜索后端", v: "已接入 /api 同源代理（演示模式可用时自动连接）" },
     { k: "运行模式", v: "本地演示（浏览器内运行，无后端任务引擎）" },
     { k: "AI Provider", v: "Not configured（将在 Phase 4 接入）", muted: true },
   ];

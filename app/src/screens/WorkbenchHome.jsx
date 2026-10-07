@@ -21,8 +21,9 @@ const QUICK_ACTIONS = [
 ];
 
 const STATUS_ITEMS = [
-  { key: "engine", label: "搜索引擎", value: "Ready", ok: true },
-  { key: "rules", label: "本地规则", value: "Ready", ok: true },
+  { key: "engine", label: "任务引擎", value: "Ready", ok: true },
+  { key: "router", label: "任务路由", value: "Deterministic", ok: true },
+  { key: "skills", label: "技能", value: "5 个", ok: true },
   { key: "ai", label: "AI Engine", value: "Not connected", ok: false },
   { key: "review", label: "Human Review", value: "Ready / Planned", ok: true },
 ];

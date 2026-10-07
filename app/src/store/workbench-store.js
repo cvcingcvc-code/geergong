@@ -15,6 +15,8 @@
 
 import * as Repo from "./task-repository.js";
 import { TASK_STATUS, canTransition, InvalidTransitionError } from "../workbench/task-model.js";
+import { runTask as runTaskEngine } from "../workbench/task-runner.js";
+import { searchActivities } from "../lib/api.js";
 
 const K_TASKS_V2 = Repo.SCHEMA_VERSION ? "gorgon_workbench_tasks_v2" : "gorgon_workbench_tasks_v2";
 const K_V1_TASKS = "gorgon_workbench_tasks";
@@ -122,6 +124,17 @@ export function getStorageHealth() {
 
 export function getSchemaVersion() {
   return Repo.SCHEMA_VERSION;
+}
+
+// ── Phase 3: Task execution (deterministic router + skills) ────────────
+//
+// runTask drives the real Task Runner: it routes the goal, builds steps, runs
+// each Skill, and writes the result back through the repository. The search
+// skill reuses the SAME api.searchActivities client the NaturalSearchScreen
+// uses — no second search client. Returns the Runner's result object.
+export async function runTask(id, { skillIds = null } = {}) {
+  const result = await runTaskEngine(id, { search: searchActivities, skillIds });
+  return result;
 }
 
 // ---- Review cards (DEMO / PREVIEW — local UI state only) --------------

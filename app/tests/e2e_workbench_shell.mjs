@@ -120,6 +120,23 @@ async function gotoHome(session) {
   await session.waitFor(`!!document.querySelector('[data-gg-shell]')`);
 }
 
+/** Create a task from the home input and wait for its Task Detail to open. */
+async function createTaskAndOpen(session, goal) {
+  await session.click(`document.querySelector('[data-workbench-nav="home"]')`);
+  await session.waitFor(`!!document.querySelector('[data-gg-screen="workbench-home"]')`);
+  await session.eval(TYPE_IN('[data-gg-screen="workbench-home"] textarea', goal));
+  await session.click(`[...document.querySelectorAll('[data-gg-screen="workbench-home"] button')].find(b => b.innerText.includes('开始任务'))`);
+  await session.waitFor(`!!document.querySelector('[data-gg-screen="workbench-task-detail"]')`, { timeout: 8000 });
+}
+
+/** Click the real run button and wait for the task to reach 已完成. */
+async function runCurrentTask(session, timeout = 30000) {
+  await session.click(`document.querySelector('[data-testid="workbench-detail-run"]')`);
+  return session.waitFor(
+    `document.querySelector('[data-testid="workbench-detail-status"]').innerText.includes('已完成')`,
+    { timeout });
+}
+
 async function desktopChain() {
   const s = new Session({ port: 9343 });
   await s.launch({ width: 1440, height: 900 });
@@ -449,6 +466,70 @@ async function mobileChain() {
   }
 }
 
+/* ── Phase 3: deterministic Task Router + Skills (§40/§41/§42) ─────────
+   Drives the REAL router + skill runner end-to-end in the browser: the
+   run button executes the actual engine (no simulation). Verifies routing,
+   step creation, source/demo badges, the workflow_result envelope (§22),
+   and execution timeline events (§23). Local-only skills must NOT touch the
+   network and must NOT show a DEMO badge. */
+
+async function phase3Chain() {
+  const s = new Session({ port: 9351 });
+  await s.launch({ width: 1440, height: 900 });
+  await s.connect();
+  await setViewport(s, 1440, 900);
+  try {
+    await gotoHome(s);
+
+    // ── §40: REAL search (demo API) — routes deterministically to search ──
+    await createTaskAndOpen(s, "帮我寻找本周值得参加的 AI 活动");
+    const done40 = await runCurrentTask(s);
+    check("§40: routed search task runs to 已完成", done40);
+
+    const router40 = await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-router"]')`);
+    check("§40: router panel renders after run", router40);
+    const routerTxt40 = await s.eval(`return document.querySelector('[data-testid="workbench-detail-router"]').innerText;`);
+    check("§40: router shows 智能搜索 skill", /智能搜索/.test(routerTxt40 || ""), (routerTxt40 || "").replace(/\n/g, " ").slice(0, 80));
+    const step40 = await s.eval(`return [...document.querySelectorAll('[data-testid="workbench-detail-step"]')].some(e=>e.innerText.includes('智能搜索'));`);
+    check("§40: 智能搜索 step created + completed", step40);
+
+    // The demo API returns providerMode=demo → the DEMO DATA badge must show.
+    const demoBadge = await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-demo-badge"]')`, { timeout: 6000 }).catch(() => false);
+    check("§40: DEMO DATA badge shown for demo search results", demoBadge);
+
+    const tl40 = await s.eval(`return (()=>{const b=document.querySelector('[data-testid="workbench-detail-timeline-list"]');if(!b)return false;const t=b.innerText;return ['开始分析任务目标','确定工具','开始执行','任务执行完成'].every(x=>t.includes(x));})();`);
+    check("§40: timeline records routing + skill + completion events (§23)", tl40);
+
+    // ── §41: search + plan workflow → workflow_result envelope (§22) ──
+    await createTaskAndOpen(s, "帮我寻找本周 AI 活动并制定参与计划");
+    const done41 = await runCurrentTask(s);
+    check("§41: search+plan workflow runs to 已完成", done41);
+    const step41 = await s.eval(`return [...document.querySelectorAll('[data-testid="workbench-detail-step"]')].filter(e=>e.innerText.includes('智能搜索')||e.innerText.includes('本地规划')).length;`);
+    check("§41: both 智能搜索 + 本地规划 steps created", step41 >= 2, "steps=" + step41);
+    const wf = await s.eval(`return [...document.querySelectorAll('[data-testid="workbench-detail-result-view"]')].some(e=>e.innerText.includes('workflow_result'));`);
+    check("§41: multi-skill result wrapped in workflow_result envelope (§22)", wf);
+    const tl41 = await s.eval(`return (()=>{const b=document.querySelector('[data-testid="workbench-detail-timeline-list"]');if(!b)return false;const t=b.innerText;return (t.match(/开始执行：/g)||[]).length>=2;})();`);
+    check("§41: timeline records 2 skill_started events", tl41);
+
+    // ── §42: local-only extract — no network, no DEMO badge ──
+    await createTaskAndOpen(s, "从这段文字中提取待办事项和日期：截止 10 月 15 日提交材料，下周一与团队开会复盘");
+    const done42 = await runCurrentTask(s);
+    check("§42: local extract task runs to 已完成 (no network)", done42);
+    await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-router"]')`);
+    const router42 = await s.eval(`return document.querySelector('[data-testid="workbench-detail-router"]').innerText;`);
+    check("§42: router shows 本地提取 (extract)", /本地提取/.test(router42 || ""), (router42 || "").replace(/\n/g, " ").slice(0, 80));
+    const noDemo42 = await s.eval(`return document.querySelectorAll('[data-testid="workbench-detail-demo-badge"]').length === 0;`);
+    check("§42: NO demo badge for local skill", noDemo42);
+    const resTxt42 = await s.eval(`return document.querySelector('[data-testid="workbench-detail-result-view"]').innerText;`);
+    check("§42: extract result contains structured date 10月15日", /10月15日/.test(resTxt42 || ""), (resTxt42 || "").slice(0, 120));
+
+    const errs = appErrors(s);
+    check("phase3: console errors = 0", errs.length === 0, errs.slice(0, 2).join(" | ").slice(0, 200));
+  } finally {
+    await s.close();
+  }
+}
+
 /* ── main ─────────────────────────────────────────────────────────────── */
 
 console.log("[wb-e2e] starting API server (demo mode) + vite preview ...");
@@ -465,6 +546,7 @@ try {
 
   await desktopChain();
   await mobileChain();
+  await phase3Chain();
 } finally {
   for (const p of procs) { try { p.kill(); } catch { /* gone */ } }
 }

@@ -9,6 +9,7 @@ import React from "react";
 import { Button } from "../lib/ds.js";
 import * as WB from "../store/workbench-store.js";
 import { TASK_STATUS, canTransition } from "../workbench/task-model.js";
+import * as SkillRegistry from "../workbench/skills/registry.js";
 import { Icon } from "../components/Icon.jsx";
 
 const STATUS_LABEL = {
@@ -41,7 +42,30 @@ const EVENT_ICON = {
   source_added: "link",
   result_saved: "file-check",
   task_failed: "alert-triangle",
+  // Phase 3 execution events (§23).
+  routing_started: "compass",
+  routing_completed: "map",
+  skill_started: "play",
+  skill_completed: "check-circle",
+  skill_failed: "alert-triangle",
+  task_execution_completed: "flag",
 };
+
+// Phase 3 Router result rendering (§25): map skill ids / intent → labels.
+function skillName(id) {
+  const s = SkillRegistry.getSkill(id);
+  return s ? s.name : id;
+}
+function intentLabel(router) {
+  if (!router) return "未分析";
+  if (router.intent === "unknown") return "未识别（需手动选择工具）";
+  if (router.intent === "manual") return "手动选择";
+  if (router.intent === "workflow") return "多步工作流";
+  return skillName(router.intent);
+}
+
+// The 5 deterministic skills a user may pick manually (§27). Order matters.
+const MANUAL_SKILLS = ["search", "summarize", "extract", "plan", "write"];
 
 // Simulation controls (§14): each maps to a LEGAL transition target; the
 // button only renders when canTransition(current, target) is true.
@@ -79,10 +103,31 @@ const card = {
   borderRadius: "var(--radius-md)", padding: "12px 14px",
 };
 
-export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpdateStep, onSetResult, onAddSource }) {
+export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpdateStep, onSetResult, onAddSource, onRun }) {
   const [stepTitle, setStepTitle] = React.useState("");
   const [sourceTitle, setSourceTitle] = React.useState("");
   const [resultText, setResultText] = React.useState("");
+  const [running, setRunning] = React.useState(false);
+  const [runError, setRunError] = React.useState(null);
+
+  const isRunnable = (task.status === TASK_STATUS.CREATED || task.status === TASK_STATUS.READY) && !running;
+  const router = task.metadata && task.metadata.router;
+
+  const handleRun = async (skillIds) => {
+    if (!onRun || running) return;
+    setRunError(null);
+    setRunning(true);
+    try {
+      const out = await onRun(task.id, skillIds ? { skillIds } : {});
+      if (out && out.ok === false && out.code) {
+        setRunError(out.message || "无法运行任务");
+      }
+    } catch (e) {
+      setRunError(String((e && e.message) || e));
+    } finally {
+      setRunning(false);
+    }
+  };
 
   if (!task) {
     return (
@@ -159,7 +204,87 @@ export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpda
           </div>
         </div>
 
-        {/* simulation controls — LEGAL transitions only */}
+        {/* ── Phase 3: run / router / manual selection (§18/§24/§25/§27) ── */}
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }} data-testid="workbench-detail-runzone">
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <Button variant="primary" data-testid="workbench-detail-run" disabled={!isRunnable}
+              onClick={() => handleRun(null)}
+              leadingIcon={<Icon name={running ? "compass" : "play"} style={{ width: 15, height: 15 }} />}>
+              {running ? "正在执行…" : "运行任务"}
+            </Button>
+            {task.status === TASK_STATUS.CREATED && !running && (
+              <span style={{ fontSize: 12, color: "var(--text-faint)" }}>
+                任务引擎会先分析目标，再按顺序执行对应工具。
+              </span>
+            )}
+            {task.status === TASK_STATUS.RUNNING && (
+              <span style={{ fontSize: 12, color: "var(--brand)" }}>正在执行，请勿重复点击。</span>
+            )}
+            {runError && (
+              <span data-testid="workbench-detail-run-error" style={{ fontSize: 12.5, color: "var(--danger)" }}>
+                {runError}
+              </span>
+            )}
+          </div>
+
+          {router && (
+            <div style={{ ...card, fontSize: 13, lineHeight: 1.7 }} data-testid="workbench-detail-router">
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-faint)", marginBottom: 7, letterSpacing: "0.03em" }}>
+                任务路由（确定性规则）
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 7 }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600, marginRight: 4 }}>任务类型：</span>
+                <span style={{ fontWeight: 700, color: "var(--text-strong)" }}>{intentLabel(router)}</span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 7 }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600, marginRight: 4 }}>使用工具：</span>
+                {router.skillIds.length === 0 ? (
+                  <span style={{ color: "var(--text-faint)" }}>无（未识别到明确能力）</span>
+                ) : (
+                  router.skillIds.map((sid) => (
+                    <span key={sid} style={{
+                      fontSize: 12, fontWeight: 600, padding: "2px 9px", borderRadius: "var(--radius-pill)",
+                      background: "var(--brand-soft)", color: "var(--brand)",
+                    }}>✓ {skillName(sid)}</span>
+                  ))
+                )}
+              </div>
+              <div style={{ color: "var(--text-muted)" }}>
+                <span style={{ fontWeight: 600, marginRight: 4 }}>判断依据：</span>
+                {router.reasons.length ? router.reasons.join("；") : "（未识别到关键词）"}
+              </div>
+            </div>
+          )}
+
+          {isRunnable && (
+            <div data-testid="workbench-detail-manual">
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-faint)", marginBottom: 7, letterSpacing: "0.03em" }}>
+                手动选择工具（确定性本地能力，无需模型）
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {MANUAL_SKILLS.map((sid) => (
+                  <button key={sid} data-testid={"workbench-detail-manual-" + sid} disabled={running}
+                    onClick={() => handleRun([sid])}
+                    style={{
+                      border: "1px solid var(--border-subtle)", background: "var(--surface-card)",
+                      color: "var(--text-body)", fontSize: 12.5, fontWeight: 600, cursor: running ? "default" : "pointer",
+                      padding: "7px 12px", borderRadius: "var(--radius-pill)", fontFamily: "var(--font-sans)",
+                    }}>
+                    {skillName(sid)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {router && router.intent === "unknown" && (
+            <div style={{ fontSize: 12.5, color: "var(--text-muted)", background: "var(--bg-sunken)", borderRadius: "var(--radius-md)", padding: "9px 13px", lineHeight: 1.6 }}>
+              暂时无法确定该使用哪项能力。你可以修改目标，或手动选择一个工具。
+            </div>
+          )}
+        </div>
+
+        {/* simulation controls — LEGAL transitions only (kept for manual state checks) */}
         <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }} data-testid="workbench-detail-actions">
           {legalActions.map((a) => (
             <button key={a.key} data-testid={a.testid} onClick={() => onTransition(a.to)}
@@ -218,6 +343,11 @@ export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpda
                 <div style={{ minWidth: 0, flex: 1, fontSize: 13, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {s.url ? <a href={s.url} target="_blank" rel="noreferrer" style={{ color: "var(--brand)" }}>{s.title}</a> : s.title}
                 </div>
+                {s.demo && (
+                  <span data-testid="workbench-detail-demo-badge" style={{ flex: "none", fontSize: 10.5, fontWeight: 700, padding: "2px 7px", borderRadius: "var(--radius-pill)", background: "var(--warning-soft)", color: "#9A6300" }}>
+                    DEMO 数据
+                  </span>
+                )}
                 <span style={{ fontSize: 11.5, color: "var(--text-faint)", flex: "none" }}>{s.type}</span>
               </div>
             ))}

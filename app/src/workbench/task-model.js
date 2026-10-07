@@ -206,6 +206,8 @@ export function makeSource(input, opts = {}) {
     title,
     url: typeof input.url === "string" && input.url ? input.url : null,
     provider: typeof input.provider === "string" && input.provider ? input.provider : null,
+    // Phase 3: optional flag so the UI can badge DEMO-mode search results (§12).
+    demo: typeof input.demo === "boolean" ? input.demo : false,
     addedAt: opts.now || nowIso(),
   };
 }
