@@ -7,6 +7,7 @@
 // UI must label this "本地规划" / "规则生成", never "AI 规划" (§16/§46).
 
 import { createSkillResult, CAP_LOCAL } from "./skill-base.js";
+import { withAiAssist } from "../ai/assist.js";
 
 const GENERIC_PLAN = [
   "明确目标与验收标准",
@@ -50,12 +51,33 @@ const planSkill = {
     return { ok: hit, confidence: hit ? 0.85 : 0 };
   },
 
-  execute(ctx = {}) {
+  execute(ctx = {}, deps = {}) {
+    // Plan NEVER re-searches: it consumes the previous step's search results
+    // (buildPlan already does this, and metadata.source records it).
     const { steps, source } = buildPlan({ previousResults: ctx.previousResults || [] });
-    return createSkillResult("plan", {
-      summary: `已生成 ${steps.length} 步行动计划（基于${source === "search_results" ? "检索结果" : "通用模板"}）`,
-      result: { type: "plan", content: steps },
-      metadata: { method: "rule_based", source },
+    const summary = `已生成 ${steps.length} 步行动计划（基于${source === "search_results" ? "检索结果" : "通用模板"}）`;
+
+    const deterministic = () =>
+      createSkillResult("plan", {
+        summary,
+        result: { type: "plan", content: steps },
+        metadata: { method: "rule_based", source },
+      });
+
+    // The plan input is the goal + the candidates we already have. A generic
+    // (no search results) plan is rule-based with high confidence; a plan built
+    // on real candidates is complex enough for the gate to consider AI.
+    const input = `${(ctx.goal || "")}\n${steps.join("\n")}`;
+    return withAiAssist({
+      skill: "plan",
+      purpose: "plan",
+      input,
+      intent: (ctx.task && ctx.task.metadata && ctx.task.metadata.router && ctx.task.metadata.router.intent) || "",
+      deps,
+      deterministic,
+      confidence: source === "search_results" ? 0.6 : 0.9,
+      method: "rule_based",
+      extra: { source },
     });
   },
 };

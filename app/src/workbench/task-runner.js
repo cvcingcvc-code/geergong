@@ -57,6 +57,7 @@ function manualRoute(ids) {
  *   router     : (input) => { intent, skillIds, confidence, reasons }
  *   registry   : { getSkill(id) => skill|null }
  *   search     : fn passed to the search skill as deps.search (real API client)
+ *   aiClient   : OPT-IN AI client; when omitted every skill stays deterministic
  *   skillIds   : forced skill list (manual selection / re-run), overrides router
  *   now        : () => timestamp string
  * @returns {Promise<{ok:boolean, executed?:boolean, task?:object,
@@ -68,7 +69,10 @@ export async function runTask(taskId, options = {}) {
   const router = options.router || routeTask;
   const registry = options.registry || { getSkill: defaultGetSkill };
   const now = typeof options.now === "function" ? options.now : defaultNow;
-  const deps = { search: options.search, now };
+  // `aiClient` is OPT-IN (Phase 5). When absent, every Skill stays purely
+  // deterministic — which is what keeps the competition demo at AI_CALLS = 0
+  // and prevents a mock provider from degrading good local output.
+  const deps = { search: options.search, now, aiClient: options.aiClient };
 
   const task0 = repository.getTask(taskId);
   if (!task0) {

@@ -7,6 +7,7 @@
 // (empty arrays + a clear "未识别" summary) rather than guessed (§14).
 
 import { createSkillResult, createSkillError, CAP_LOCAL } from "./skill-base.js";
+import { withAiAssist } from "../ai/assist.js";
 
 // ── regex kit (deterministic, order-stable) ───────────────────────────────
 const RE = {
@@ -105,23 +106,43 @@ const extractSkill = {
   },
 
   // context: { goal, text?, previousResults?, task?, metadata? }
-  // text 优先来自 context.text，否则用 goal；previousResults 命中则合并它们的文本。
-  execute(ctx = {}) {
+  // Local rules first; only if they found nothing meaningful do we consider an
+  // AI-assisted extract (Phase 5). deps.aiClient is opt-in — absent ⇒ local,
+  // and this stays fully SYNCHRONOUS (withAiAssist only returns a Promise when
+  // a real model call actually happens).
+  execute(ctx = {}, deps = {}) {
     const prevText = (ctx.previousResults || [])
       .map((r) => (r && r.result && typeof r.result.content === "string" ? r.result.content : ""))
       .join("\n");
     const text = (ctx.text != null ? ctx.text : ctx.goal) || "";
-    const data = extractStructured(text + "\n" + prevText);
+    const input = (text + "\n" + prevText).trim();
 
-    const parts = describe(data);
-    const summary = parts.length
-      ? `本地提取到：${parts.join("、")}`
-      : "未识别到结构化信息（已如实返回空结果，未猜测）";
+    const deterministic = () => {
+      const data = extractStructured(input);
+      const parts = describe(data);
+      const summary = parts.length
+        ? `本地提取到：${parts.join("、")}`
+        : "未识别到结构化信息（已如实返回空结果，未猜测）";
+      return createSkillResult("extract", {
+        summary,
+        result: { type: "json", content: data },
+        metadata: { method: "regex", recognized: parts.length },
+      });
+    };
 
-    return createSkillResult("extract", {
-      summary,
-      result: { type: "json", content: data },
-      metadata: { method: "regex", recognized: parts.length },
+    // Confidence: local rules are trusted when they actually found something.
+    const probe = extractStructured(input);
+    const found = describe(probe).length > 0;
+    return withAiAssist({
+      skill: "extract",
+      purpose: "extract",
+      input,
+      intent: (ctx.task && ctx.task.metadata && ctx.task.metadata.router && ctx.task.metadata.router.intent) || "",
+      deps,
+      deterministic,
+      // Local rules found nothing → low confidence → the gate may allow AI.
+      confidence: found ? 0.9 : 0.1,
+      method: "regex",
     });
   },
 };

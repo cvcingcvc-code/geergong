@@ -6,6 +6,7 @@
 // UI must show "Template / Local", never "AI 写作" (§17/§46).
 
 import { createSkillResult, CAP_LOCAL } from "./skill-base.js";
+import { withAiAssist } from "../ai/assist.js";
 
 function fmtNow(now) {
   if (typeof now === "function") {
@@ -54,18 +55,34 @@ const writeSkill = {
   },
 
   // deps.now is optional; tests pass a fixed stamp for determinism.
+  // Produces TEXT ONLY — this skill must never perform an external write (§32).
   execute(ctx = {}, deps = {}) {
     const goal = (ctx && ctx.goal) || "";
     const task = ctx && ctx.task;
     const title = (task && task.title) || goal.slice(0, 30) || "未命名任务";
     const sources = (ctx && ctx.previousSources) || [];
-    const content = renderWorkLog({ title, goal, sources, now: deps.now });
 
-    // Sanity: this skill must never perform an external write (§32).
-    return createSkillResult("write", {
-      summary: "已生成模板工作记录（本地，无外部写入）",
-      result: { type: "text", content },
-      metadata: { method: "template", externalWrite: false },
+    const deterministic = () => {
+      const content = renderWorkLog({ title, goal, sources, now: deps.now });
+      return createSkillResult("write", {
+        summary: "已生成模板工作记录（本地，无外部写入）",
+        result: { type: "text", content },
+        metadata: { method: "template", externalWrite: false },
+      });
+    };
+
+    const input = [goal, ...sources.map((s) => (s && s.title) || "")].join("\n");
+    return withAiAssist({
+      skill: "write",
+      purpose: "generate",
+      input,
+      intent: (ctx && ctx.task && ctx.task.metadata && ctx.task.metadata.router && ctx.task.metadata.router.intent) || "",
+      deps,
+      deterministic,
+      confidence: 0.75,
+      method: "template",
+      // Hard guarantee: whatever happens, no external write is ever recorded.
+      extra: { externalWrite: false },
     });
   },
 };

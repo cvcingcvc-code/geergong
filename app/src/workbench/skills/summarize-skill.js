@@ -8,6 +8,7 @@
 // never "AI Summary" (§15/§46).
 
 import { createSkillResult, CAP_LOCAL } from "./skill-base.js";
+import { withAiAssist } from "../ai/assist.js";
 
 const STOP = new Set([
   "的", "了", "和", "与", "及", "在", "是", "我", "你", "他", "她", "它", "我们", "你们", "他们",
@@ -97,29 +98,46 @@ export const summarizeSkill = {
     return { ok: hit, confidence: hit ? 0.85 : 0 };
   },
 
-  execute(ctx = {}) {
+  execute(ctx = {}, deps = {}) {
     const prevText = (ctx.previousResults || [])
       .map((r) => (r && r.result && typeof r.result.content === "string" ? r.result.content : ""))
       .join("\n");
     const text = (ctx.text != null ? ctx.text : ctx.goal) || "";
     const input = (text + "\n" + prevText).trim();
-    if (!input) {
+
+    const deterministic = () => {
+      if (!input) {
+        return createSkillResult("summarize", {
+          summary: "没有可摘要的内容",
+          result: { type: "text", content: "" },
+          metadata: { method: "local_extractive", empty: true },
+        });
+      }
+      const out = localSummarize(input, { maxSentences: 5 });
       return createSkillResult("summarize", {
-        summary: "没有可摘要的内容",
-        result: { type: "text", content: "" },
-        metadata: { method: "local_extractive", empty: true },
+        summary: out.summary,
+        result: { type: "text", content: out.summary },
+        metadata: {
+          method: "local_extractive",
+          totalSentences: out.totalSentences,
+          kept: out.kept,
+          truncated: out.truncated,
+        },
       });
-    }
-    const out = localSummarize(input, { maxSentences: 5 });
-    return createSkillResult("summarize", {
-      summary: out.summary,
-      result: { type: "text", content: out.summary },
-      metadata: {
-        method: "local_extractive",
-        totalSentences: out.totalSentences,
-        kept: out.kept,
-        truncated: out.truncated,
-      },
+    };
+
+    // Short text is handled well by the extractive summarizer (high
+    // confidence); long / complex text is where AI is allowed to help.
+    const long = input.length >= 1200;
+    return withAiAssist({
+      skill: "summarize",
+      purpose: "summarize",
+      input,
+      intent: (ctx.task && ctx.task.metadata && ctx.task.metadata.router && ctx.task.metadata.router.intent) || "",
+      deps,
+      deterministic,
+      confidence: long ? 0.3 : 0.85,
+      method: "local_extractive",
     });
   },
 };
