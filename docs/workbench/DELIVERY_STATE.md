@@ -4,18 +4,18 @@
 > 下一轮**只读这个文件**即可恢复上下文，不要重新扫描整个 repo。
 
 ```text
-CURRENT_PHASE=PHASE 7 DONE (COMPETITION_DEMO_STABILIZATION) — GATE GREEN, 待 commit
-CURRENT_HEAD=2f84e13 (PHASE 6)，7 号变更在工作区
+CURRENT_PHASE=PHASE 8 DONE (WINDOWS_DESKTOP_PACKAGING) — GATE GREEN, 待 commit
+CURRENT_HEAD=73d87f5 (PHASE 7)
 
 LAST_COMPLETED=
-  PHASE 0/1/2/3/3B/4A/4B/5/6  (Gate 全绿)
-  PHASE 7 TASK-7.1 可复现离线演示种子 (?demo=1, 幂等, 精确比赛指令)
-  PHASE 7 TASK-7.2 Task Detail「处理方式」面板 (本地处理 / AI Assisted / 模拟输出 / Token)
-  PHASE 7 TASK-7.3 演示链路 E2E 7 条失败根因定位与修复（真实 bug）
-  PHASE 7 TASK-7.4 全量回归 205 + 18 + 93 + 58 全绿, 0 回归
+  PHASE 0/1/2/3/3B/4A/4B/5/6/7  (Gate 全绿)
+  PHASE 8 TASK-8.1 desktop/main.py 启动器（ui+api 双线程 + /api 反代 + 浏览器回退）
+  PHASE 8 TASK-8.2 --selftest 无头自检（冻结包 8/8，写 JSON 报告）
+  PHASE 8 TASK-8.3 PyInstaller onedir 打包 + 图标 + GORGON_PYTHON 校验
+  PHASE 8 TASK-8.4 desktop_smoke.py 加「真跑打包 EXE」检查 → 19/19
 
-CURRENT_TASK=Phase 7 commit + 更新 DELIVERY_STATE
-NEXT_TASK=PHASE 8 — Windows Desktop Packaging (PyInstaller onedir + pywebview)
+CURRENT_TASK=Phase 8 commit + 更新 DELIVERY_STATE
+NEXT_TASK=PHASE 9 — Release QA + 交付物文档
 
 TEST_STATUS=
   UNIT            = 205/205 PASS
@@ -23,7 +23,8 @@ TEST_STATUS=
   VITE_BUILD      = PASS (1737 modules, 420.30 kB / gzip 123.84 kB)
   WORKBENCH_E2E   = 93/93 PASS
   LEGACY_E2E      = 58/58 PASS
-  DESKTOP_SMOKE   = 待跑 (需先 PyInstaller 打包)
+  DESKTOP_SMOKE   = 19/19 PASS (含打包 EXE 自检 8/8)
+  EXE_PACKAGED    = PASS (5.87 MB, frozen=true, python=3.14.2, 原生窗口)
   NEW_REGRESSIONS = 0
   API_KEYS_IN_REPO= 0
 
@@ -33,12 +34,14 @@ KNOWN_ISSUES=
     build.ps1 在 app/dist 已存在时直接复用，已规避。
   - 沙箱可能被外部进程占用 4173/4175/8000 端口，造成 E2E 假失败。
     跑 E2E 前先确认端口空闲（netstat -ano | grep LISTENING）。
+  - PATH 上的 `python` 是托管 3.13（无 pyinstaller/pywebview）。
+    打包必须用系统 3.14：build.ps1 支持 GORGON_PYTHON 并会主动校验。
 
 BLOCKERS=none
 
-DELIVERY_READINESS=NOT_READY  (缺 EXE 打包 + 交付物文档)
+DELIVERY_READINESS=NEAR_READY  (EXE 已可用；缺 release/ 交付物文档 + 最终 QA 报告)
 
-LAST_UPDATE=2026-10-09 12:48 GMT+8
+LAST_UPDATE=2026-10-09 13:10 GMT+8
 ```
 
 ## Phase 7 核心结论（实测，非推断）

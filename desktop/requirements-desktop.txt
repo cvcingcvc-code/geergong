@@ -1,0 +1,10 @@
+# Gorgon Workbench — desktop runtime dependencies.
+#
+# Kept deliberately tiny. The Workbench frontend ships pre-built (app/dist),
+# so no Node toolchain is required at runtime.
+#
+#   pywebview  — native window (uses the OS WebView2 runtime on Windows)
+#   pyinstaller — only needed to BUILD the exe, not to run it
+
+pywebview>=5.0
+pyinstaller>=6.0

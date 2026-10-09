@@ -12,3 +12,19 @@ pipeline/data/cache/
 .env
 .env.local
 search.env
+
+# PHASE 8 — Windows desktop build outputs.
+# `release/` holds the packaged app (a ~50 MB onedir bundle). It is a BUILD
+# ARTIFACT, reproducible at any time with:
+#     powershell -ExecutionPolicy Bypass -File desktop/build.ps1
+# Committing a frozen Python runtime to git would bloat the repo with no
+# benefit, so the bundle is produced on demand and shipped out-of-band.
+release/
+build/
+
+# Per-machine desktop self-test report (written next to the built exe).
+desktop-selftest.json
+
+# Transient E2E logs / scratch artifacts.
+app/tests/.e2e-logs/
+*.log
