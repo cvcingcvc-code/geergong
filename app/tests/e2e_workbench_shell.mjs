@@ -633,6 +633,103 @@ async function phase6Chain() {
   }
 }
 
+/* ── Phase 7: competition demo mode + Local/AI labelling ────────────────
+   ?demo=1 must seed the exact competition task reproducibly, and Task Detail
+   must expose the processing mode (本地处理 / AI Assisted) plus token usage. */
+async function phase7Chain() {
+  const s = new Session({ port: 9354 });
+  await s.launch({ width: 1440, height: 900 });
+  await s.connect();
+  await setViewport(s, 1440, 900);
+  try {
+    // Navigate to the real origin FIRST — localStorage is inaccessible on
+    // about:blank (SecurityError), so clearing it must happen after a goto.
+    await s.goto(BASE + "/");
+    await s.waitFor(`!!document.querySelector('[data-gg-shell]')`);
+
+    // Boot straight into demo mode from a clean slate.
+    await s.eval(`localStorage.clear(); true`);
+    await s.goto(BASE + "/?demo=1");
+    await sleep(700);
+    // `waitFor` returns false (never throws) on timeout, so treat this as a
+    // real assertion rather than swallowing the result.
+    const booted = await s.waitFor(
+      `!!document.querySelector('[data-gg-screen="workbench-home"], [data-gg-screen="workbench-tasks"]')`,
+      { timeout: 10000 });
+    check("§70: ?demo=1 boots the workbench shell", booted);
+
+    const seeded = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_tasks_v2') || '{"tasks":[]}');
+      const tasks = raw.tasks || raw || [];
+      return tasks.filter(t => t.metadata && t.metadata.demo_seed_v1).length;`);
+    check("§70: ?demo=1 seeds exactly one demo task", seeded === 1, "count=" + seeded);
+
+    // Reproducible: a reload must not create a second one.
+    await s.eval(`location.reload(); true`);
+    await sleep(900);
+    // The reload restarts the app: re-establish the shell before driving nav,
+    // otherwise the nav click can land on a not-yet-mounted DOM (a real flake).
+    await s.waitFor(`!!document.querySelector('[data-gg-shell]')`, { timeout: 10000 });
+    const seeded2 = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_tasks_v2') || '{"tasks":[]}');
+      const tasks = raw.tasks || raw || [];
+      return tasks.filter(t => t.metadata && t.metadata.demo_seed_v1).length;`);
+    check("§70: reload does not duplicate the demo task (idempotent)", seeded2 === 1, "count=" + seeded2);
+
+    // The demo task carries the exact competition goal.
+    const goalOk = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_tasks_v2') || '{"tasks":[]}');
+      const tasks = raw.tasks || raw || [];
+      const t = tasks.find(x => x.metadata && x.metadata.demo_seed_v1);
+      return !!t && t.goal.includes('上海') && t.goal.includes('制定参加计划');`);
+    check("§70: demo task uses the exact competition prompt", goalOk);
+
+    // Open it and run it through the REAL engine.
+    // NOTE: [data-testid="workbench-task-item"] is the ROW wrapper and carries
+    // no onClick — the clickable target is the row's 详情 button
+    // (workbench-task-open). Clicking the wrapper silently does nothing, which
+    // is exactly what made §71/§72 fail before.
+    await s.click(`document.querySelector('[data-workbench-nav="tasks"]')`);
+    // Wait for the seeded row itself, not just the screen container: the list
+    // is rendered from storage and `find()` on an empty list throws.
+    const rowUp = await s.waitFor(`[...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+      .some(it => it.innerText.includes('上海'))`, { timeout: 10000 });
+    check("§71: demo task is listed in the task list", rowUp);
+    await s.click(`[...document.querySelectorAll('[data-testid="workbench-task-item"]')]
+      .find(it => it.innerText.includes('上海'))
+      .querySelector('[data-testid="workbench-task-open"]')`);
+    const detailUp = await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-runzone"]')`, { timeout: 8000 });
+    check("§71: demo task detail opens", detailUp);
+    const done = await runCurrentTask(s);
+    check("§71: demo task runs to 已完成 through the real engine", done);
+
+    const routerTxt = await s.eval(`return (document.querySelector('[data-testid="workbench-detail-router"]')||{}).innerText || '';`);
+    check("§71: router panel explains the routing decision", /智能搜索/.test(routerTxt) && /本地规划|规划/.test(routerTxt),
+      routerTxt.replace(/\n/g, " ").slice(0, 90));
+
+    // Processing mode panel: must show a Local/AI label per step + token usage.
+    const procUp = await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-processing-view"]')`, { timeout: 6000 })
+      .catch(() => false);
+    check("§72: 处理方式 panel renders", procUp);
+    const labels = await s.eval(`return [...document.querySelectorAll('[data-testid="workbench-detail-processing-label"]')].map(e=>e.innerText);`);
+    check("§72: every step is labelled 本地处理 or AI Assisted",
+      labels.length > 0 && labels.every((l) => l === "本地处理" || l === "AI Assisted"),
+      JSON.stringify(labels));
+    const usageTxt = await s.eval(`return (document.querySelector('[data-testid="workbench-detail-processing-view"]')||{}).innerText || '';`);
+    check("§72: token/API usage is shown", /Token\/API：/.test(usageTxt));
+    check("§72: summary distinguishes local vs AI-assisted counts", /确定性本地处理/.test(usageTxt));
+
+    // Timeline + sources still render in demo mode.
+    const tl = await s.waitFor(`!!document.querySelector('[data-testid="workbench-detail-timeline-list"]')`);
+    check("§71: timeline renders", tl);
+
+    const errs = appErrors(s);
+    check("phase7: console errors = 0", errs.length === 0, errs.slice(0, 2).join(" | ").slice(0, 200));
+  } finally {
+    await s.close();
+  }
+}
+
 /* ── main ─────────────────────────────────────────────────────────────── */
 
 console.log("[wb-e2e] starting API server (demo mode) + vite preview ...");
@@ -651,6 +748,7 @@ try {
   await mobileChain();
   await phase3Chain();
   await phase6Chain();
+  await phase7Chain();
 } finally {
   for (const p of procs) { try { p.kill(); } catch { /* gone */ } }
 }

@@ -109,8 +109,13 @@ export class Session {
       }
       if (msg.method === "Log.entryAdded") {
         const e = msg.params.entry;
-        this.console.push({ level: e.level, text: e.text });
-        if (e.level === "error") this.errors.push(e.text);
+        // `entry.text` for a failed sub-resource is a generic
+        // "Failed to load resource: ... 404" string — the URL that actually
+        // failed lives in `entry.url`. Append it so callers can filter (and
+        // diagnose) by the real resource instead of guessing.
+        const text = e.url ? `${e.text} [${e.url}]` : e.text;
+        this.console.push({ level: e.level, text });
+        if (e.level === "error") this.errors.push(text);
       }
     });
 

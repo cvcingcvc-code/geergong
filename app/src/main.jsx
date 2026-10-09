@@ -16,12 +16,16 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import { applyCategoryExtensions } from "./lib/categories.js";
 import { initDemoReset } from "./lib/demo-reset.js";
+import { initDemoMode } from "./lib/demo-mode.js";
 
 // Additive category extension (科技/黑客松/展览/市集/讲座/社交/校园/公益)
 // — must run BEFORE the first render so var(--cat-*) resolves everywhere.
 applyCategoryExtensions();
 
-// The ?demo=1 reset chip (same behaviour as the legacy demo-reset.js).
+// Phase 7: ?demo=1 seeds a reproducible, offline competition demo task
+// (idempotent), then mounts the reset chip. Must run BEFORE the first render
+// so the seeded task is present when App reads the repository.
+initDemoMode();
 initDemoReset();
 
 // Register the PWA service worker in production builds only (skip the Vite

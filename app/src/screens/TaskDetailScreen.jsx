@@ -389,6 +389,65 @@ export function TaskDetailScreen({ task, onTransition, onBack, onAddStep, onUpda
           </div>
         </Section>
 
+        {/* processing mode — Local vs AI Assisted, per skill (Phase 7).
+            Read from the REAL skill metadata; never guessed. */}
+        <Section title="处理方式" testid="workbench-detail-processing">
+          <div style={card} data-testid="workbench-detail-processing-view">
+            {task.steps.length === 0 ? (
+              <div style={{ fontSize: 12.5, color: "var(--text-faint)" }}>尚无执行步骤。</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {task.steps.map((s) => {
+                  const m = s.metadata || {};
+                  const ai = m.aiAssisted === true;
+                  const sim = m.simulated === true;
+                  const label = ai ? "AI Assisted" : "本地处理";
+                  const reason = m.aiFallbackReason || m.aiReason || "";
+                  const tokens = m.aiUsageTotal || 0;
+                  return (
+                    <div key={s.id} data-testid="workbench-detail-processing-item" style={{
+                      display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                      fontSize: 12.5, color: "var(--text-body)",
+                    }}>
+                      <span style={{ fontWeight: 600, color: "var(--text-strong)", minWidth: 0 }}>
+                        {s.title}
+                      </span>
+                      <span data-testid="workbench-detail-processing-label" style={{
+                        fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: "var(--radius-pill)",
+                        background: ai ? "var(--brand-soft, var(--warning-soft))" : "var(--surface-sunken, var(--surface-card))",
+                        color: ai ? "var(--brand-ink, #1D4ED8)" : "var(--text-muted)",
+                        border: ai ? "1px solid transparent" : "1px solid var(--border-subtle)",
+                      }}>
+                        {label}
+                      </span>
+                      {sim && (
+                        <span data-testid="workbench-detail-processing-simulated" style={{
+                          fontSize: 10.5, fontWeight: 700, padding: "2px 7px", borderRadius: "var(--radius-pill)",
+                          background: "var(--warning-soft)", color: "#9A6300",
+                        }}>
+                          模拟输出
+                        </span>
+                      )}
+                      <span style={{ color: "var(--text-faint)" }}>
+                        Token/API：{tokens}
+                      </span>
+                      {reason && (
+                        <span style={{ color: "var(--text-faint)" }} data-testid="workbench-detail-processing-reason">
+                          · {reason}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: 11.5, color: "var(--text-faint)", lineHeight: 1.6, marginTop: 2 }} data-testid="workbench-detail-processing-summary">
+                  共 {task.steps.length} 个步骤 · 其中 AI 辅助 {task.steps.filter((s) => s.metadata && s.metadata.aiAssisted === true).length} 个 ·
+                  确定性本地处理 {task.steps.filter((s) => !(s.metadata && s.metadata.aiAssisted === true)).length} 个
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+
         {/* timeline */}
         <Section title={`时间线 (${task.timeline.length})`} testid="workbench-detail-timeline">
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }} data-testid="workbench-detail-timeline-list">
