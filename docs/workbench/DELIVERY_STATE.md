@@ -4,8 +4,8 @@
 > 下一轮**只读这个文件**即可恢复上下文，不要重新扫描整个 repo。
 
 ```text
-CURRENT_PHASE=PHASE 9 DONE (RELEASE_QA + DELIVERABLES) — RELEASE READY
-CURRENT_HEAD=848c6c0 (PHASE 8)
+CURRENT_PHASE=PHASE 10 DONE (COMPETITION FINAL ACCEPTANCE) — COMPETITION_CANDIDATE_READY
+CURRENT_HEAD=9e1e3b6 (PHASE 10)
 
 LAST_COMPLETED=
   PHASE 0/1/2/3/3B/4A/4B/5/6/7/8  (Gate 全绿)
@@ -13,20 +13,34 @@ LAST_COMPLETED=
   PHASE 9 TASK-9.2 交付物文档 release/{README,DEMO_SCRIPT,TEST_REPORT,RELEASE_NOTES}.md
   PHASE 9 TASK-9.3 安全核查：仓库内明文密钥 0、bundle 内密钥 0
   PHASE 9 TASK-9.4 打包件端到端实测：原生窗口（msedge 增量 0）+ 服务可用
+  PHASE 10 (本轮)
+    TASK-10.1 冻结：审核 HEAD/工作树，无新功能；仅修 1 处数据准确性缺陷
+      fix(workbench): runner 持久化 step.metadata（method/aiAssisted/aiReason/
+      aiUsageTotal/isDemo），修复「处理方式」面板读不到原因的链路断裂
+      → 回归测试 +1，单元 205→206/206，NEW_REGRESSIONS=0
+    TASK-10.2 Windows 实机验收 → release/WINDOWS_ACCEPTANCE.md
+      EXE 8/8 + desktop 19/19 全绿；独立 Win GUI 会话/SmartScreen=NOT_TESTED（诚实）
+    TASK-10.3 真实场景验证 → release/REAL_WORLD_EVALUATION.md（5/5 场景通过）
+    TASK-10.4 比赛材料 → release/COMPETITION_MATERIALS.md（脚本/PPT大纲/10 Q&A/录屏）
+      COMPETITION_RULES=UNVERIFIED（仓库无官方赛题，不编造）
+    TASK-10.5 GitHub 交付：README 更新、SHA256SUMS、本地 ZIP；push 待用户授权
+    TASK-10.6 停止条件：全部可自主验收项完成，见本文件顶部 CURRENT_PHASE
 
-CURRENT_TASK=Phase 9 commit + 最终交付报告
-NEXT_TASK=(交付完成) 可选 P2：安装器 / 代码签名 / 自动更新
+CURRENT_TASK=(完成) 待用户授权 push + 独立 Win 机器人工验收 GUI
+NEXT_TASK=(停) 不进入 Phase 11，不扩展功能
 
 TEST_STATUS=
-  UNIT            = 205/205 PASS
+  UNIT            = 206/206 PASS  (205 基线 + 1 回归)
   TEST_BUILD      = 18/18 PASS (含 secret 扫描)
-  VITE_BUILD      = PASS (1737 modules, 420.30 kB / gzip 123.84 kB)
+  VITE_BUILD      = PASS (1737 modules, 420.36 kB / gzip 123.85 kB, hash CT8rx1Rm)
   WORKBENCH_E2E   = 93/93 PASS
   LEGACY_E2E      = 58/58 PASS
   DESKTOP_SMOKE   = 19/19 PASS (含打包 EXE 自检 8/8)
-  EXE_PACKAGED    = PASS (5.87 MB, frozen=true, python=3.14.2, 原生窗口)
+  EXE_PACKAGED    = PASS (6.14 MB, frozen=true, python=3.14.2, 原生窗口)
   NEW_REGRESSIONS = 0
   API_KEYS_IN_REPO= 0
+  EXE_SHA256      = fb8edb483d71b4273863c00c077cf849bd651fd8d4c0b30823d64890f9822ec9
+  ZIP_SHA256      = 35f6c0622d9886863dd28c83c615b5f3588a4948427239d953f782581f7fd642
 
 KNOWN_ISSUES=
   - npm run build 清理既有 app/dist/ 时被沙箱删除拦截 (ETIMEDOUT / genie-trash)，
@@ -41,9 +55,9 @@ KNOWN_ISSUES=
 
 BLOCKERS=none
 
-DELIVERY_READINESS=READY
+DELIVERY_READINESS=COMPETITION_CANDIDATE_READY
 
-LAST_UPDATE=2026-10-09 13:20 GMT+8
+LAST_UPDATE=2026-10-10 00:30 GMT+8
 ```
 
 ## 交付物清单（已就位）
