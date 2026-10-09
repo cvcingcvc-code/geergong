@@ -126,6 +126,31 @@ test("runner: created → planning → ready → running → completed (search+p
   assert.ok(t.metadata.router && Array.isArray(t.metadata.router.skillIds));
 });
 
+test("runner: skill metadata (method / aiReason) is persisted onto the step", async () => {
+  // Data-accuracy regression: the "处理方式" panel reads step.metadata, so the
+  // runner MUST copy the skill's returned metadata onto the step. Before the
+  // Phase-10 fix only status+result content were written and the metadata was
+  // silently dropped, so the UI could never show WHY a step stayed local.
+  const repo = seedCreated("帮我找上海的 AI 活动并制定参加计划");
+  const id = repo.listTasks()[0].id;
+  const mockSearch = async () => ({
+    kind: "ok",
+    data: { providerMode: "demo", results: [{ activity: { title: "A", sourceUrl: "https://a.com", source: "demo" }, dataOrigin: "demo" }] },
+  });
+  const res = await runTask(id, { repository: repo, registry: Registry, search: mockSearch, now: () => TS });
+  assert.equal(res.ok, true);
+  const t = repo.getTask(id);
+  const searchStep = t.steps.find((s) => s.metadata.skillId === "search");
+  const planStep = t.steps.find((s) => s.metadata.skillId === "plan");
+  // search skill records method:"api" and isDemo:true
+  assert.equal(searchStep.metadata.method, "api", "search method must persist");
+  assert.equal(searchStep.metadata.isDemo, true, "search isDemo flag must persist");
+  // plan skill records source:"search_results" and an aiReason (stayed local)
+  assert.equal(planStep.metadata.source, "search_results", "plan source must persist");
+  assert.equal(typeof planStep.metadata.aiReason, "string", "plan aiReason must persist");
+  assert.equal(planStep.metadata.aiAssisted, false, "demo plan must be labelled local");
+});
+
 /* ── Single-skill result shape (§22) ───────────────────────────────────── */
 
 test("runner: single skill writes its own result directly", async () => {

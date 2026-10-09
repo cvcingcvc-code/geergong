@@ -197,7 +197,18 @@ export async function runTask(taskId, options = {}) {
     }
 
     if (result && result.ok) {
-      if (step) repository.updateTaskStep(taskId, step.id, { status: "completed", result: result.result || null });
+      if (step) {
+        // Data accuracy: persist the skill's REAL metadata (method / aiAssisted /
+        // aiReason / aiUsageTotal / simulated / isDemo ...) onto the step so the
+        // "处理方式" panel reads actual values instead of defaults. Previously
+        // only status + result content were written, silently dropping the very
+        // metadata the UI promises to surface (§46 honesty guarantee).
+        repository.updateTaskStep(taskId, step.id, {
+          status: "completed",
+          result: result.result || null,
+          metadata: Object.assign({}, step.metadata || {}, result.metadata || {}),
+        });
+      }
       repository.appendTimelineEvent(
         taskId, "skill_completed", `完成：${skill.name}`, { skillId: sid },
       );

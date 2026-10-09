@@ -50,13 +50,17 @@ Gorgon Workbench 是一个**可审计的任务工作台**：用一句自然语�
 
 ```text
 release/
-  README.md               # 本文件
-  DEMO_SCRIPT.md          # 比赛演示脚本（60–120 秒）
-  TEST_REPORT.md          # 完整测试矩阵与结果
-  RELEASE_NOTES.md        # 版本说明、能力边界、已知限制
+  README.md                    # 本文件
+  DEMO_SCRIPT.md               # 比赛演示脚本（60–120 秒）
+  TEST_REPORT.md               # 完整测试矩阵与结果
+  RELEASE_NOTES.md             # 版本说明、能力边界、已知限制
+  COMPETITION_MATERIALS.md     # 3 分钟/90 秒脚本、8 页 PPT 大纲、10 Q&A、录屏大纲（Phase 10）
+  WINDOWS_ACCEPTANCE.md        # Windows 实机验收（含 NOT_TESTED 诚实标记）
+  REAL_WORLD_EVALUATION.md     # 三场景真实价值验证 + 基线对照（Phase 10）
+  SHA256SUMS.md                # 交付包校验和
   Gorgon-Workbench-Windows/
-    Gorgon Workbench.exe  # ← 双击这个
-    _internal/            # 运行时（前端 + 检索服务 + 窗口后端），请勿改动
+    Gorgon Workbench.exe       # ← 双击这个
+    _internal/                 # 运行时（前端 + 检索服务 + 窗口后端），请勿改动
 ```
 
 ---
