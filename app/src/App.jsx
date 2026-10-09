@@ -251,6 +251,8 @@ export default function App() {
   const [wbTasks, setWbTasks] = React.useState(() => WBStore.getTasks());
   const [wbReview, setWbReview] = React.useState(() => WBStore.ensureReviewSeed());
   const [wbLog, setWbLog] = React.useState(() => WBStore.getLog());
+  // Phase 6: REAL proposals backing the Review Center.
+  const [wbProposals, setWbProposals] = React.useState(() => WBStore.getProposals());
 
   const { isMobile } = useResponsive();
 
@@ -311,6 +313,12 @@ export default function App() {
   const decideReview = (id, decision) => {
     setWbReview(WBStore.decideReviewCard(id, decision));
     setWbLog(WBStore.getLog());
+  };
+
+  const decideProposal = (id, decision) => {
+    setWbProposals(WBStore.decideProposal(id, decision) ? WBStore.getProposals() : WBStore.getProposals());
+    // An approved follow-up proposal really creates a task — refresh the list.
+    setWbTasks(WBStore.getTasks());
   };
 
   const resumeReviewTask = (id) => {
@@ -388,7 +396,8 @@ export default function App() {
     ),
     review: (
       <ReviewCenterScreen cards={wbReview} onDecide={decideReview}
-        reviewTasks={wbTasks} onResumeTask={resumeReviewTask} />
+        reviewTasks={wbTasks} onResumeTask={resumeReviewTask}
+        proposals={wbProposals} onProposal={decideProposal} />
     ),
     history: (
       <HistoryScreen tasks={wbTasks} log={wbLog} onOpenTask={openTaskDetail} />

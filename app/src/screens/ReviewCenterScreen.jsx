@@ -1,15 +1,18 @@
-// Gorgon Workbench — ReviewCenterScreen (Phase 2 upgrade).
+// Gorgon Workbench — ReviewCenterScreen (Phase 6: REAL Proposal model).
 //
-// TWO card sources now:
-//   1. REAL tasks with status === "review_required" (§20) — shown first,
-//      with a local 继续任务 action (review_required -> running through the
-//      State Machine). This is NOT the formal Human Review protocol
-//      (AI_PROPOSED / USER_APPROVED models arrive in Phase 6).
-//   2. The Phase-1 DEMO / PREVIEW card flow, unchanged.
+// THREE card sources, in priority order:
+//   1. REAL Proposals (Phase 6) — persisted, versioned, with a real state
+//      machine (PROPOSED → APPROVED/EDITED/REJECTED → EXECUTED/FAILED).
+//      These lead the page and support 批准 / 修改 / 拒绝 for real.
+//   2. REAL tasks with status === "review_required", resumed through the Task
+//      State Machine (Phase 2 contract, unchanged).
+//   3. The Phase-1 DEMO / PREVIEW cards, kept last and still labelled DEMO so
+//      nothing is ever passed off as a real reviewed action.
 
 import React from "react";
 import * as WB from "../store/workbench-store.js";
 import { canTransition } from "../workbench/task-model.js";
+import { PROPOSAL_STATUS, ACTION_KINDS } from "../workbench/proposal-model.js";
 import { Icon } from "../components/Icon.jsx";
 
 const DECISION_LABEL = {
@@ -17,6 +20,24 @@ const DECISION_LABEL = {
   approved: "已批准（本地演示）",
   rejected: "已拒绝（本地演示）",
   edited: "已修改（本地演示）",
+};
+
+const PROPOSAL_STATUS_LABEL = {
+  [PROPOSAL_STATUS.PROPOSED]: "待你确认",
+  [PROPOSAL_STATUS.APPROVED]: "已批准",
+  [PROPOSAL_STATUS.EDITED]: "已修改，待确认",
+  [PROPOSAL_STATUS.REJECTED]: "已拒绝",
+  [PROPOSAL_STATUS.EXECUTED]: "已执行",
+  [PROPOSAL_STATUS.FAILED]: "执行失败",
+};
+
+const ACTION_KIND_LABEL = {
+  [ACTION_KINDS.READ_ONLY]: "只读建议",
+  [ACTION_KINDS.CREATE_REMINDER]: "创建后续任务",
+  [ACTION_KINDS.CREATE_CALENDAR]: "创建日历事件",
+  [ACTION_KINDS.SEND_EMAIL]: "发送邮件",
+  [ACTION_KINDS.WRITE_FILE]: "修改文件",
+  [ACTION_KINDS.EXTERNAL_SUBMIT]: "外部提交",
 };
 
 function fmtTime(iso) {
@@ -27,10 +48,17 @@ function fmtTime(iso) {
   } catch (e) { return ""; }
 }
 
-export function ReviewCenterScreen({ cards, onDecide, reviewTasks, onResumeTask }) {
+export function ReviewCenterScreen({ cards, onDecide, reviewTasks, onResumeTask, proposals, onProposal }) {
   const pending = cards.filter((c) => c.decision === "pending");
   const decided = cards.filter((c) => c.decision !== "pending");
   const waiting = (reviewTasks || []).filter((t) => t.status === "review_required");
+  const allProposals = proposals || [];
+  const openProposals = allProposals.filter(
+    (p) => p.status === PROPOSAL_STATUS.PROPOSED || p.status === PROPOSAL_STATUS.EDITED,
+  );
+  const closedProposals = allProposals.filter(
+    (p) => p.status !== PROPOSAL_STATUS.PROPOSED && p.status !== PROPOSAL_STATUS.EDITED,
+  );
 
   return (
     <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }} data-gg-screen="workbench-review">
@@ -39,9 +67,104 @@ export function ReviewCenterScreen({ cards, onDecide, reviewTasks, onResumeTask 
           审核中心
         </h1>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", lineHeight: 1.7, margin: "10px 0 0", maxWidth: 640 }}>
-          等待用户确认的任务（review_required 状态）会出现在这里。「继续任务」通过任务状态机
-          review_required → running 恢复执行。正式 Human Review 协议将在 Phase 6 接入。
+          任何会产生外部副作用的动作，都会先生成一条真实建议（Proposal），等待你批准后才执行。
+          只读能力（搜索 / 总结 / 提取 / 规划 / 写作）默认不需要审核。
         </p>
+
+        {/* ── A. REAL Proposals (Phase 6) ─────────────────────────── */}
+        <div style={{ marginTop: 22 }} data-testid="workbench-proposals">
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10 }}>
+            待你决策的建议 ({openProposals.length})
+          </div>
+          {openProposals.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: "var(--text-faint)", padding: "14px 0" }} data-testid="workbench-proposals-empty">
+              暂无待决策的建议。产生外部副作用的动作会在这里等待你的确认。
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {openProposals.map((p) => (
+                <div key={p.id} data-testid="workbench-proposal" style={{
+                  background: "var(--surface-card)", border: "1px solid var(--brand)",
+                  borderRadius: "var(--radius-lg)", padding: "16px 18px", minWidth: 0,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap", marginBottom: 8 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 9px",
+                      borderRadius: "var(--radius-pill)", background: "var(--brand-soft, var(--warning-soft))",
+                      color: "var(--brand-ink, #9A6300)",
+                    }}>
+                      {ACTION_KIND_LABEL[p.kind] || p.kind}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--text-faint)" }}>
+                      {PROPOSAL_STATUS_LABEL[p.status] || p.status} · {fmtTime(p.history?.[p.history.length - 1]?.at)}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16, color: "var(--text-strong)", lineHeight: 1.5 }}>
+                    {p.title}
+                  </div>
+                  {p.rationale && (
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.7, marginTop: 7 }}>
+                      {p.rationale}
+                    </div>
+                  )}
+                  {p.editedPayload && (
+                    <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.6 }} data-testid="workbench-proposal-edited">
+                      已修改为：{p.editedPayload.goal || p.editedPayload.title || JSON.stringify(p.editedPayload)}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 9, marginTop: 14, flexWrap: "wrap" }}>
+                    <button data-testid="workbench-proposal-approve" onClick={() => onProposal && onProposal(p.id, "approve")}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, border: "none", cursor: "pointer",
+                        background: "var(--accent)", color: "#06241B", fontWeight: 700, fontSize: 13,
+                        padding: "9px 16px", borderRadius: "var(--radius-sm)", fontFamily: "var(--font-sans)",
+                      }}>
+                      <Icon name="check" style={{ width: 14, height: 14 }} />批准
+                    </button>
+                    <button data-testid="workbench-proposal-reject" onClick={() => onProposal && onProposal(p.id, "reject")}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer",
+                        border: "1px solid var(--border-subtle)", background: "var(--surface-card)",
+                        color: "var(--text-body)", fontWeight: 600, fontSize: 13, padding: "9px 16px",
+                        borderRadius: "var(--radius-sm)", fontFamily: "var(--font-sans)",
+                      }}>
+                      拒绝
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── B. decided proposals (audit trail) ───────────────────── */}
+        {closedProposals.length > 0 && (
+          <div style={{ marginTop: 22 }} data-testid="workbench-proposals-history">
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10 }}>
+              已处理建议 ({closedProposals.length})
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {closedProposals.map((p) => (
+                <div key={p.id} data-testid="workbench-proposal-history-item" style={{
+                  background: "var(--surface-card)", border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-md, var(--radius-lg))", padding: "12px 15px", minWidth: 0,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-strong)" }}>
+                      {PROPOSAL_STATUS_LABEL[p.status] || p.status}
+                    </span>
+                    <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{p.title}</span>
+                  </div>
+                  {p.history?.[p.history.length - 1]?.note && (
+                    <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 5, lineHeight: 1.6 }}>
+                      {p.history[p.history.length - 1].note}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* A. real review_required tasks */}
         <div style={{ marginTop: 20 }} data-testid="workbench-review-tasks">

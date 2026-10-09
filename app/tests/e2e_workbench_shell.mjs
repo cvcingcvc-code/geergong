@@ -530,6 +530,109 @@ async function phase3Chain() {
   }
 }
 
+/* ── Phase 6: REAL Human Review / Proposal model ────────────────────────
+   Creates a real Proposal through the app's own store, then drives the
+   Review Center UI: it must appear, approving it must move it to 已执行 and
+   really create a task, and a rejected one must never execute. */
+async function phase6Chain() {
+  const s = new Session({ port: 9353 });
+  await s.launch({ width: 1440, height: 900 });
+  await s.connect();
+  await setViewport(s, 1440, 900);
+  try {
+    await gotoHome(s);
+
+    // Seed two real proposals straight into the persisted store (no UI path
+    // exists yet for creating a side-effecting proposal, and inventing one
+    // would be out of scope) then open the Review Center.
+    await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_proposals_v1') || '[]');
+      raw.push({
+        id: 'prop-e2e-approve', schemaVersion: 1, taskId: null,
+        kind: 'create_reminder', requiresReview: true, status: 'proposed',
+        title: 'E2E 建议：创建后续任务', payload: { goal: 'E2E 后续任务目标' },
+        rationale: 'E2E 审核链路验证', sourceSkill: 'plan',
+        history: [{ status: 'proposed', at: new Date().toISOString(), note: '已生成建议' }],
+      });
+      raw.push({
+        id: 'prop-e2e-reject', schemaVersion: 1, taskId: null,
+        kind: 'create_reminder', requiresReview: true, status: 'proposed',
+        title: 'E2E 建议：应被拒绝', payload: { goal: 'E2E 不应被创建' },
+        rationale: 'E2E 拒绝链路验证', sourceSkill: 'plan',
+        history: [{ status: 'proposed', at: new Date().toISOString(), note: '已生成建议' }],
+      });
+      localStorage.setItem('gorgon_workbench_proposals_v1', JSON.stringify(raw));
+      return true;`);
+
+    // Reload so App re-reads proposals from storage.
+    await s.eval(`location.reload(); true`);
+    await sleep(600);
+    await s.waitFor(`!!document.querySelector('[data-testid="workbench-proposals"]')`, { timeout: 8000 })
+      .catch(() => false);
+    await s.click(`document.querySelector('[data-workbench-nav="review"]')`);
+    const reviewUp = await s.waitFor(`!!document.querySelector('[data-gg-screen="workbench-review"]')`);
+    check("§60: review center renders", reviewUp);
+
+    const listUp = await s.waitFor(`!!document.querySelector('[data-testid="workbench-proposal"]')`, { timeout: 8000 });
+    check("§60: real Proposal cards render in Review Center", listUp);
+
+    const count = await s.eval(`return document.querySelectorAll('[data-testid="workbench-proposal"]').length;`);
+    check("§60: both seeded proposals are listed", count === 2, "count=" + count);
+
+    const hasApprove = await s.eval(`return !!document.querySelector('[data-testid="workbench-proposal-approve"]');`);
+    const hasReject = await s.eval(`return !!document.querySelector('[data-testid="workbench-proposal-reject"]');`);
+    check("§60: 批准 / 拒绝 actions available", hasApprove && hasReject);
+
+    // ── REJECT first: must not execute ──
+    await s.click(`[...document.querySelectorAll('[data-testid="workbench-proposal"]')]
+      .find(c => c.innerText.includes('应被拒绝'))
+      .querySelector('[data-testid="workbench-proposal-reject"]')`);
+    await sleep(400);
+    const rejected = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_proposals_v1') || '[]');
+      const p = raw.find(x => x.id === 'prop-e2e-reject');
+      return p ? p.status : 'missing';`);
+    check("§61: reject → status becomes rejected", rejected === "rejected", "status=" + rejected);
+
+    // ── APPROVE: must execute and create a real task ──
+    const tasksBefore = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_tasks_v2') || '{"tasks":[]}');
+      return (raw.tasks || raw || []).length;`);
+    await s.click(`[...document.querySelectorAll('[data-testid="workbench-proposal"]')]
+      .find(c => c.innerText.includes('创建后续任务'))
+      .querySelector('[data-testid="workbench-proposal-approve"]')`);
+    await sleep(600);
+
+    const approved = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_proposals_v1') || '[]');
+      const p = raw.find(x => x.id === 'prop-e2e-approve');
+      return p ? p.status : 'missing';`);
+    check("§62: approve → proposal executed", approved === "executed", "status=" + approved);
+
+    const tasksAfter = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_tasks_v2') || '{"tasks":[]}');
+      return (raw.tasks || raw || []).length;`);
+    check("§62: approve really creates a follow-up task (local apply)", tasksAfter > tasksBefore,
+      `before=${tasksBefore} after=${tasksAfter}`);
+
+    // A rejected proposal must NOT have executed.
+    const rejectHist = await s.eval(`
+      const raw = JSON.parse(localStorage.getItem('gorgon_workbench_proposals_v1') || '[]');
+      const p = raw.find(x => x.id === 'prop-e2e-reject');
+      return JSON.stringify((p && p.history) || []);`);
+    check("§61: rejected proposal never reached executed", !/executed/.test(rejectHist), rejectHist.slice(0, 100));
+
+    // History section shows the decided proposals.
+    const histSection = await s.eval(`return !!document.querySelector('[data-testid="workbench-proposals-history"]');`);
+    check("§62: decided proposals appear in the audit history", histSection);
+
+    const errs = appErrors(s);
+    check("phase6: console errors = 0", errs.length === 0, errs.slice(0, 2).join(" | ").slice(0, 200));
+  } finally {
+    await s.close();
+  }
+}
+
 /* ── main ─────────────────────────────────────────────────────────────── */
 
 console.log("[wb-e2e] starting API server (demo mode) + vite preview ...");
@@ -547,6 +650,7 @@ try {
   await desktopChain();
   await mobileChain();
   await phase3Chain();
+  await phase6Chain();
 } finally {
   for (const p of procs) { try { p.kill(); } catch { /* gone */ } }
 }

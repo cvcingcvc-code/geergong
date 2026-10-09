@@ -17,6 +17,7 @@ import * as Repo from "./task-repository.js";
 import { TASK_STATUS, canTransition, InvalidTransitionError } from "../workbench/task-model.js";
 import { runTask as runTaskEngine } from "../workbench/task-runner.js";
 import { searchActivities } from "../lib/api.js";
+import * as Proposals from "./proposal-repository.js";
 
 const K_TASKS_V2 = Repo.SCHEMA_VERSION ? "gorgon_workbench_tasks_v2" : "gorgon_workbench_tasks_v2";
 const K_V1_TASKS = "gorgon_workbench_tasks";
@@ -187,6 +188,38 @@ export function decideReviewCard(id, decision) {
   setReviewCards(next);
   if (decision === "approved") logEvent("user_approve", "批准了一项待审核操作");
   if (decision === "rejected") logEvent("user_reject", "拒绝了一项待审核操作");
+  return next;
+}
+
+// ---- Proposals (Phase 6: REAL Human Review model) ---------------------
+//
+// The Phase-1 demo review cards above are UI sugar only. These are the real
+// persisted Proposals with a proper state machine, backing the Review Center.
+
+export function getProposals() {
+  return Proposals.listProposals();
+}
+
+export function addProposal(input) {
+  return Proposals.saveProposal(input);
+}
+
+/** Approve / reject a proposal. Approving a local action executes it. */
+export function decideProposal(id, decision) {
+  const next =
+    decision === "approve"
+      ? Proposals.approveProposal(id, {
+          // The local "apply" step: approving a follow-up proposal really
+          // creates a task in the Task Engine, and the proposal history records it.
+          createTask: (p) => {
+            const goal = p.goal || p.title || "后续任务";
+            const list = addTask(goal, { source: "建议执行" });
+            return list && list[0] ? list[0] : null;
+          },
+        })
+      : Proposals.rejectProposal(id);
+  if (decision === "approve") logEvent("user_approve", "批准了一条建议");
+  if (decision === "reject") logEvent("user_reject", "拒绝了一条建议");
   return next;
 }
 
