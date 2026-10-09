@@ -4,18 +4,18 @@
 > 下一轮**只读这个文件**即可恢复上下文，不要重新扫描整个 repo。
 
 ```text
-CURRENT_PHASE=PHASE 8 DONE (WINDOWS_DESKTOP_PACKAGING) — GATE GREEN, 待 commit
-CURRENT_HEAD=73d87f5 (PHASE 7)
+CURRENT_PHASE=PHASE 9 DONE (RELEASE_QA + DELIVERABLES) — RELEASE READY
+CURRENT_HEAD=848c6c0 (PHASE 8)
 
 LAST_COMPLETED=
-  PHASE 0/1/2/3/3B/4A/4B/5/6/7  (Gate 全绿)
-  PHASE 8 TASK-8.1 desktop/main.py 启动器（ui+api 双线程 + /api 反代 + 浏览器回退）
-  PHASE 8 TASK-8.2 --selftest 无头自检（冻结包 8/8，写 JSON 报告）
-  PHASE 8 TASK-8.3 PyInstaller onedir 打包 + 图标 + GORGON_PYTHON 校验
-  PHASE 8 TASK-8.4 desktop_smoke.py 加「真跑打包 EXE」检查 → 19/19
+  PHASE 0/1/2/3/3B/4A/4B/5/6/7/8  (Gate 全绿)
+  PHASE 9 TASK-9.1 全量测试矩阵 5 套件全绿 (205+18+58+93+19 = 393 断言)
+  PHASE 9 TASK-9.2 交付物文档 release/{README,DEMO_SCRIPT,TEST_REPORT,RELEASE_NOTES}.md
+  PHASE 9 TASK-9.3 安全核查：仓库内明文密钥 0、bundle 内密钥 0
+  PHASE 9 TASK-9.4 打包件端到端实测：原生窗口（msedge 增量 0）+ 服务可用
 
-CURRENT_TASK=Phase 8 commit + 更新 DELIVERY_STATE
-NEXT_TASK=PHASE 9 — Release QA + 交付物文档
+CURRENT_TASK=Phase 9 commit + 最终交付报告
+NEXT_TASK=(交付完成) 可选 P2：安装器 / 代码签名 / 自动更新
 
 TEST_STATUS=
   UNIT            = 205/205 PASS
@@ -36,12 +36,29 @@ KNOWN_ISSUES=
     跑 E2E 前先确认端口空闲（netstat -ano | grep LISTENING）。
   - PATH 上的 `python` 是托管 3.13（无 pyinstaller/pywebview）。
     打包必须用系统 3.14：build.ps1 支持 GORGON_PYTHON 并会主动校验。
+  - 未做（P2，不影响交付）：安装器 / 代码签名 / 自动更新。
+    未签名 EXE 可能触发 SmartScreen 提示，选「仍要运行」即可。
 
 BLOCKERS=none
 
-DELIVERY_READINESS=NEAR_READY  (EXE 已可用；缺 release/ 交付物文档 + 最终 QA 报告)
+DELIVERY_READINESS=READY
 
-LAST_UPDATE=2026-10-09 13:10 GMT+8
+LAST_UPDATE=2026-10-09 13:20 GMT+8
+```
+
+## 交付物清单（已就位）
+
+```text
+release/
+  README.md               # 是什么 / 30 秒跑起来 / 怎么验证
+  DEMO_SCRIPT.md          # 比赛演示脚本 60–120 秒（含讲解词与答疑）
+  TEST_REPORT.md          # 完整测试矩阵、EXE 自检原文、安全核查、复现步骤
+  RELEASE_NOTES.md        # 版本说明、关键数字、已修缺陷、已知限制
+  Gorgon-Workbench-Windows/
+    Gorgon Workbench.exe  # 双击即用（5.87 MB，含图标）
+    selftest.json         # 8/8 自检报告（frozen=true, python=3.14.2）
+    _internal/            # 冻结运行时：app/dist + pipeline + webview/pythonnet
+docs/workbench/COMPETITION_DEMO_SCRIPT.md   # 演示脚本（仓库内版本）
 ```
 
 ## Phase 7 核心结论（实测，非推断）

@@ -14,12 +14,14 @@ pipeline/data/cache/
 search.env
 
 # PHASE 8 — Windows desktop build outputs.
-# `release/` holds the packaged app (a ~50 MB onedir bundle). It is a BUILD
-# ARTIFACT, reproducible at any time with:
+# `release/Gorgon-Workbench-Windows/` holds the packaged app (a ~50 MB onedir
+# bundle). It is a BUILD ARTIFACT, reproducible at any time with:
 #     powershell -ExecutionPolicy Bypass -File desktop/build.ps1
 # Committing a frozen Python runtime to git would bloat the repo with no
 # benefit, so the bundle is produced on demand and shipped out-of-band.
-release/
+# The release DOCUMENTS next to it stay tracked — they describe the deliverable.
+release/*
+!release/*.md
 build/
 
 # Per-machine desktop self-test report (written next to the built exe).
